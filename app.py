@@ -17,21 +17,21 @@ def init_db():
             fecha TEXT, cliente_contacto TEXT, tecnico_1 TEXT, tecnico_2 TEXT,
             temp_salida REAL, p_carga TEXT, p_descarga TEXT,
             horas_marcha REAL, horas_carga REAL,
-            estado_entrega TEXT, tipo_intervencion TEXT, ruta_archivo TEXT
+            estado_entrega TEXT, tipo_intervencion TEXT, recomendaciones TEXT, ruta_archivo TEXT
         )
     ''')
     conn.commit()
     conn.close()
 
-def guardar_registro(tag, mod, serie, area, ubi, fecha, cli, tec1, tec2, temp, p_c, p_d, h_m, h_c, est, tipo, ruta):
+def guardar_registro(tag, mod, serie, area, ubi, fecha, cli, tec1, tec2, temp, p_c, p_d, h_m, h_c, est, tipo, reco, ruta):
     conn = sqlite3.connect("historial_equipos.db")
     cursor = conn.cursor()
     cursor.execute('''
         INSERT INTO intervenciones 
         (tag, modelo, numero_serie, area, ubicacion, fecha, cliente_contacto, tecnico_1, tecnico_2, 
-        temp_salida, p_carga, p_descarga, horas_marcha, horas_carga, estado_entrega, tipo_intervencion, ruta_archivo)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (tag, mod, serie, area, ubi, fecha, cli, tec1, tec2, temp, p_c, p_d, h_m, h_c, est, tipo, ruta))
+        temp_salida, p_carga, p_descarga, horas_marcha, horas_carga, estado_entrega, tipo_intervencion, recomendaciones, ruta_archivo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (tag, mod, serie, area, ubi, fecha, cli, tec1, tec2, temp, p_c, p_d, h_m, h_c, est, tipo, reco, ruta))
     conn.commit()
     conn.close()
 
@@ -40,7 +40,7 @@ def buscar_ultimo_registro(tag):
     cursor = conn.cursor()
     cursor.execute('''
         SELECT fecha, cliente_contacto, temp_salida, estado_entrega, tipo_intervencion, 
-               tecnico_1, tecnico_2, p_carga, p_descarga, horas_marcha, horas_carga
+               tecnico_1, tecnico_2, p_carga, p_descarga, horas_marcha, horas_carga, recomendaciones
         FROM intervenciones WHERE tag = ? ORDER BY id DESC LIMIT 1
     ''', (tag,))
     resultado = cursor.fetchone()
@@ -79,11 +79,12 @@ if 'input_fecha' not in st.session_state:
     st.session_state.input_p_descarga = 7.0
     st.session_state.input_h_marcha = 0.0
     st.session_state.input_h_carga = 0.0
+    st.session_state.input_reco = "Realizar limpieza de filtros y chequeo de tensiones en la próxima visita."
 
 st.title("⚙️ Sistema de Mantenimiento InforGem")
 st.markdown("---")
 
-# Inventario
+# Inventario Maestro
 inventario_equipos = {
     "70-GC-013": ["GA 132", "AIF095296", "descarga acido", "área húmeda"],
     "70-GC-014": ["GA 132", "AIF095297", "descarga acido", "área húmeda"],
@@ -117,13 +118,14 @@ with col_busqueda:
         reg = buscar_ultimo_registro(tag_seleccionado)
         if reg:
             st.session_state.input_cliente, st.session_state.input_temp = reg[1], float(reg[2])
-            st.session_state.input_tec1, st.session_state.input_tec2 = reg[5], reg[6]
-            # Extraer solo el número de la presión si guardamos con unidad
+            st.session_state.input_estado, st.session_state.input_tec1 = reg[3], reg[5]
+            st.session_state.input_tec2 = reg[6]
             try: st.session_state.input_p_carga = float(str(reg[7]).split()[0])
             except: st.session_state.input_p_carga = 7.0
             try: st.session_state.input_p_descarga = float(str(reg[8]).split()[0])
             except: st.session_state.input_p_descarga = 7.5
             st.session_state.input_h_marcha, st.session_state.input_h_carga = float(reg[9]), float(reg[10])
+            st.session_state.input_reco = reg[11] if reg[11] else ""
             st.success(f"Cargado. Última visita: {reg[0]}")
 
 with col_plan:
@@ -132,10 +134,10 @@ with col_plan:
 st.markdown("---")
 
 # --- FORMULARIO ---
-st.subheader("📋 Datos del Equipo")
+st.subheader("📋 Datos del Activo")
 c1, c2, c3, c4 = st.columns(4)
 modelo = c1.text_input("Modelo:", value=mod_d)
-numero_serie = c2.text_input("Serie:", value=ser_d)
+numero_serie = c2.text_input("N° Serie:", value=ser_d)
 area = c3.text_input("Área:", value=area_d)
 ubicacion = c4.text_input("Ubicación:", value=ubi_d)
 
@@ -150,31 +152,44 @@ st.subheader("📊 Operación y Horómetro")
 c9, c10, c11, c12, c13, c14 = st.columns(6)
 horas_marcha = c9.number_input("Horas Marcha:", step=1.0, key="input_h_marcha")
 horas_carga = c10.number_input("Horas Carga:", step=1.0, key="input_h_carga")
-
-# --- SELECTOR DE UNIDAD DE PRESIÓN ---
 unidad_p = c11.selectbox("Unidad Presión:", ["bar", "psi"])
 p_carga_val = c12.number_input(f"P. Carga ({unidad_p}):", step=0.1 if unidad_p=="bar" else 1.0, key="input_p_carga")
 p_descarga_val = c13.number_input(f"P. Descarga ({unidad_p}):", step=0.1 if unidad_p=="bar" else 1.0, key="input_p_descarga")
 temp_salida = c14.number_input("Temp Salida (°C):", step=0.1, key="input_temp")
 
+st.subheader("📝 Notas y Recomendaciones")
 estado_entrega = st.text_area("Estado de Entrega:")
+recomendaciones = st.text_area("Nota Técnica / Recomendaciones:", key="input_reco")
 
 # --- ACCIÓN ---
-if st.button(f"🚀 Generar Reporte", type="primary"):
+if st.button(f"🚀 Generar Reporte Industrial", type="primary"):
     try:
         doc = DocxTemplate("plantilla/inspeccion.docx")
         
-        # Unimos el valor con la unidad para el Word
         p_carga_full = f"{p_carga_val} {unidad_p}"
         p_descarga_full = f"{p_descarga_val} {unidad_p}"
         
+        # MAPEO A LA NUEVA PLANTILLA
         context = {
-            "tipo_intervencion": tipo_plan, "modelo": modelo, "tag": tag_seleccionado,
-            "area": area, "ubicacion": ubicacion, "cliente_contacto": cliente_contacto,
-            "p_carga": p_carga_full, "p_descarga": p_descarga_full, "temp_salida": temp_salida,
-            "horas_marcha": int(horas_marcha), "horas_carga": int(horas_carga),
-            "tecnico_1": tecnico_1, "tecnico_2": tecnico_2,
-            "estado_entrega": estado_entrega, "fecha": fecha
+            "tipo_intervencion": tipo_plan,
+            "modelo": modelo,
+            "equipo_modelo": modelo, # Se usa en la tabla inferior
+            "tag": tag_seleccionado,
+            "area": area,
+            "ubicacion": ubicacion,
+            "cliente_contacto": cliente_contacto,
+            "p_carga": p_carga_full,
+            "p_descarga": p_descarga_full,
+            "temp_salida": temp_salida,
+            "horas_marcha": int(horas_marcha),
+            "horas_carga": int(horas_carga),
+            "tecnico_1": tecnico_1,
+            "tecnico_2": tecnico_2,
+            "estado_entrega": estado_entrega,
+            "recomendaciones": recomendaciones,
+            "serie": numero_serie, # Vinculado al N° Serie del equipo
+            "tipo_orden": "INSPECCIÓN", # Siempre en mayúsculas
+            "fecha": fecha
         }
         doc.render(context)
 
@@ -187,15 +202,15 @@ if st.button(f"🚀 Generar Reporte", type="primary"):
         
         guardar_registro(tag_seleccionado, modelo, numero_serie, area, ubicacion, fecha, cliente_contacto, 
                          tecnico_1, tecnico_2, temp_salida, p_carga_full, p_descarga_full, horas_marcha, horas_carga, 
-                         estado_entrega, tipo_plan, ruta)
+                         estado_entrega, tipo_plan, recomendaciones, ruta)
         
-        st.success(f"✅ Guardado: {nombre_archivo}")
+        st.success(f"✅ Reporte generado: {nombre_archivo}")
         st.info(sincronizar_con_nube(tag_seleccionado, tipo_plan)[1])
         
         buffer = io.BytesIO()
         doc.save(buffer)
         buffer.seek(0)
-        st.download_button("⬇️ Descargar", data=buffer, file_name=nombre_archivo)
+        st.download_button("⬇️ Descargar Word", data=buffer, file_name=nombre_archivo)
     except Exception as e:
         st.error(f"Error: {e}")
 
