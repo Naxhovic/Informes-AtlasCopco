@@ -3,8 +3,9 @@ from docxtpl import DocxTemplate
 import io
 import os
 import sqlite3
+import subprocess
 
-# --- CONFIGURACIÓN DE LA BASE DE DATOS ---
+# --- 1. MÓDULO DE BASE DE DATOS LOCAL ---
 def init_db():
     conn = sqlite3.connect("historial_equipos.db")
     cursor = conn.cursor()
@@ -20,16 +21,20 @@ def init_db():
             tipo_intervencion TEXT
         )
     ''')
+    try:
+        cursor.execute('ALTER TABLE intervenciones ADD COLUMN ruta_archivo TEXT')
+    except sqlite3.OperationalError:
+        pass 
     conn.commit()
     conn.close()
 
-def guardar_registro(tag, modelo, fecha, cliente, temp, estado, tipo):
+def guardar_registro(tag, modelo, fecha, cliente, temp, estado, tipo, ruta_archivo):
     conn = sqlite3.connect("historial_equipos.db")
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO intervenciones (tag, modelo, fecha, cliente_contacto, temp_salida, estado_entrega, tipo_intervencion)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (tag, modelo, fecha, cliente, temp, estado, tipo))
+        INSERT INTO intervenciones (tag, modelo, fecha, cliente_contacto, temp_salida, estado_entrega, tipo_intervencion, ruta_archivo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (tag, modelo, fecha, cliente, temp, estado, tipo, ruta_archivo))
     conn.commit()
     conn.close()
 
@@ -46,13 +51,26 @@ def buscar_ultimo_registro(tag):
     conn.close()
     return resultado
 
-# Iniciar la base de datos
+# --- 2. MÓDULO DE NUBE (Respalda el Word y la Base de Datos) ---
+def sincronizar_con_nube(tag, tipo_plan):
+    try:
+        # Usamos "." para decirle que respalde TODO (El Word nuevo y los cambios en la BD)
+        subprocess.run(["git", "add", "."], check=True, capture_output=True, text=True)
+        mensaje = f"InforGem: Auto-guardado de {tipo_plan} para el equipo {tag}"
+        subprocess.run(["git", "commit", "-m", mensaje], check=True, capture_output=True, text=True)
+        subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
+        return True, "☁️ ¡Respaldo total en la nube (Word + Base de Datos) exitoso!"
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else "Sin cambios nuevos para subir."
+        return False, f"⚠️ Aviso de Nube: {error_msg}"
+    except FileNotFoundError:
+        return False, "⚠️ Aviso: No se detectó Git."
+
+# --- 3. INICIO DE LA APLICACIÓN VISUAL ---
 init_db()
 
-# --- CONFIGURACIÓN DE PÁGINA Y MEMORIA SEGURA ---
 st.set_page_config(page_title="InforGem Generador", page_icon="⚙️")
 
-# Inicializar las llaves de memoria solo si no existen (evita el bloqueo y la pantalla negra)
 if 'input_fecha' not in st.session_state:
     st.session_state.input_fecha = "21 de febrero de 2026"
     st.session_state.input_cliente = "Lorena Rojas"
@@ -64,7 +82,6 @@ if 'input_fecha' not in st.session_state:
 st.title("⚙️ Sistema de Mantenimiento InforGem")
 st.markdown("---")
 
-# Inventario de prueba
 inventario_equipos = {
     "25-GC-007": "GA250",
     "0505-GC-015": "GA30",
@@ -72,7 +89,6 @@ inventario_equipos = {
     "99-GC-100": "ZR400"
 }
 
-# --- SECCIÓN 1: BÚSQUEDA Y TIPO DE PLAN ---
 col_busqueda, col_plan = st.columns(2)
 
 with col_busqueda:
@@ -85,13 +101,10 @@ with col_busqueda:
         if registro:
             st.session_state.fecha_ultima = registro[0]
             st.session_state.input_cliente = registro[1]
-            
-            # Seguro contra errores de conversión de números (evita que la pantalla colapse)
             try:
                 st.session_state.input_temp = float(registro[2])
             except (ValueError, TypeError):
                 st.session_state.input_temp = 0.0
-                
             st.session_state.input_estado = registro[3]
             st.session_state.tipo_ultimo = registro[4]
             st.success("✅ ¡Historial encontrado! Se recuperaron los parámetros de la última visita.")
@@ -105,11 +118,9 @@ with col_plan:
 
 st.markdown("---")
 
-# --- AVISO VISUAL DE LA ÚLTIMA INTERVENCIÓN ---
 if st.session_state.fecha_ultima != "":
     st.info(f"📌 **Referencia Histórica:** El último trabajo realizado en este equipo fue un(a) **{st.session_state.tipo_ultimo}**, el **{st.session_state.fecha_ultima}**.")
 
-# --- SECCIÓN 2: DATOS DEL REPORTE NUEVO ---
 st.subheader(f"Datos para el Reporte Nuevo ({tag_seleccionado})")
 col1, col2 = st.columns(2)
 
@@ -124,46 +135,41 @@ with col2:
 
 st.markdown("---")
 
-# --- SECCIÓN 3: GENERACIÓN Y GUARDADO ---
 if st.button(f"Generar, Guardar y Registrar Word de {tipo_plan}", type="primary"):
     try:
-        # Selección de plantilla
         if tipo_plan == "Inspección":
             plantilla_path = "plantilla/inspeccion.docx"
         else:
             plantilla_path = "plantilla/inspeccion.docx" 
             
         doc = DocxTemplate(plantilla_path)
-
         context = {
-            "tag": tag_seleccionado,
-            "modelo": modelo,
-            "fecha": fecha,
-            "cliente_contacto": cliente_contacto,
-            "temp_salida": temp_salida,
-            "estado_entrega": estado_entrega,
-            "tipo_intervencion": tipo_plan
+            "tag": tag_seleccionado, "modelo": modelo, "fecha": fecha,
+            "cliente_contacto": cliente_contacto, "temp_salida": temp_salida,
+            "estado_entrega": estado_entrega, "tipo_intervencion": tipo_plan
         }
         doc.render(context)
 
-        # Creación de carpetas y guardado físico
-        carpeta_principal = "Historial_Informes"
-        carpeta_equipo = os.path.join(carpeta_principal, tag_seleccionado)
+        # Guardado Local
+        carpeta_equipo = os.path.join("Historial_Informes", tag_seleccionado)
         os.makedirs(carpeta_equipo, exist_ok=True)
-        
         nombre_archivo = f"Informe_{tipo_plan}_{tag_seleccionado}.docx"
         ruta_completa = os.path.join(carpeta_equipo, nombre_archivo)
         doc.save(ruta_completa)
 
-        # Guardado en base de datos SQLite
-        guardar_registro(tag_seleccionado, modelo, fecha, cliente_contacto, temp_salida, estado_entrega, tipo_plan)
+        guardar_registro(tag_seleccionado, modelo, fecha, cliente_contacto, temp_salida, estado_entrega, tipo_plan, ruta_completa)
+        st.success(f"✅ ¡Word creado localmente y BD actualizada!")
 
-        # Descarga
+        # Módulo de Nube (Ahora te mostrará SIEMPRE si funcionó o falló)
+        exito_nube, mensaje_nube = sincronizar_con_nube(tag_seleccionado, tipo_plan)
+        if exito_nube:
+            st.success(mensaje_nube)
+        else:
+            st.warning(mensaje_nube)
+
         buffer = io.BytesIO()
         doc.save(buffer)
         buffer.seek(0)
-        
-        st.success(f"✅ ¡Todo listo! Registro en BD exitoso y Word guardado en: {ruta_completa}")
         st.download_button(
             label=f"⬇️ Descargar Copia Manual ({tipo_plan})",
             data=buffer,
@@ -172,4 +178,4 @@ if st.button(f"Generar, Guardar y Registrar Word de {tipo_plan}", type="primary"
         )
 
     except Exception as e:
-        st.error(f"⚠️ Error al procesar la plantilla. Detalle: {e}")
+        st.error(f"⚠️ Error. Detalle: {e}")
