@@ -27,7 +27,6 @@ def init_db():
     cursor.execute("PRAGMA table_info(intervenciones)")
     columnas_actuales = [info[1] for info in cursor.fetchall()]
     
-    # Si agregamos funciones nuevas, el código las crea aquí automáticamente
     if "estado_equipo" not in columnas_actuales:
         cursor.execute("ALTER TABLE intervenciones ADD COLUMN estado_equipo TEXT DEFAULT 'Operativo'")
     if "recomendaciones" not in columnas_actuales:
@@ -99,7 +98,7 @@ def sincronizar_con_nube(tag, tipo_plan):
 init_db()
 st.set_page_config(page_title="InforGem Generador", layout="wide", page_icon="⚙️")
 
-# Inicialización de la memoria de la aplicación (Session State)
+# Memoria de la aplicación
 if 'input_cliente' not in st.session_state: st.session_state.input_cliente = "Lorena Rojas"
 if 'input_tec1' not in st.session_state: st.session_state.input_tec1 = "Ignacio Morales"
 if 'input_tec2' not in st.session_state: st.session_state.input_tec2 = "emian Sanchez"
@@ -115,29 +114,36 @@ if 'input_estado_eq' not in st.session_state: st.session_state.input_estado_eq =
 st.title("⚙️ Sistema de Mantenimiento InforGem")
 st.markdown("---")
 
-# Inventario Maestro
+# --- INVENTARIO MAESTRO ORDENADO NUMÉRICAMENTE ---
 inventario_equipos = {
-    "70-GC-013": ["GA 132", "AIF095296", "descarga acido", "área húmeda"],
-    "70-GC-014": ["GA 132", "AIF095297", "descarga acido", "área húmeda"],
-    "050-GD-001": ["GA 45", "API542705", "planta sx", "área húmeda"],
-    "050-GD-002": ["GA 45", "API542706", "planta sx", "área húmeda"],
-    "050-GC-003": ["ZT 37", "API791692", "planta sx", "área húmeda"],
-    "050-GC-004": ["ZT 37", "API791693", "planta sx", "área húmeda"],
-    "050-CD-001": ["CD 80+", "API095825", "planta sx", "área húmeda"],
-    "050-CD-002": ["CD 80+", "API095826", "planta sx", "área húmeda"],
-    "050-GC-015": ["GA 30", "API501440", "planta borra", "área húmeda"],
-    "65-GC-011": ["GA 250", "APF253581", "patio estanques", "área húmeda"],
-    "65-GC-009": ["GA 250", "APF253608", "patio estanques", "área húmeda"],
-    "65-GD-011": ["CD 630", "WXF300015", "patio estanques", "área húmeda"],
-    "65-GD-012": ["CD 630", "WXF300016", "patio estanques", "área húmeda"],
-    "35-GC-006": ["GA 250", "AIF095420", "chancado secundario", "área seca"],
-    "35-GC-007": ["GA 250", "AIF095421", "chancado secundario", "área seca"],
-    "35-GC-008": ["GA 250", "AIF095302", "chancado secundario", "área seca"],
-    "20-GC-004": ["GA 37", "AII390776", "mina", "mina"],
+    # ÁREA 20 - MINA / TRUCK SHOP
     "20-GC-001": ["GA 75", "AII482673", "truck shop", "mina"],
     "20-GC-002": ["GA 75", "AII482674", "truck shop", "mina"],
     "20-GC-003": ["GA 90", "AIF095178", "truck shop", "mina"],
-    "TALLER-01": ["GA18", "API335343", "taller", "área seca"]
+    "20-GC-004": ["GA 37", "AII390776", "mina", "mina"],
+    # ÁREA 35 - CHANCADO
+    "35-GC-006": ["GA 250", "AIF095420", "chancado secundario", "área seca"],
+    "35-GC-007": ["GA 250", "AIF095421", "chancado secundario", "área seca"],
+    "35-GC-008": ["GA 250", "AIF095302", "chancado secundario", "área seca"],
+    # ÁREA 50 - PLANTA SX
+    "50-GD-001": ["GA 45", "API542705", "planta SX", "área húmeda"],
+    "50-GD-002": ["GA 45", "API542706", "planta SX", "área húmeda"],
+    "50-GC-003": ["ZT 37", "API791692", "planta SX", "área húmeda"],
+    "50-GC-004": ["ZT 37", "API791693", "planta SX", "área húmeda"],
+    "50-CD-001": ["CD 80+", "API095825", "planta SX", "área húmeda"],
+    "50-CD-002": ["CD 80+", "API095826", "planta SX", "área húmeda"],
+    # ÁREA 55 - PLANTA BORRA
+    "55-GC-015": ["GA 30", "API501440", "planta borra", "área húmeda"],
+    # ÁREA 65 - PATIO ESTANQUES
+    "65-GC-009": ["GA 250", "APF253608", "patio estanques", "área húmeda"],
+    "65-GC-011": ["GA 250", "APF253581", "patio estanques", "área húmeda"],
+    "65-GD-011": ["CD 630", "WXF300015", "patio estanques", "área húmeda"],
+    "65-GD-012": ["CD 630", "WXF300016", "patio estanques", "área húmeda"],
+    # ÁREA 70 - DESCARGA ÁCIDO
+    "70-GC-013": ["GA 132", "AIF095296", "descarga acido", "área húmeda"],
+    "70-GC-014": ["GA 132", "AIF095297", "descarga acido", "área húmeda"],
+    # OTROS
+    "TALLER-01": ["GA18", "API335343", "taller", "laboratorio"]
 }
 
 # --- BUSCADOR CON SEMÁFORO ---
@@ -154,15 +160,12 @@ with col_busqueda:
     if st.button("Buscar Historial"):
         reg = buscar_ultimo_registro(tag_sel)
         if reg:
-            # Recuperar Personal y Notas
             st.session_state.input_cliente = reg[1]
             st.session_state.input_tec1 = reg[5]
             st.session_state.input_tec2 = reg[6]
             st.session_state.input_estado = reg[3]
             st.session_state.input_reco = reg[11] if reg[11] else ""
             st.session_state.input_estado_eq = reg[12] if reg[12] else "Operativo"
-            
-            # Recuperar Parámetros Técnicos
             st.session_state.input_temp = float(reg[2])
             st.session_state.input_h_marcha = float(reg[9]) if reg[9] else 0.0
             st.session_state.input_h_carga = float(reg[10]) if reg[10] else 0.0
@@ -170,8 +173,7 @@ with col_busqueda:
             except: st.session_state.input_p_carga = 7.0
             try: st.session_state.input_p_descarga = float(str(reg[8]).split()[0])
             except: st.session_state.input_p_descarga = 7.5
-            
-            st.success("✅ Memoria técnica y personal cargada.")
+            st.success("✅ Datos cargados.")
             st.rerun()
 
 with col_plan:
@@ -210,7 +212,6 @@ with col_est2:
 
 recomendaciones = st.text_area("Nota Técnica / Recomendaciones:", key="input_reco")
 
-# --- GENERACIÓN ---
 if st.button("🚀 Generar Reporte Industrial", type="primary"):
     try:
         if tipo_plan == "P1": file_plantilla = "plantilla/p1.docx"
@@ -218,7 +219,6 @@ if st.button("🚀 Generar Reporte Industrial", type="primary"):
         else: file_plantilla = "plantilla/inspeccion.docx"
             
         doc = DocxTemplate(file_plantilla)
-        
         context = {
             "tipo_intervencion": tipo_plan, "modelo": modelo, "tag": tag_sel,
             "area": area, "ubicacion": ubicacion, "cliente_contacto": cliente_contacto,
@@ -226,11 +226,9 @@ if st.button("🚀 Generar Reporte Industrial", type="primary"):
             "temp_salida": temp_salida, "horas_marcha": int(horas_marcha), "horas_carga": int(horas_carga),
             "tecnico_1": tecnico_1, "tecnico_2": tecnico_2, "estado_equipo": estado_equipo,
             "estado_entrega": estado_entrega, "recomendaciones": recomendaciones,
-            "serie": numero_serie, "tipo_orden": tipo_plan.upper(), "fecha": fecha,
-            "equipo_modelo": modelo
+            "serie": numero_serie, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": modelo
         }
         doc.render(context)
-
         nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"
         folder = os.path.join("Historial_Informes", tag_sel)
         os.makedirs(folder, exist_ok=True)
@@ -241,15 +239,14 @@ if st.button("🚀 Generar Reporte Industrial", type="primary"):
                          tecnico_1, tecnico_2, temp_salida, f"{p_carga_val} {unidad_p}", f"{p_descarga_val} {unidad_p}", 
                          horas_marcha, horas_carga, estado_entrega, tipo_plan, recomendaciones, estado_equipo, ruta)
         
-        st.success(f"✅ Reporte generado y sincronizado.")
+        st.success(f"✅ Reporte generado.")
         st.info(sincronizar_con_nube(tag_sel, tipo_plan)[1])
         st.download_button("⬇️ Descargar", data=io.BytesIO(open(ruta, "rb").read()), file_name=nombre_archivo)
         st.rerun()
     except Exception as e:
         st.error(f"Error: {e}")
 
-# --- TABLA HISTÓRICA ---
 st.markdown("---")
-df_historial = obtener_todo_el_historial(tag_sel)
-if not df_historial.empty:
-    st.dataframe(df_historial.style.apply(lambda r: ['background-color: #ffcccc' if r.estado_equipo == 'Fuera de servicio' else '' for _ in r], axis=1), use_container_width=True)
+df_hist = obtener_todo_el_historial(tag_sel)
+if not df_hist.empty:
+    st.dataframe(df_hist.style.apply(lambda r: ['background-color: #ffcccc' if r.estado_equipo == 'Fuera de servicio' else '' for _ in r], axis=1), use_container_width=True)
