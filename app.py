@@ -257,6 +257,20 @@ if st.button("🚀 Generar Reporte Industrial", type="primary"):
         st.success(f"✅ Reporte generado utilizando plantilla: {file_plantilla.split('/')[-1]}")
         st.info(sincronizar_con_nube(tag_sel, tipo_plan)[1])
         
+        # --- VISTA PREVIA ---
+        with st.expander("👁️ Vista Previa de Datos del Reporte", expanded=True):
+            st.markdown(f"**📍 Equipo:** {modelo} ({tag_sel}) | **N° Serie:** {numero_serie}")
+            st.markdown(f"**🛠️ Tipo de Orden:** {tipo_plan.upper()} | **Fecha:** {fecha}")
+            st.markdown(f"**👨‍🔧 Técnicos:** {tecnico_1} y {tecnico_2}")
+            if estado_equipo == "Operativo":
+                st.success(f"**Estado Final:** {estado_equipo}")
+            else:
+                st.error(f"**Estado Final:** {estado_equipo}")
+            st.info(f"**Comentarios de Entrega:**\n{estado_entrega}")
+            if recomendaciones:
+                st.warning(f"**Nota Técnica:**\n{recomendaciones}")
+        # ---------------------
+        
         with open(ruta, "rb") as file:
             st.download_button(
                 label="⬇️ Descargar Reporte",
