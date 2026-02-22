@@ -15,7 +15,7 @@ from email import encoders
 # Aquí pones el correo Gmail exclusivo que creaste para la app (Ej: inforgem.spence@gmail.com)
 CORREO_REMITENTE = "informeatlas.spence@gmail.com"  
 # Aquí pegas la clave de 16 letras de la "Contraseña de Aplicación" de Google SIN ESPACIOS
-PASSWORD_APLICACION = "abcdefghijklmnop"  
+PASSWORD_APLICACION = "jkliuaftlcyenwsa"  
 
 def enviar_carrito_por_correo(destinatario, lista_informes):
     if not CORREO_REMITENTE or CORREO_REMITENTE == "inforgem.spence@gmail.com":
