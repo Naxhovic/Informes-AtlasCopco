@@ -2,85 +2,86 @@ import streamlit as st
 from docxtpl import DocxTemplate
 import io, os, sqlite3, subprocess
 import pandas as pd
+import smtplib
+from email.message import EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email import encoders
 
 # =============================================================================
-# 0. CONFIGURACIÓN DE PÁGINA Y ESTILOS CORPORATIVOS
+# 0.1 CONFIGURACIÓN DE CORREO ELECTRÓNICO (SMTP)
+# =============================================================================
+# Aquí pones el correo Gmail exclusivo que creaste para la app (Ej: inforgem.spence@gmail.com)
+CORREO_REMITENTE = "informeatlas.spence@gmail.com"  
+# Aquí pegas la clave de 16 letras de la "Contraseña de Aplicación" de Google SIN ESPACIOS
+PASSWORD_APLICACION = "abcdefghijklmnop"  
+
+def enviar_carrito_por_correo(destinatario, lista_informes):
+    if not CORREO_REMITENTE or CORREO_REMITENTE == "inforgem.spence@gmail.com":
+        return False, "⚠️ Por favor configura el correo y contraseña del sistema en el código fuente."
+    
+    msg = MIMEMultipart()
+    msg['From'] = CORREO_REMITENTE
+    msg['To'] = destinatario
+    msg['Subject'] = f"REVISIÓN PREVIA: Reportes Atlas Copco - {pd.Timestamp.now().strftime('%d/%m/%Y')}"
+
+    cuerpo = f"Estimado/a,\n\nSe adjuntan {len(lista_informes)} reportes de servicio técnico generados en la presente jornada para su revisión previa antes del envío oficial.\n\nEquipos intervenidos:\n"
+    for item in lista_informes:
+        cuerpo += f"- TAG: {item['tag']} | Orden: {item['tipo']}\n"
+    cuerpo += "\nSaludos cordiales,\nSistema Integrado InforGem"
+
+    msg.attach(MIMEText(cuerpo, 'plain'))
+
+    # Adjuntar cada archivo del carrito
+    for item in lista_informes:
+        ruta = item['ruta']
+        if os.path.exists(ruta):
+            with open(ruta, "rb") as f:
+                part = MIMEBase('application', 'octet-stream')
+                part.set_payload(f.read())
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition', f'attachment; filename="{item["nombre_archivo"]}"')
+            msg.attach(part)
+
+    try:
+        # Configuración por defecto para Gmail
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(CORREO_REMITENTE, PASSWORD_APLICACION)
+        server.send_message(msg)
+        server.quit()
+        return True, "✅ Todos los informes fueron enviados a tu correo corporativo para revisión."
+    except Exception as e:
+        return False, f"❌ Error al enviar el correo: {e}"
+
+# =============================================================================
+# 0.2 CONFIGURACIÓN DE PÁGINA Y ESTILOS CORPORATIVOS
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
 
 def aplicar_estilos_premium():
     st.markdown("""
         <style>
-        /* Paleta */
-        :root {
-            --ac-blue: #007CA6;
-            --ac-dark: #005675;
-            --ac-light: #e6f2f7;
-            --bhp-orange: #FF6600;
-        }
-        
-        /* Ocultar elementos por defecto de Streamlit para look White-Label */
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-        
-        /* Estilos de Botones Principales */
+        :root { --ac-blue: #007CA6; --ac-dark: #005675; --ac-light: #e6f2f7; --bhp-orange: #FF6600; }
+        #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
         div.stButton > button:first-child {
-            background-color: var(--ac-blue);
-            color: white;
-            border-radius: 6px;
-            border: none;
-            font-weight: 600;
-            padding: 0.5rem 1rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background-color: var(--ac-blue); color: white; border-radius: 6px; border: none;
+            font-weight: 600; padding: 0.5rem 1rem; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         div.stButton > button:first-child:hover {
-            background-color: var(--ac-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            color: white;
+            background-color: var(--ac-dark); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); color: white;
         }
-        
-        /* Foco en inputs */
         .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus {
-            border-color: var(--ac-blue) !important;
-            box-shadow: 0 0 0 1px var(--ac-blue) !important;
+            border-color: var(--ac-blue) !important; box-shadow: 0 0 0 1px var(--ac-blue) !important;
         }
-
-        /* Títulos */
-        h1, h2, h3 {
-            font-family: 'Segoe UI', sans-serif;
-            font-weight: 700;
-        }
+        h1, h2, h3 { font-family: 'Segoe UI', sans-serif; font-weight: 700; }
         h1 { border-bottom: 3px solid var(--ac-blue); padding-bottom: 10px; }
-        
-        /* Tarjetas (Containers) en el Catálogo */
-        div[data-testid="stVerticalBlock"] div[data-testid="stContainer"] {
-            transition: all 0.3s ease;
-        }
-        div[data-testid="stVerticalBlock"] div[data-testid="stContainer"]:hover {
-            border-color: var(--ac-blue);
-        }
-        
-        /* Pestañas (Tabs) */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 24px;
-        }
-        .stTabs [data-baseweb="tab"] {
-            height: 50px;
-            white-space: pre-wrap;
-            border-radius: 4px 4px 0 0;
-            gap: 1px;
-            padding-top: 10px;
-            padding-bottom: 10px;
-        }
-        .stTabs [aria-selected="true"] {
-            background-color: var(--ac-light);
-            border-bottom: 3px solid var(--ac-blue);
-            color: var(--ac-dark);
-            font-weight: 600;
-        }
+        div[data-testid="stVerticalBlock"] div[data-testid="stContainer"] { transition: all 0.3s ease; }
+        div[data-testid="stVerticalBlock"] div[data-testid="stContainer"]:hover { border-color: var(--ac-blue); }
+        .stTabs [data-baseweb="tab-list"] { gap: 24px; }
+        .stTabs [data-baseweb="tab"] { height: 50px; white-space: pre-wrap; border-radius: 4px 4px 0 0; gap: 1px; padding-top: 10px; padding-bottom: 10px; }
+        .stTabs [aria-selected="true"] { background-color: var(--ac-light); border-bottom: 3px solid var(--ac-blue); color: var(--ac-dark); font-weight: 600; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -133,11 +134,9 @@ def init_db():
         if "recomendaciones" not in cols: conn.execute("ALTER TABLE intervenciones ADD COLUMN recomendaciones TEXT")
         if "generado_por" not in cols: conn.execute("ALTER TABLE intervenciones ADD COLUMN generado_por TEXT DEFAULT 'Desconocido'")
         
-        # Tabla de Contactos
         conn.execute('''CREATE TABLE IF NOT EXISTS contactos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE)''')
         cursor = conn.execute("SELECT COUNT(*) FROM contactos")
-        if cursor.fetchone()[0] == 0:
-            conn.execute("INSERT INTO contactos (nombre) VALUES ('Lorena Rojas')")
+        if cursor.fetchone()[0] == 0: conn.execute("INSERT INTO contactos (nombre) VALUES ('Lorena Rojas')")
 
 def obtener_contactos():
     try:
@@ -214,7 +213,8 @@ default_states = {
     'input_cliente': "Lorena Rojas", 'input_tec1': "Ignacio Morales", 'input_tec2': "emian Sanchez",
     'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
-    'input_reco': "", 'input_estado_eq': "Operativo"
+    'input_reco': "", 'input_estado_eq': "Operativo",
+    'carrito_informes': []
 }
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
@@ -241,6 +241,9 @@ def seleccionar_equipo(tag):
 
 def volver_catalogo(): st.session_state.equipo_seleccionado = None
 
+def eliminar_del_carrito(idx):
+    st.session_state.carrito_informes.pop(idx)
+
 # =============================================================================
 # 5. PANTALLA 1: SISTEMA DE LOGIN PREMIUM
 # =============================================================================
@@ -266,10 +269,36 @@ if not st.session_state.logged_in:
 # 6. PANTALLA PRINCIPAL: APLICACIÓN AUTENTICADA
 # =============================================================================
 else:
-    # Sidebar Corporativo
+    # Sidebar Corporativo y Carrito
     with st.sidebar:
         st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
+        
+        # --- UI DEL CARRITO DE CORREOS PARA REVISIÓN ---
+        st.markdown("---")
+        st.markdown("### 🛒 Bandeja de Salida (Revisión)")
+        
+        if len(st.session_state.carrito_informes) == 0:
+            st.info("No hay informes generados para enviar.")
+        else:
+            for i, item in enumerate(st.session_state.carrito_informes):
+                c_name, c_btn = st.columns([4, 1])
+                c_name.caption(f"📄 {item['tag']} ({item['tipo']})")
+                c_btn.button("❌", key=f"del_cart_{i}", help="Quitar", on_click=eliminar_del_carrito, args=(i,))
+                
+            st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
+            correo_destino = st.text_input("Enviar a mi correo corporativo:", value="tu_correo@bhp.com", help="Recibe los informes en tu bandeja para revisarlos antes de reenviarlos a tu supervisor.")
+            
+            if st.button("✉️ Enviarme Informes para Revisión", use_container_width=True):
+                with st.spinner("Enviando paquete de correos a tu bandeja..."):
+                    exito, mensaje = enviar_carrito_por_correo(correo_destino, st.session_state.carrito_informes)
+                    if exito:
+                        st.success(mensaje)
+                        st.session_state.carrito_informes = [] 
+                    else:
+                        st.error(mensaje)
+        # ----------------------------------------
+        
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True):
             st.session_state.logged_in = False
@@ -354,7 +383,6 @@ else:
             area = c3.text_input("Área", area_d, disabled=True)
             ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True)
 
-            # Ajuste de tamaño de columnas para darle espacio al botón X del contacto
             c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
             fecha = c5.text_input("Fecha Ejecución", "23 de febrero de 2026")
             tec1 = c6.text_input("Técnico 1", key="input_tec1")
@@ -362,29 +390,24 @@ else:
             
             with c8:
                 contactos_db = obtener_contactos()
-                # Añadimos la opción de crear uno nuevo siempre visible al tope
                 opciones = ["➕ Escribir nuevo..."] + contactos_db
                 
-                # Rescatar el index si existe, si no, colocar el primer contacto real
                 if st.session_state.input_cliente in opciones:
                     cli_idx = opciones.index(st.session_state.input_cliente)
                 else:
                     cli_idx = 1 if len(contactos_db) > 0 else 0
                 
-                # Mini-columnas internas para el selectbox y el botón 'X'
                 sc1, sc2 = st.columns([4, 1])
                 with sc1:
                     cli_sel = st.selectbox("Contacto Cliente", opciones, index=cli_idx)
                 with sc2:
                     st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
-                    # Mostrar 'X' sólo si es un contacto guardado
                     if cli_sel != "➕ Escribir nuevo...":
                         if st.button("❌", help="Eliminar permanentemente"):
                             eliminar_contacto(cli_sel)
                             st.session_state.input_cliente = obtener_contactos()[0] if obtener_contactos() else ""
                             st.rerun()
                 
-                # Lógica: Si seleccionó "Escribir nuevo", se abre campo de texto temporal
                 if cli_sel == "➕ Escribir nuevo...":
                     nuevo_c = st.text_input("Nombre:", placeholder="Ej: Juan Pérez", label_visibility="collapsed")
                     if st.button("💾 Guardar y Seleccionar", use_container_width=True):
@@ -450,7 +473,17 @@ else:
                         tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, ruta, st.session_state.usuario_actual)
                         guardar_registro(tupla_db)
                         
-                        st.success(f"✅ ¡Operación Exitosa! Reporte '{nombre_archivo}' emitido correctamente.")
+                        ruta_final = ruta_pdf_gen if ruta_pdf_gen else ruta
+                        nombre_final = nombre_archivo.replace(".docx", ".pdf") if ruta_pdf_gen else nombre_archivo
+                        
+                        st.session_state.carrito_informes.append({
+                            "tag": tag_sel,
+                            "tipo": tipo_plan,
+                            "ruta": ruta_final,
+                            "nombre_archivo": nombre_final
+                        })
+
+                        st.success(f"✅ ¡Reporte '{nombre_archivo}' generado y añadido a tu bandeja de revisión!")
                         st.info(sincronizar_con_nube(tag_sel, tipo_plan)[1])
                         
                         c_d1, c_d2 = st.columns(2)
