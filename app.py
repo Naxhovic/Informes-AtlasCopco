@@ -6,10 +6,11 @@ import sqlite3
 import subprocess
 import pandas as pd
 
-# --- 1. MÓDULO DE BASE DE DATOS LOCAL ---
+# --- 1. MÓDULO DE BASE DE DATOS LOCAL CON AUTO-MIGRACIÓN ---
 def init_db():
     conn = sqlite3.connect("historial_equipos.db")
     cursor = conn.cursor()
+    # Crear tabla base si no existe
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS intervenciones (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,21 +18,47 @@ def init_db():
             fecha TEXT, cliente_contacto TEXT, tecnico_1 TEXT, tecnico_2 TEXT,
             temp_salida REAL, p_carga TEXT, p_descarga TEXT,
             horas_marcha REAL, horas_carga REAL,
-            estado_entrega TEXT, tipo_intervencion TEXT, recomendaciones TEXT, ruta_archivo TEXT
+            estado_entrega TEXT, tipo_intervencion TEXT, recomendaciones TEXT, 
+            estado_equipo TEXT, ruta_archivo TEXT
         )
     ''')
+    
+    # Comprobar si faltan columnas nuevas (Auto-migración)
+    cursor.execute("PRAGMA table_info(intervenciones)")
+    columnas_actuales = [info[1] for info in cursor.fetchall()]
+    
+    # Si agregamos funciones nuevas, el código las crea aquí automáticamente
+    if "estado_equipo" not in columnas_actuales:
+        cursor.execute("ALTER TABLE intervenciones ADD COLUMN estado_equipo TEXT DEFAULT 'Operativo'")
+    if "recomendaciones" not in columnas_actuales:
+        cursor.execute("ALTER TABLE intervenciones ADD COLUMN recomendaciones TEXT")
+        
     conn.commit()
     conn.close()
 
-def guardar_registro(tag, mod, serie, area, ubi, fecha, cli, tec1, tec2, temp, p_c, p_d, h_m, h_c, est, tipo, reco, ruta):
+def obtener_estados_actuales():
+    """Trae el último estado de cada equipo para el semáforo del buscador"""
+    try:
+        conn = sqlite3.connect("historial_equipos.db")
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT tag, estado_equipo FROM intervenciones 
+            WHERE id IN (SELECT MAX(id) FROM intervenciones GROUP BY tag)
+        ''')
+        estados = {row[0]: row[1] for row in cursor.fetchall()}
+        conn.close()
+        return estados
+    except: return {}
+
+def guardar_registro(tag, mod, serie, area, ubi, fecha, cli, tec1, tec2, temp, p_c, p_d, h_m, h_c, est, tipo, reco, est_eq, ruta):
     conn = sqlite3.connect("historial_equipos.db")
     cursor = conn.cursor()
     cursor.execute('''
         INSERT INTO intervenciones 
         (tag, modelo, numero_serie, area, ubicacion, fecha, cliente_contacto, tecnico_1, tecnico_2, 
-        temp_salida, p_carga, p_descarga, horas_marcha, horas_carga, estado_entrega, tipo_intervencion, recomendaciones, ruta_archivo)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (tag, mod, serie, area, ubi, fecha, cli, tec1, tec2, temp, p_c, p_d, h_m, h_c, est, tipo, reco, ruta))
+        temp_salida, p_carga, p_descarga, horas_marcha, horas_carga, estado_entrega, tipo_intervencion, recomendaciones, estado_equipo, ruta_archivo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (tag, mod, serie, area, ubi, fecha, cli, tec1, tec2, temp, p_c, p_d, h_m, h_c, est, tipo, reco, est_eq, ruta))
     conn.commit()
     conn.close()
 
@@ -40,7 +67,7 @@ def buscar_ultimo_registro(tag):
     cursor = conn.cursor()
     cursor.execute('''
         SELECT fecha, cliente_contacto, temp_salida, estado_entrega, tipo_intervencion, 
-               tecnico_1, tecnico_2, p_carga, p_descarga, horas_marcha, horas_carga, recomendaciones
+               tecnico_1, tecnico_2, p_carga, p_descarga, horas_marcha, horas_carga, recomendaciones, estado_equipo
         FROM intervenciones WHERE tag = ? ORDER BY id DESC LIMIT 1
     ''', (tag,))
     resultado = cursor.fetchone()
@@ -49,7 +76,11 @@ def buscar_ultimo_registro(tag):
 
 def obtener_todo_el_historial(tag):
     conn = sqlite3.connect("historial_equipos.db")
-    query = "SELECT fecha, tipo_intervencion, horas_marcha, p_carga, p_descarga, temp_salida, tecnico_1 FROM intervenciones WHERE tag = ? ORDER BY id DESC"
+    query = """
+        SELECT fecha, tipo_intervencion, estado_equipo, horas_marcha, horas_carga, 
+               p_carga, p_descarga, temp_salida, tecnico_1 
+        FROM intervenciones WHERE tag = ? ORDER BY id DESC
+    """
     df = pd.read_sql_query(query, conn, params=(tag,))
     conn.close()
     return df
@@ -58,17 +89,33 @@ def obtener_todo_el_historial(tag):
 def sincronizar_con_nube(tag, tipo_plan):
     try:
         subprocess.run(["git", "add", "."], check=True, capture_output=True, text=True)
-        mensaje = f"Reporte: {tipo_plan} - {tag}"
-        subprocess.run(["git", "commit", "-m", mensaje], check=True, capture_output=True, text=True)
-        subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
+        subprocess.run(["git", "commit", "-m", f"Reporte Industrial: {tipo_plan} - {tag}"], check=True)
+        subprocess.run(["git", "push"], check=True)
         return True, "☁️ Sincronización con GitHub exitosa."
     except Exception:
-        return False, "⚠️ Error de sincronización."
+        return False, "⚠️ Pendiente de subir a GitHub."
 
 # --- 3. CONFIGURACIÓN DE INTERFAZ ---
 init_db()
 st.set_page_config(page_title="InforGem Generador", layout="wide", page_icon="⚙️")
 
+# Inicialización de la memoria de la aplicación (Session State)
+if 'input_cliente' not in st.session_state: st.session_state.input_cliente = "Lorena Rojas"
+if 'input_tec1' not in st.session_state: st.session_state.input_tec1 = "Ignacio Morales"
+if 'input_tec2' not in st.session_state: st.session_state.input_tec2 = "emian Sanchez"
+if 'input_h_marcha' not in st.session_state: st.session_state.input_h_marcha = 0.0
+if 'input_h_carga' not in st.session_state: st.session_state.input_h_carga = 0.0
+if 'input_temp' not in st.session_state: st.session_state.input_temp = 70.0
+if 'input_p_carga' not in st.session_state: st.session_state.input_p_carga = 7.0
+if 'input_p_descarga' not in st.session_state: st.session_state.input_p_descarga = 7.5
+if 'input_estado' not in st.session_state: st.session_state.input_estado = ""
+if 'input_reco' not in st.session_state: st.session_state.input_reco = ""
+if 'input_estado_eq' not in st.session_state: st.session_state.input_estado_eq = "Operativo"
+
+st.title("⚙️ Sistema de Mantenimiento InforGem")
+st.markdown("---")
+
+# Inventario Maestro
 inventario_equipos = {
     "70-GC-013": ["GA 132", "AIF095296", "descarga acido", "área húmeda"],
     "70-GC-014": ["GA 132", "AIF095297", "descarga acido", "área húmeda"],
@@ -93,26 +140,46 @@ inventario_equipos = {
     "TALLER-01": ["GA18", "API335343", "taller", "área seca"]
 }
 
-if 'reco_val' not in st.session_state: st.session_state.reco_val = ""
-
-st.title("⚙️ Sistema de Mantenimiento InforGem")
-st.markdown("---")
-
+# --- BUSCADOR CON SEMÁFORO ---
+estados_db = obtener_estados_actuales()
 col_busqueda, col_plan = st.columns(2)
 with col_busqueda:
-    tag_sel = st.selectbox("🔍 TAG del Equipo:", list(inventario_equipos.keys()))
+    def format_func(tag):
+        estado = estados_db.get(tag, "Operativo")
+        return f"{'🟢' if estado == 'Operativo' else '🔴'} {tag}"
+
+    tag_sel = st.selectbox("🔍 TAG del Equipo:", list(inventario_equipos.keys()), format_func=format_func)
     mod_d, ser_d, area_d, ubi_d = inventario_equipos[tag_sel]
+    
     if st.button("Buscar Historial"):
         reg = buscar_ultimo_registro(tag_sel)
         if reg:
-            st.session_state.reco_val = reg[11] if reg[11] else ""
-            st.success("✅ Historial recuperado.")
+            # Recuperar Personal y Notas
+            st.session_state.input_cliente = reg[1]
+            st.session_state.input_tec1 = reg[5]
+            st.session_state.input_tec2 = reg[6]
+            st.session_state.input_estado = reg[3]
+            st.session_state.input_reco = reg[11] if reg[11] else ""
+            st.session_state.input_estado_eq = reg[12] if reg[12] else "Operativo"
+            
+            # Recuperar Parámetros Técnicos
+            st.session_state.input_temp = float(reg[2])
+            st.session_state.input_h_marcha = float(reg[9]) if reg[9] else 0.0
+            st.session_state.input_h_carga = float(reg[10]) if reg[10] else 0.0
+            try: st.session_state.input_p_carga = float(str(reg[7]).split()[0])
+            except: st.session_state.input_p_carga = 7.0
+            try: st.session_state.input_p_descarga = float(str(reg[8]).split()[0])
+            except: st.session_state.input_p_descarga = 7.5
+            
+            st.success("✅ Memoria técnica y personal cargada.")
+            st.rerun()
 
 with col_plan:
     tipo_plan = st.selectbox("🛠️ Tipo Intervención:", ["Inspección", "P1", "P2", "P3", "Correctivo"])
 
 st.markdown("---")
 
+# --- FORMULARIO ---
 c1, c2, c3, c4 = st.columns(4)
 modelo = c1.text_input("Modelo:", value=mod_d)
 numero_serie = c2.text_input("N° Serie:", value=ser_d)
@@ -121,42 +188,46 @@ ubicacion = c4.text_input("Ubicación:", value=ubi_d)
 
 c5, c6, c7, c8 = st.columns(4)
 fecha = c5.text_input("Fecha:", value="21 de febrero de 2026")
-tecnico_1 = c6.text_input("Técnico 1:", value="Ignacio Morales")
-tecnico_2 = c7.text_input("Técnico 2:", value="emian Sanchez")
-cliente_contacto = c8.text_input("Contacto Cliente:", value="Lorena Rojas")
+tecnico_1 = c6.text_input("Técnico 1:", key="input_tec1")
+tecnico_2 = c7.text_input("Técnico 2:", key="input_tec2")
+cliente_contacto = c8.text_input("Contacto Cliente:", key="input_cliente")
 
+st.subheader("📊 Parámetros Técnicos")
 c9, c10, c11, c12, c13, c14 = st.columns(6)
-horas_marcha = c9.number_input("Horas Marcha:", step=1.0)
-horas_carga = c10.number_input("Horas Carga:", step=1.0)
+horas_marcha = c9.number_input("Horas Marcha:", step=1.0, key="input_h_marcha")
+horas_carga = c10.number_input("Horas Carga:", step=1.0, key="input_h_carga")
 unidad_p = c11.selectbox("Unidad:", ["bar", "psi"])
-p_carga_val = c12.number_input(f"P. Carga:", step=0.1)
-p_descarga_val = c13.number_input(f"P. Descarga:", step=0.1)
-temp_salida = c14.number_input("Temp Salida (°C):", step=0.1)
+p_carga_val = c12.number_input(f"P. Carga:", step=0.1, key="input_p_carga")
+p_descarga_val = c13.number_input(f"P. Descarga:", step=0.1, key="input_p_descarga")
+temp_salida = c14.number_input("Temp Salida (°C):", step=0.1, key="input_temp")
 
-estado_entrega = st.text_area("Estado de Entrega:")
-recomendaciones = st.text_area("Nota Técnica / Recomendaciones:", value=st.session_state.reco_val)
+st.subheader("📝 Notas y Estado Final")
+col_est1, col_est2 = st.columns([1, 2])
+with col_est1:
+    estado_equipo = st.radio("Estado final del equipo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True)
+with col_est2:
+    estado_entrega = st.text_area("Estado de Entrega:", key="input_estado")
 
+recomendaciones = st.text_area("Nota Técnica / Recomendaciones:", key="input_reco")
+
+# --- GENERACIÓN ---
 if st.button("🚀 Generar Reporte Industrial", type="primary"):
     try:
-        if tipo_plan == "P1":
-            file_plantilla = "plantilla/p1.docx"
-        elif tipo_plan == "P2":
-            file_plantilla = "plantilla/p2.docx"
-        else:
-            file_plantilla = "plantilla/inspeccion.docx"
+        if tipo_plan == "P1": file_plantilla = "plantilla/p1.docx"
+        elif tipo_plan == "P2": file_plantilla = "plantilla/p2.docx"
+        else: file_plantilla = "plantilla/inspeccion.docx"
             
         doc = DocxTemplate(file_plantilla)
         
-        # EL CAMBIO CLAVE ESTÁ AQUÍ: Ahora tipo_orden toma el valor seleccionado en mayúsculas
         context = {
-            "tipo_intervencion": tipo_plan, "modelo": modelo, "equipo_modelo": modelo,
-            "tag": tag_sel, "area": area, "ubicacion": ubicacion,
-            "cliente_contacto": cliente_contacto, "p_carga": f"{p_carga_val} {unidad_p}",
-            "p_descarga": f"{p_descarga_val} {unidad_p}", "temp_salida": temp_salida,
-            "horas_marcha": int(horas_marcha), "horas_carga": int(horas_carga),
-            "tecnico_1": tecnico_1, "tecnico_2": tecnico_2,
+            "tipo_intervencion": tipo_plan, "modelo": modelo, "tag": tag_sel,
+            "area": area, "ubicacion": ubicacion, "cliente_contacto": cliente_contacto,
+            "p_carga": f"{p_carga_val} {unidad_p}", "p_descarga": f"{p_descarga_val} {unidad_p}",
+            "temp_salida": temp_salida, "horas_marcha": int(horas_marcha), "horas_carga": int(horas_carga),
+            "tecnico_1": tecnico_1, "tecnico_2": tecnico_2, "estado_equipo": estado_equipo,
             "estado_entrega": estado_entrega, "recomendaciones": recomendaciones,
-            "serie": numero_serie, "tipo_orden": tipo_plan.upper(), "fecha": fecha
+            "serie": numero_serie, "tipo_orden": tipo_plan.upper(), "fecha": fecha,
+            "equipo_modelo": modelo
         }
         doc.render(context)
 
@@ -168,17 +239,17 @@ if st.button("🚀 Generar Reporte Industrial", type="primary"):
         
         guardar_registro(tag_sel, modelo, numero_serie, area, ubicacion, fecha, cliente_contacto, 
                          tecnico_1, tecnico_2, temp_salida, f"{p_carga_val} {unidad_p}", f"{p_descarga_val} {unidad_p}", 
-                         horas_marcha, horas_carga, estado_entrega, tipo_plan, recomendaciones, ruta)
+                         horas_marcha, horas_carga, estado_entrega, tipo_plan, recomendaciones, estado_equipo, ruta)
         
-        st.success(f"✅ Reporte generado y registrado exitosamente.")
+        st.success(f"✅ Reporte generado y sincronizado.")
         st.info(sincronizar_con_nube(tag_sel, tipo_plan)[1])
-        
-        buffer = io.BytesIO()
-        doc.save(buffer)
-        buffer.seek(0)
-        st.download_button("⬇️ Descargar Word", data=buffer, file_name=nombre_archivo)
+        st.download_button("⬇️ Descargar", data=io.BytesIO(open(ruta, "rb").read()), file_name=nombre_archivo)
+        st.rerun()
     except Exception as e:
-        st.error(f"Error crítico: {e}")
+        st.error(f"Error: {e}")
 
+# --- TABLA HISTÓRICA ---
 st.markdown("---")
-st.dataframe(obtener_todo_el_historial(tag_sel), use_container_width=True)
+df_historial = obtener_todo_el_historial(tag_sel)
+if not df_historial.empty:
+    st.dataframe(df_historial.style.apply(lambda r: ['background-color: #ffcccc' if r.estado_equipo == 'Fuera de servicio' else '' for _ in r], axis=1), use_container_width=True)
