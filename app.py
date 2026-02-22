@@ -15,7 +15,6 @@ USUARIOS = {
 }
 
 # --- DICCIONARIO DE ESPECIFICACIONES TÉCNICAS CON PDFs ---
-# Nota: Si el archivo PDF no existe en la carpeta 'manuales', el sistema mostrará una advertencia amistosa.
 ESPECIFICACIONES = {
     "GA 18": {"Aceite (Lts)": "8 L", "Filtro de Aire": "1622 1855 01", "Filtro de Aceite": "1623 0514 00", "Separador": "1622 0871 00", "Manual": "manuales/manual_ga18.pdf"},
     "GA 30": {"Aceite (Lts)": "15 L", "Filtro de Aire": "1622 1855 01", "Filtro de Aceite": "1623 0514 00", "Separador": "1622 0871 00", "Manual": "manuales/manual_ga30.pdf"},
@@ -30,7 +29,29 @@ ESPECIFICACIONES = {
     "CD 630": {"Desecante": "Alúmina", "Kit Válvulas": "2901 1625 00", "Silenciador": "1621 1235 00", "Filtros": "DD/PD 630", "Manual": "manuales/manual_cd630.pdf"},
 }
 
-# --- 1. MÓDULO DE BASE DE DATOS LOCAL ---
+# --- 1. MÓDULOS DE BASE DE DATOS Y UTILIDADES ---
+def convertir_a_pdf(ruta_docx):
+    """Convierte el Word a PDF usando LibreOffice (Nube) o docx2pdf (Local)"""
+    ruta_pdf = ruta_docx.replace(".docx", ".pdf")
+    directorio = os.path.dirname(ruta_docx)
+    
+    # 1. Intento en Nube (Streamlit Cloud con LibreOffice)
+    try:
+        subprocess.run(["libreoffice", "--headless", "--convert-to", "pdf", "--outdir", directorio, ruta_docx], check=True, capture_output=True)
+        if os.path.exists(ruta_pdf): return ruta_pdf
+    except Exception:
+        pass
+        
+    # 2. Intento Local (Windows con MS Word)
+    try:
+        from docx2pdf import convert
+        convert(ruta_docx, ruta_pdf)
+        if os.path.exists(ruta_pdf): return ruta_pdf
+    except Exception:
+        pass
+        
+    return None
+
 def init_db():
     conn = sqlite3.connect("historial_equipos.db")
     cursor = conn.cursor()
@@ -87,7 +108,6 @@ def obtener_todo_el_historial(tag):
     conn.close()
     return df
 
-# --- 2. MÓDULO DE NUBE ---
 def sincronizar_con_nube(tag, tipo_plan):
     try:
         subprocess.run(["git", "add", "."], check=True, capture_output=True, text=True)
@@ -126,7 +146,6 @@ inventario_equipos = {
     "TALLER-01": ["GA 18", "API335343", "taller", "laboratorio"]
 }
 
-# --- FUNCIONES DE NAVEGACIÓN ---
 def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag
     reg = buscar_ultimo_registro(tag)
@@ -216,8 +235,6 @@ else:
         if mod_d in ESPECIFICACIONES:
             with st.expander(f"📘 Ficha Técnica ({mod_d}) - Repuestos y Consumibles", expanded=False):
                 specs = ESPECIFICACIONES[mod_d]
-                
-                # Separar los datos normales del archivo PDF
                 datos_mostrar = {k: v for k, v in specs.items() if k != "Manual"}
                 
                 cols_specs = st.columns(len(datos_mostrar))
@@ -226,27 +243,16 @@ else:
                         st.markdown(f"**{key}**")
                         st.code(val)
                 
-                # Botón inteligente para el PDF
                 if "Manual" in specs:
                     st.markdown("---")
-                    ruta_pdf = specs["Manual"]
-                    
-                    if os.path.exists(ruta_pdf):
-                        with open(ruta_pdf, "rb") as pdf_file:
-                            st.download_button(
-                                label=f"📥 Descargar Manual y Despiece {mod_d} (PDF)",
-                                data=pdf_file,
-                                file_name=ruta_pdf.split('/')[-1],
-                                mime="application/pdf",
-                                use_container_width=True
-                            )
-                    else:
-                        st.warning(f"⚠️ El archivo '{ruta_pdf}' aún no se ha subido a la plataforma.")
+                    ruta_pdf_manual = specs["Manual"]
+                    if os.path.exists(ruta_pdf_manual):
+                        with open(ruta_pdf_manual, "rb") as pdf_file:
+                            st.download_button(label=f"📥 Descargar Manual y Despiece {mod_d} (PDF)", data=pdf_file, file_name=ruta_pdf_manual.split('/')[-1], mime="application/pdf", use_container_width=True)
+                    else: st.warning(f"⚠️ El archivo '{ruta_pdf_manual}' aún no se ha subido a la plataforma.")
         else:
-            with st.expander(f"📘 Ficha Técnica ({mod_d})", expanded=False):
-                st.info("⚠️ Especificaciones no registradas para este modelo. Agrégalas en el código fuente.")
-        # -------------------------------------------
-
+            with st.expander(f"📘 Ficha Técnica ({mod_d})", expanded=False): st.info("⚠️ Especificaciones no registradas.")
+        
         st.markdown("---")
 
         col_izq, col_der = st.columns(2)
@@ -262,7 +268,7 @@ else:
         ubicacion = c4.text_input("Ubicación:", value=ubi_d)
 
         c5, c6, c7, c8 = st.columns(4)
-        fecha = c5.text_input("Fecha:", value="22 de febrero de 2026")
+        fecha = c5.text_input("Fecha:", value="23 de febrero de 2026")
         tecnico_1 = c6.text_input("Técnico 1:", key="input_tec1")
         tecnico_2 = c7.text_input("Técnico 2:", key="input_tec2")
         cliente_contacto = c8.text_input("Contacto Cliente:", key="input_cliente")
@@ -287,9 +293,7 @@ else:
 
         if st.button("🚀 Generar Reporte Industrial", type="primary", use_container_width=True):
             try:
-                if "CD" in tag_sel:
-                    if estado_equipo == "Fuera de servicio": file_plantilla = "plantilla/secadorfueradeservicio.docx"
-                    else: file_plantilla = "plantilla/inspeccionsecador.docx"
+                if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if estado_equipo == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
                 else:
                     if estado_equipo == "Fuera de servicio": file_plantilla = "plantilla/fueradeservicio.docx"
                     elif tipo_plan == "P1": file_plantilla = "plantilla/p1.docx"
@@ -315,6 +319,9 @@ else:
                 ruta = os.path.join(folder, nombre_archivo)
                 doc.save(ruta)
                 
+                # --- NUEVO: Generación de PDF ---
+                ruta_pdf_generado = convertir_a_pdf(ruta)
+                
                 guardar_registro(tag_sel, modelo, numero_serie, area, ubicacion, fecha, cliente_contacto, 
                                  tecnico_1, tecnico_2, temp_salida, f"{p_carga_val} {unidad_p}", f"{p_descarga_val} {unidad_p}", 
                                  horas_marcha, horas_carga, estado_entrega, tipo_plan, recomendaciones, estado_equipo, ruta, 
@@ -327,20 +334,19 @@ else:
                     st.markdown(f"**📍 Equipo:** {modelo} ({tag_sel}) | **N° Serie:** {numero_serie}")
                     st.markdown(f"**🛠️ Tipo de Orden:** {tipo_plan.upper()} | **Fecha:** {fecha}")
                     st.markdown(f"**👨‍🔧 Técnicos Registrados:** {tecnico_1} y {tecnico_2}")
-                    st.markdown(f"**✍️ Documento Creado por:** {st.session_state.usuario_actual.title()}")
-                    if estado_equipo == "Operativo": st.success(f"**Estado Final:** {estado_equipo}")
-                    else: st.error(f"**Estado Final:** {estado_equipo}")
-                    st.info(f"**Comentarios de Entrega:**\n{estado_entrega}")
                     if recomendaciones: st.warning(f"**Nota Técnica:**\n{recomendaciones}")
                 
-                with open(ruta, "rb") as file:
-                    st.download_button(
-                        label="⬇️ Descargar Reporte en Word",
-                        data=file,
-                        file_name=nombre_archivo,
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        use_container_width=True
-                    )
+                # --- NUEVO: DOS BOTONES DE DESCARGA ---
+                col_b1, col_b2 = st.columns(2)
+                with col_b1:
+                    with open(ruta, "rb") as file:
+                        st.download_button(label="📄 Descargar Word", data=file, file_name=nombre_archivo, mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
+                with col_b2:
+                    if ruta_pdf_generado:
+                        with open(ruta_pdf_generado, "rb") as file_pdf:
+                            st.download_button(label="📕 Descargar PDF", data=file_pdf, file_name=nombre_archivo.replace(".docx", ".pdf"), mime="application/pdf", use_container_width=True)
+                    else:
+                        st.button("📕 PDF (No Disponible / Carga en Nube)", disabled=True, use_container_width=True)
                     
             except Exception as e:
                 st.error(f"Error: {e}")
