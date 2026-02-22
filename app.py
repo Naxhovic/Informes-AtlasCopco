@@ -8,8 +8,9 @@ import pandas as pd
 
 # --- CONFIGURACIÓN DE USUARIOS ---
 USUARIOS = {
-    "ignacio": "spence2026",
-    "emian": "spence2026",
+    "Ignacio Morales": "spence2026",
+    "Emian": "spence2026",
+    "Ignacio Veas": "spence2026",
     "admin": "admin123"
 }
 
