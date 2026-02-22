@@ -58,12 +58,12 @@ def obtener_todo_el_historial(tag):
 def sincronizar_con_nube(tag, tipo_plan):
     try:
         subprocess.run(["git", "add", "."], check=True, capture_output=True, text=True)
-        mensaje = f"Reporte Industrial: {tipo_plan} - {tag}"
+        mensaje = f"Reporte: {tipo_plan} - {tag}"
         subprocess.run(["git", "commit", "-m", mensaje], check=True, capture_output=True, text=True)
         subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
         return True, "☁️ Sincronización con GitHub exitosa."
     except Exception:
-        return False, "⚠️ Pendiente de subir a GitHub."
+        return False, "⚠️ Error de sincronización."
 
 # --- 3. CONFIGURACIÓN DE INTERFAZ ---
 init_db()
@@ -106,7 +106,7 @@ with col_busqueda:
         reg = buscar_ultimo_registro(tag_sel)
         if reg:
             st.session_state.reco_val = reg[11] if reg[11] else ""
-            st.success("✅ Historial cargado.")
+            st.success("✅ Historial recuperado.")
 
 with col_plan:
     tipo_plan = st.selectbox("🛠️ Tipo Intervención:", ["Inspección", "P1", "P2", "P3", "Correctivo"])
@@ -121,8 +121,8 @@ ubicacion = c4.text_input("Ubicación:", value=ubi_d)
 
 c5, c6, c7, c8 = st.columns(4)
 fecha = c5.text_input("Fecha:", value="21 de febrero de 2026")
-tecnico_1 = c6.text_input("Técnico 1:", value="Ignacio")
-tecnico_2 = c7.text_input("Técnico 2:", value="Pendiente")
+tecnico_1 = c6.text_input("Técnico 1:", value="Ignacio Morales")
+tecnico_2 = c7.text_input("Técnico 2:", value="emian Sanchez")
 cliente_contacto = c8.text_input("Contacto Cliente:", value="Lorena Rojas")
 
 c9, c10, c11, c12, c13, c14 = st.columns(6)
@@ -136,9 +136,8 @@ temp_salida = c14.number_input("Temp Salida (°C):", step=0.1)
 estado_entrega = st.text_area("Estado de Entrega:")
 recomendaciones = st.text_area("Nota Técnica / Recomendaciones:", value=st.session_state.reco_val)
 
-if st.button("🚀 Generar Reporte", type="primary"):
+if st.button("🚀 Generar Reporte Industrial", type="primary"):
     try:
-        # Lógica de Selección de Plantillas
         if tipo_plan == "P1":
             file_plantilla = "plantilla/p1.docx"
         elif tipo_plan == "P2":
@@ -148,7 +147,7 @@ if st.button("🚀 Generar Reporte", type="primary"):
             
         doc = DocxTemplate(file_plantilla)
         
-        # Mapeo de datos (temp_salida corregido)
+        # EL CAMBIO CLAVE ESTÁ AQUÍ: Ahora tipo_orden toma el valor seleccionado en mayúsculas
         context = {
             "tipo_intervencion": tipo_plan, "modelo": modelo, "equipo_modelo": modelo,
             "tag": tag_sel, "area": area, "ubicacion": ubicacion,
@@ -157,7 +156,7 @@ if st.button("🚀 Generar Reporte", type="primary"):
             "horas_marcha": int(horas_marcha), "horas_carga": int(horas_carga),
             "tecnico_1": tecnico_1, "tecnico_2": tecnico_2,
             "estado_entrega": estado_entrega, "recomendaciones": recomendaciones,
-            "serie": numero_serie, "tipo_orden": "INSPECCIÓN", "fecha": fecha
+            "serie": numero_serie, "tipo_orden": tipo_plan.upper(), "fecha": fecha
         }
         doc.render(context)
 
