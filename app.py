@@ -132,7 +132,7 @@ if not st.session_state.logged_in:
     with col_l2:
         with st.form("form_login"):
             st.subheader("Ingresa tus credenciales")
-            usuario_ingresado = st.text_input("Usuario (Ej: ignacio)").lower()
+            usuario_ingresado = st.text_input("Usuario (Ej: ignacio)")
             password_ingresada = st.text_input("Contraseña", type="password")
             submit_login = st.form_submit_button("Ingresar a la Plataforma", type="primary", use_container_width=True)
             
