@@ -126,8 +126,8 @@ inventario_equipos = {
     "35-GC-007": ["GA 250", "AIF095421", "chancado secundario", "área seca"],
     "35-GC-008": ["GA 250", "AIF095302", "chancado secundario", "área seca"],
     # ÁREA 50 - PLANTA SX
-    "50-GD-001": ["GA 45", "API542705", "planta SX", "área húmeda"],
-    "50-GD-002": ["GA 45", "API542706", "planta SX", "área húmeda"],
+    "50-GC-001": ["GA 45", "API542705", "planta SX", "área húmeda"],
+    "50-GC-002": ["GA 45", "API542706", "planta SX", "área húmeda"],
     "50-GC-003": ["ZT 37", "API791692", "planta SX", "área húmeda"],
     "50-GC-004": ["ZT 37", "API791693", "planta SX", "área húmeda"],
     "50-CD-001": ["CD 80+", "API095825", "planta SX", "área húmeda"],
@@ -137,13 +137,13 @@ inventario_equipos = {
     # ÁREA 65 - PATIO ESTANQUES
     "65-GC-009": ["GA 250", "APF253608", "patio estanques", "área húmeda"],
     "65-GC-011": ["GA 250", "APF253581", "patio estanques", "área húmeda"],
-    "65-GD-011": ["CD 630", "WXF300015", "patio estanques", "área húmeda"],
-    "65-GD-012": ["CD 630", "WXF300016", "patio estanques", "área húmeda"],
+    "65-CD-011": ["CD 630", "WXF300015", "patio estanques", "área húmeda"],
+    "65-CD-012": ["CD 630", "WXF300016", "patio estanques", "área húmeda"],
     # ÁREA 70 - DESCARGA ÁCIDO
     "70-GC-013": ["GA 132", "AIF095296", "descarga acido", "área húmeda"],
     "70-GC-014": ["GA 132", "AIF095297", "descarga acido", "área húmeda"],
     # OTROS
-    "TALLER-01": ["GA18", "API335343", "taller", "laboratorio"]
+    "TALLER": ["GA18", "API335343", "taller", "laboratorio"]
 }
 
 # --- BUSCADOR CON SEMÁFORO ---
