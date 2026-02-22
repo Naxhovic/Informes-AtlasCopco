@@ -126,8 +126,8 @@ inventario_equipos = {
     "35-GC-007": ["GA 250", "AIF095421", "chancado secundario", "área seca"],
     "35-GC-008": ["GA 250", "AIF095302", "chancado secundario", "área seca"],
     # ÁREA 50 - PLANTA SX
-    "50-GC-001": ["GA 45", "API542705", "planta SX", "área húmeda"],
-    "50-GC-002": ["GA 45", "API542706", "planta SX", "área húmeda"],
+    "50-GD-001": ["GA 45", "API542705", "planta SX", "área húmeda"],
+    "50-GD-002": ["GA 45", "API542706", "planta SX", "área húmeda"],
     "50-GC-003": ["ZT 37", "API791692", "planta SX", "área húmeda"],
     "50-GC-004": ["ZT 37", "API791693", "planta SX", "área húmeda"],
     "50-CD-001": ["CD 80+", "API095825", "planta SX", "área húmeda"],
@@ -143,7 +143,7 @@ inventario_equipos = {
     "70-GC-013": ["GA 132", "AIF095296", "descarga acido", "área húmeda"],
     "70-GC-014": ["GA 132", "AIF095297", "descarga acido", "área húmeda"],
     # OTROS
-    "TALLER": ["GA18", "API335343", "taller", "laboratorio"]
+    "TALLER-01": ["GA18", "API335343", "taller", "laboratorio"]
 }
 
 # --- BUSCADOR CON SEMÁFORO ---
@@ -214,11 +214,19 @@ recomendaciones = st.text_area("Nota Técnica / Recomendaciones:", key="input_re
 
 if st.button("🚀 Generar Reporte Industrial", type="primary"):
     try:
-        if tipo_plan == "P1": file_plantilla = "plantilla/p1.docx"
-        elif tipo_plan == "P2": file_plantilla = "plantilla/p2.docx"
-        else: file_plantilla = "plantilla/inspeccion.docx"
+        # LÓGICA INTELIGENTE DE PLANTILLAS
+        if estado_equipo == "Fuera de servicio":
+            file_plantilla = "plantilla/fueradeservicio.docx"
+        elif tipo_plan == "P1": 
+            file_plantilla = "plantilla/p1.docx"
+        elif tipo_plan == "P2": 
+            file_plantilla = "plantilla/p2.docx"
+        else: 
+            file_plantilla = "plantilla/inspeccion.docx"
             
         doc = DocxTemplate(file_plantilla)
+        
+        # Mapeo de variables (DocxTemplate ignora las que no se usan en la plantilla)
         context = {
             "tipo_intervencion": tipo_plan, "modelo": modelo, "tag": tag_sel,
             "area": area, "ubicacion": ubicacion, "cliente_contacto": cliente_contacto,
@@ -229,6 +237,7 @@ if st.button("🚀 Generar Reporte Industrial", type="primary"):
             "serie": numero_serie, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": modelo
         }
         doc.render(context)
+        
         nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"
         folder = os.path.join("Historial_Informes", tag_sel)
         os.makedirs(folder, exist_ok=True)
@@ -239,7 +248,7 @@ if st.button("🚀 Generar Reporte Industrial", type="primary"):
                          tecnico_1, tecnico_2, temp_salida, f"{p_carga_val} {unidad_p}", f"{p_descarga_val} {unidad_p}", 
                          horas_marcha, horas_carga, estado_entrega, tipo_plan, recomendaciones, estado_equipo, ruta)
         
-        st.success(f"✅ Reporte generado.")
+        st.success(f"✅ Reporte generado utilizando plantilla: {file_plantilla.split('/')[-1]}")
         st.info(sincronizar_con_nube(tag_sel, tipo_plan)[1])
         st.download_button("⬇️ Descargar", data=io.BytesIO(open(ruta, "rb").read()), file_name=nombre_archivo)
         st.rerun()
