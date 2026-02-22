@@ -120,7 +120,7 @@ inventario_equipos = {
     "35-GC-006": ["GA 250", "AIF095420", "chancado secundario", "área seca"],
     "35-GC-007": ["GA 250", "AIF095421", "chancado secundario", "área seca"],
     "35-GC-008": ["GA 250", "AIF095302", "chancado secundario", "área seca"],
-    # ÁREA 50 - PLANTA SX (Corrección de GD a GC en los compresores GA 45)
+    # ÁREA 50 - PLANTA SX
     "50-GC-001": ["GA 45", "API542705", "planta SX", "área húmeda"],
     "50-GC-002": ["GA 45", "API542706", "planta SX", "área húmeda"],
     "50-GC-003": ["ZT 37", "API791692", "planta SX", "área húmeda"],
@@ -171,7 +171,13 @@ with col_busqueda:
             st.rerun()
 
 with col_plan:
-    tipo_plan = st.selectbox("🛠️ Tipo Intervención:", ["Inspección", "P1", "P2", "P3", "Correctivo"])
+    # --- MENÚ DINÁMICO DE INTERVENCIÓN CON PM03 AL FINAL ---
+    if "CD" in tag_sel:
+        opciones_plan = ["Inspección", "PM03"]
+    else:
+        opciones_plan = ["Inspección", "P1", "P2", "P3", "PM03"]
+        
+    tipo_plan = st.selectbox("🛠️ Tipo Intervención:", opciones_plan)
 
 st.markdown("---")
 
@@ -221,6 +227,8 @@ if st.button("🚀 Generar Reporte Industrial", type="primary"):
                 file_plantilla = "plantilla/p1.docx"
             elif tipo_plan == "P2": 
                 file_plantilla = "plantilla/p2.docx"
+            elif tipo_plan == "P3": 
+                file_plantilla = "plantilla/p3.docx"
             else: 
                 file_plantilla = "plantilla/inspeccion.docx"
             
