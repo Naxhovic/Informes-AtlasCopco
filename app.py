@@ -4,18 +4,19 @@ import io, os, sqlite3, subprocess
 import pandas as pd
 
 # =============================================================================
-# 0. CONFIGURACIÓN DE PÁGINA Y ESTILOS CORPORATIVOS (ATLAS COPCO)
+# 0. CONFIGURACIÓN DE PÁGINA Y ESTILOS CORPORATIVOS
 # =============================================================================
-st.set_page_config(page_title="InforGem | Atlas Copco", layout="wide", page_icon="🟦")
+st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
 
 def aplicar_estilos_premium():
     st.markdown("""
         <style>
-        /* Paleta Atlas Copco */
+        /* Paleta */
         :root {
             --ac-blue: #007CA6;
             --ac-dark: #005675;
             --ac-light: #e6f2f7;
+            --bhp-orange: #FF6600;
         }
         
         /* Ocultar elementos por defecto de Streamlit para look White-Label */
@@ -49,7 +50,6 @@ def aplicar_estilos_premium():
 
         /* Títulos */
         h1, h2, h3 {
-            color: #1a1a1a;
             font-family: 'Segoe UI', sans-serif;
             font-weight: 700;
         }
@@ -61,7 +61,6 @@ def aplicar_estilos_premium():
         }
         div[data-testid="stVerticalBlock"] div[data-testid="stContainer"]:hover {
             border-color: var(--ac-blue);
-            background-color: #fafafa;
         }
         
         /* Pestañas (Tabs) */
@@ -133,6 +132,31 @@ def init_db():
         if "estado_equipo" not in cols: conn.execute("ALTER TABLE intervenciones ADD COLUMN estado_equipo TEXT DEFAULT 'Operativo'")
         if "recomendaciones" not in cols: conn.execute("ALTER TABLE intervenciones ADD COLUMN recomendaciones TEXT")
         if "generado_por" not in cols: conn.execute("ALTER TABLE intervenciones ADD COLUMN generado_por TEXT DEFAULT 'Desconocido'")
+        
+        # Tabla de Contactos
+        conn.execute('''CREATE TABLE IF NOT EXISTS contactos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE)''')
+        cursor = conn.execute("SELECT COUNT(*) FROM contactos")
+        if cursor.fetchone()[0] == 0:
+            conn.execute("INSERT INTO contactos (nombre) VALUES ('Lorena Rojas')")
+
+def obtener_contactos():
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            return [row[0] for row in conn.execute("SELECT nombre FROM contactos ORDER BY nombre").fetchall()]
+    except: return ["Lorena Rojas"]
+
+def agregar_contacto(nombre):
+    if not nombre.strip(): return
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("INSERT INTO contactos (nombre) VALUES (?)", (nombre.strip().title(),))
+    except sqlite3.IntegrityError: pass 
+
+def eliminar_contacto(nombre):
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("DELETE FROM contactos WHERE nombre = ?", (nombre,))
+    except: pass
 
 def obtener_estados_actuales():
     try:
@@ -188,8 +212,8 @@ init_db()
 default_states = {
     'logged_in': False, 'usuario_actual': "", 'equipo_seleccionado': None,
     'input_cliente': "Lorena Rojas", 'input_tec1': "Ignacio Morales", 'input_tec2': "emian Sanchez",
-    'input_h_marcha': 0.0, 'input_h_carga': 0.0, 'input_temp': 70.0,
-    'input_p_carga': 7.0, 'input_p_descarga': 7.5, 'input_estado': "",
+    'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
+    'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
     'input_reco': "", 'input_estado_eq': "Operativo"
 }
 for key, value in default_states.items():
@@ -199,15 +223,19 @@ def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag
     reg = buscar_ultimo_registro(tag)
     if reg:
-        st.session_state.input_cliente, st.session_state.input_tec1, st.session_state.input_tec2 = reg[1], reg[5], reg[6]
-        st.session_state.input_estado, st.session_state.input_reco = reg[3], (reg[11] or "")
-        st.session_state.input_estado_eq = reg[12] or "Operativo"
-        st.session_state.input_temp = float(reg[2])
-        st.session_state.input_h_marcha, st.session_state.input_h_carga = float(reg[9] or 0), float(reg[10] or 0)
-        try: st.session_state.input_p_carga = float(str(reg[7]).split()[0])
-        except: st.session_state.input_p_carga = 7.0
-        try: st.session_state.input_p_descarga = float(str(reg[8]).split()[0])
-        except: st.session_state.input_p_descarga = 7.5
+        st.session_state.input_cliente = reg[1]
+        st.session_state.input_tec1 = reg[5]
+        st.session_state.input_tec2 = reg[6]
+        st.session_state.input_estado = reg[3]
+        st.session_state.input_reco = reg[11] if reg[11] else ""
+        st.session_state.input_estado_eq = reg[12] if reg[12] else "Operativo"
+        st.session_state.input_h_marcha = int(reg[9]) if reg[9] else 0
+        st.session_state.input_h_carga = int(reg[10]) if reg[10] else 0
+        st.session_state.input_temp = str(reg[2]).replace(',', '.') if reg[2] is not None else "70.0"
+        try: st.session_state.input_p_carga = str(reg[7]).split()[0].replace(',', '.')
+        except: st.session_state.input_p_carga = "7.0"
+        try: st.session_state.input_p_descarga = str(reg[8]).split()[0].replace(',', '.')
+        except: st.session_state.input_p_descarga = "7.5"
     else:
         st.session_state.update({'input_estado_eq': "Operativo", 'input_estado': "", 'input_reco': ""})
 
@@ -221,7 +249,7 @@ if not st.session_state.logged_in:
     _, col_centro, _ = st.columns([1, 1.5, 1])
     with col_centro:
         with st.container(border=True):
-            st.markdown("<h1 style='text-align: center; color:#007CA6; border-bottom:none;'>🟦 InforGem</h1>", unsafe_allow_html=True)
+            st.markdown("<h1 style='text-align: center; border-bottom:none;'>⚙️ <span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h1>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center; color: gray;'>Sistema de Gestión de Reportes Técnicos - Atlas Copco</p>", unsafe_allow_html=True)
             st.markdown("---")
             with st.form("form_login"):
@@ -240,7 +268,7 @@ if not st.session_state.logged_in:
 else:
     # Sidebar Corporativo
     with st.sidebar:
-        st.markdown(f"<h3 style='color:#007CA6;'>🟦 InforGem</h3>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True):
@@ -249,40 +277,61 @@ else:
 
     # --- 6.1 VISTA CATÁLOGO (Dashboard interactivo) ---
     if st.session_state.equipo_seleccionado is None:
+        
+        st.markdown("""
+            <div style="margin-top: 1.5rem; margin-bottom: 2rem; text-align: center;">
+                <div style="background-color: white; height: 2px; width: 100%;"></div>
+                <h1 style="color: #007CA6; font-size: 4.5em; font-weight: 900; margin: 20px 0; border-bottom: none; padding: 0;">Atlas Copco</h1>
+                <div style="background-color: white; height: 2px; width: 100%;"></div>
+            </div>
+        """, unsafe_allow_html=True)
+        
         st.title("🏭 Panel de Control de Equipos")
         
         estados_db = obtener_estados_actuales()
         total_equipos = len(inventario_equipos)
-        operativos = sum(1 for e in estados_db.values() if e == "Operativo")
+        
+        operativos = sum(1 for tag in inventario_equipos.keys() if estados_db.get(tag, "Operativo") == "Operativo")
         detenidos = total_equipos - operativos
         
-        # Dashboard Dashboard Metrics
         m1, m2, m3 = st.columns(3)
         m1.metric("📦 Total Activos Mineros", total_equipos)
         m2.metric("🟢 Equipos Operativos", operativos)
         m3.metric("🔴 Fuera de Servicio", detenidos)
         
         st.markdown("---")
-        busqueda = st.text_input("🔍 Buscar activo por TAG, Modelo o Área...", placeholder="Ejemplo: GA 250, 35-GC-006...").lower()
+        
+        col_filtro, col_busqueda = st.columns([1.2, 2])
+        with col_filtro:
+            filtro_tipo = st.radio("🗂️ Categoría de Equipo:", ["Todos", "Compresores", "Secadores"], horizontal=True)
+        with col_busqueda:
+            busqueda = st.text_input("🔍 Buscar activo por TAG, Modelo o Área...", placeholder="Ejemplo: GA 250, 35-GC-006...").lower()
+            
         st.markdown("<br>", unsafe_allow_html=True)
         
         columnas = st.columns(4)
         contador = 0
         for tag, (modelo, serie, area, ubicacion) in inventario_equipos.items():
+            
+            es_secador = "CD" in modelo.upper()
+            if filtro_tipo == "Compresores" and es_secador: continue
+            if filtro_tipo == "Secadores" and not es_secador: continue
+
             if busqueda in tag.lower() or busqueda in area.lower() or busqueda in modelo.lower():
                 estado = estados_db.get(tag, "Operativo")
                 color_bg = "#eaffea" if estado == "Operativo" else "#ffeaea"
+                color_text = "#004d00" if estado == "Operativo" else "#800000"
                 icono = "🟢" if estado == "Operativo" else "🔴"
                 
                 with columnas[contador % 4]:
                     with st.container(border=True):
-                        st.markdown(f"<span style='background-color:{color_bg}; padding: 4px 8px; border-radius:4px; font-size:0.85em; font-weight:bold;'>{icono} {estado.upper()}</span>", unsafe_allow_html=True)
+                        st.markdown(f"<span style='background-color:{color_bg}; color:{color_text}; padding: 4px 8px; border-radius:4px; font-size:0.85em; font-weight:bold; letter-spacing: 0.5px;'>{icono} {estado.upper()}</span>", unsafe_allow_html=True)
                         st.markdown(f"<h3 style='margin-top:10px; margin-bottom:0;'>{tag}</h3>", unsafe_allow_html=True)
                         st.caption(f"**{modelo}** | {area.title()}")
                         st.button("📝 Ingresar", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
                 contador += 1
 
-    # --- 6.2 VISTA FORMULARIO Y GENERACIÓN (Wizard con Tabs) ---
+    # --- 6.2 VISTA FORMULARIO Y GENERACIÓN (Wizard con 3 Tabs) ---
     else:
         tag_sel = st.session_state.equipo_seleccionado
         mod_d, ser_d, area_d, ubi_d = inventario_equipos[tag_sel]
@@ -290,55 +339,88 @@ else:
         c_btn, c_tit = st.columns([1, 4])
         with c_btn: st.button("⬅️ Volver", on_click=volver_catalogo, use_container_width=True)
         with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Servicio: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
-            
-        # Banner de Especificaciones Premium
-        if mod_d in ESPECIFICACIONES:
-            with st.expander(f"📘 Datos Técnicos y Repuestos ({mod_d})", expanded=False):
-                specs = {k: v for k, v in ESPECIFICACIONES[mod_d].items() if k != "Manual"}
-                cols_specs = st.columns(len(specs))
-                for i, (k, v) in enumerate(specs.items()):
-                    with cols_specs[i]: st.metric(k, v)
-                if "Manual" in ESPECIFICACIONES[mod_d] and os.path.exists(ESPECIFICACIONES[mod_d]["Manual"]):
-                    st.markdown("---")
-                    with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f:
-                        st.download_button(label=f"📥 Descargar Manual {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
         
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Creación del Wizard Interactivo con Pestañas
-        tab1, tab2, tab3 = st.tabs(["📋 1. Datos Generales", "⚙️ 2. Parámetros", "📝 3. Diagnóstico Final"])
+        tab1, tab2, tab3 = st.tabs(["📋 1. Configuración y Parámetros", "📝 2. Diagnóstico Final", "📚 3. Ficha Técnica"])
         
         with tab1:
-            st.markdown("### Configuración de la Intervención")
+            st.markdown("### Datos de la Intervención")
             tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"])
             
             c1, c2, c3, c4 = st.columns(4)
-            modelo, numero_serie, area, ubicacion = c1.text_input("Modelo", mod_d), c2.text_input("N° Serie", ser_d), c3.text_input("Área", area_d), c4.text_input("Ubicación", ubi_d)
+            modelo = c1.text_input("Modelo", mod_d, disabled=True)
+            numero_serie = c2.text_input("N° Serie", ser_d, disabled=True)
+            area = c3.text_input("Área", area_d, disabled=True)
+            ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True)
 
-            c5, c6, c7, c8 = st.columns(4)
+            # Ajuste de tamaño de columnas para darle espacio al botón X del contacto
+            c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
             fecha = c5.text_input("Fecha Ejecución", "23 de febrero de 2026")
-            tec1 = c6.text_input("Técnico Principal", key="input_tec1")
-            tec2 = c7.text_input("Técnico Asistente", key="input_tec2")
-            cli_cont = c8.text_input("Contacto Cliente", key="input_cliente")
+            tec1 = c6.text_input("Técnico 1", key="input_tec1")
+            tec2 = c7.text_input("Técnico 2", key="input_tec2")
+            
+            with c8:
+                contactos_db = obtener_contactos()
+                # Añadimos la opción de crear uno nuevo siempre visible al tope
+                opciones = ["➕ Escribir nuevo..."] + contactos_db
+                
+                # Rescatar el index si existe, si no, colocar el primer contacto real
+                if st.session_state.input_cliente in opciones:
+                    cli_idx = opciones.index(st.session_state.input_cliente)
+                else:
+                    cli_idx = 1 if len(contactos_db) > 0 else 0
+                
+                # Mini-columnas internas para el selectbox y el botón 'X'
+                sc1, sc2 = st.columns([4, 1])
+                with sc1:
+                    cli_sel = st.selectbox("Contacto Cliente", opciones, index=cli_idx)
+                with sc2:
+                    st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+                    # Mostrar 'X' sólo si es un contacto guardado
+                    if cli_sel != "➕ Escribir nuevo...":
+                        if st.button("❌", help="Eliminar permanentemente"):
+                            eliminar_contacto(cli_sel)
+                            st.session_state.input_cliente = obtener_contactos()[0] if obtener_contactos() else ""
+                            st.rerun()
+                
+                # Lógica: Si seleccionó "Escribir nuevo", se abre campo de texto temporal
+                if cli_sel == "➕ Escribir nuevo...":
+                    nuevo_c = st.text_input("Nombre:", placeholder="Ej: Juan Pérez", label_visibility="collapsed")
+                    if st.button("💾 Guardar y Seleccionar", use_container_width=True):
+                        if nuevo_c.strip():
+                            agregar_contacto(nuevo_c)
+                            st.session_state.input_cliente = nuevo_c.strip().title()
+                            st.rerun()
+                    cli_cont = nuevo_c.strip().title()
+                else:
+                    cli_cont = cli_sel
+                    st.session_state.input_cliente = cli_sel
 
-        with tab2:
+            st.markdown("<hr>", unsafe_allow_html=True)
+            
             st.markdown("### Mediciones del Equipo")
             c9, c10, c11, c12, c13, c14 = st.columns(6)
-            h_m = c9.number_input("Horas Marcha Totales", step=1.0, key="input_h_marcha")
-            h_c = c10.number_input("Horas en Carga", step=1.0, key="input_h_carga")
+            
+            h_m = c9.number_input("Horas Marcha Totales", step=1, value=int(st.session_state.input_h_marcha), format="%d")
+            h_c = c10.number_input("Horas en Carga", step=1, value=int(st.session_state.input_h_carga), format="%d")
             unidad_p = c11.selectbox("Unidad de Presión", ["bar", "psi"])
-            p_c = c12.number_input("P. Carga", step=0.1, key="input_p_carga")
-            p_d = c13.number_input("P. Descarga", step=0.1, key="input_p_descarga")
-            t_salida = c14.number_input("Temp Salida (°C)", step=0.1, key="input_temp")
+            
+            p_c_str = c12.text_input("P. Carga", value=str(st.session_state.input_p_carga))
+            p_d_str = c13.text_input("P. Descarga", value=str(st.session_state.input_p_descarga))
+            t_salida_str = c14.text_input("Temp Salida (°C)", value=str(st.session_state.input_temp))
+            
+            p_c_clean = p_c_str.replace(',', '.')
+            p_d_clean = p_d_str.replace(',', '.')
+            t_salida_clean = t_salida_str.replace(',', '.')
 
-        with tab3:
+        with tab2:
             st.markdown("### Evaluación y Conclusiones")
             est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True)
             est_ent = st.text_area("Descripción Condición Final:", key="input_estado", height=100)
             reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100)
             
             st.markdown("<br>", unsafe_allow_html=True)
-            # Botón de Guardado Prominente
             if st.button("🚀 Generar, Sincronizar y Guardar Reporte Oficial", type="primary", use_container_width=True):
                 with st.spinner('Procesando datos y contactando con la base de datos...'):
                     try:
@@ -351,7 +433,7 @@ else:
                             else: file_plantilla = "plantilla/inspeccion.docx"
                             
                         doc = DocxTemplate(file_plantilla)
-                        context = {"tipo_intervencion": tipo_plan, "modelo": modelo, "tag": tag_sel, "area": area, "ubicacion": ubicacion, "cliente_contacto": cli_cont, "p_carga": f"{p_c} {unidad_p}", "p_descarga": f"{p_d} {unidad_p}", "temp_salida": t_salida, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": numero_serie, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": modelo}
+                        context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}
                         doc.render(context)
                         
                         nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"
@@ -361,7 +443,11 @@ else:
                         doc.save(ruta)
                         
                         ruta_pdf_gen = convertir_a_pdf(ruta)
-                        tupla_db = (tag_sel, modelo, numero_serie, area, ubicacion, fecha, cli_cont, tec1, tec2, t_salida, f"{p_c} {unidad_p}", f"{p_d} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, ruta, st.session_state.usuario_actual)
+                        
+                        try: temp_db = float(t_salida_clean)
+                        except: temp_db = 0.0
+                        
+                        tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, ruta, st.session_state.usuario_actual)
                         guardar_registro(tupla_db)
                         
                         st.success(f"✅ ¡Operación Exitosa! Reporte '{nombre_archivo}' emitido correctamente.")
@@ -376,7 +462,32 @@ else:
                             else: st.button("📕 PDF (En proceso / Revisar nube)", disabled=True, use_container_width=True)
                     except Exception as e: st.error(f"Error sistémico generando reporte: {e}")
 
-        # Renderizado del Historial Local
+        with tab3:
+            st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
+            if mod_d in ESPECIFICACIONES:
+                specs = {k: v for k, v in ESPECIFICACIONES[mod_d].items() if k != "Manual"}
+                
+                cols = st.columns(3)
+                for i, (k, v) in enumerate(specs.items()):
+                    with cols[i % 3]:
+                        st.markdown(f"""
+                            <div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'>
+                                <span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br>
+                                <span style='color: white; font-size: 1.1em;'>{v}</span>
+                            </div>
+                        """, unsafe_allow_html=True)
+                
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.markdown("### 📥 Documentación y Manuales")
+                
+                if "Manual" in ESPECIFICACIONES[mod_d] and os.path.exists(ESPECIFICACIONES[mod_d]["Manual"]):
+                    with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f:
+                        st.download_button(label=f"📕 Descargar Manual de {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
+                else:
+                    st.info("ℹ️ El manual o despiece para este modelo aún no ha sido cargado en la plataforma.")
+            else:
+                st.warning("⚠️ No hay especificaciones técnicas registradas para este modelo.")
+
         st.markdown("<br><hr>", unsafe_allow_html=True)
         st.markdown("### 📋 Trazabilidad Histórica de Intervenciones")
         df_hist = obtener_todo_el_historial(tag_sel)
