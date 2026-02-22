@@ -214,7 +214,6 @@ recomendaciones = st.text_area("Nota Técnica / Recomendaciones:", key="input_re
 
 if st.button("🚀 Generar Reporte Industrial", type="primary"):
     try:
-        # LÓGICA INTELIGENTE DE PLANTILLAS
         if estado_equipo == "Fuera de servicio":
             file_plantilla = "plantilla/fueradeservicio.docx"
         elif tipo_plan == "P1": 
@@ -225,8 +224,6 @@ if st.button("🚀 Generar Reporte Industrial", type="primary"):
             file_plantilla = "plantilla/inspeccion.docx"
             
         doc = DocxTemplate(file_plantilla)
-        
-        # Mapeo de variables (DocxTemplate ignora las que no se usan en la plantilla)
         context = {
             "tipo_intervencion": tipo_plan, "modelo": modelo, "tag": tag_sel,
             "area": area, "ubicacion": ubicacion, "cliente_contacto": cliente_contacto,
@@ -237,7 +234,6 @@ if st.button("🚀 Generar Reporte Industrial", type="primary"):
             "serie": numero_serie, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": modelo
         }
         doc.render(context)
-        
         nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"
         folder = os.path.join("Historial_Informes", tag_sel)
         os.makedirs(folder, exist_ok=True)
@@ -250,8 +246,16 @@ if st.button("🚀 Generar Reporte Industrial", type="primary"):
         
         st.success(f"✅ Reporte generado utilizando plantilla: {file_plantilla.split('/')[-1]}")
         st.info(sincronizar_con_nube(tag_sel, tipo_plan)[1])
-        st.download_button("⬇️ Descargar", data=io.BytesIO(open(ruta, "rb").read()), file_name=nombre_archivo)
-        st.rerun()
+        
+        # El botón de descarga ahora se quedará visible en pantalla
+        with open(ruta, "rb") as file:
+            st.download_button(
+                label="⬇️ Descargar Reporte",
+                data=file,
+                file_name=nombre_archivo,
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+            
     except Exception as e:
         st.error(f"Error: {e}")
 
