@@ -1,6 +1,6 @@
 import streamlit as st
 from docxtpl import DocxTemplate
-import io, os, sqlite3, subprocess
+import os, sqlite3, subprocess
 import pandas as pd
 import smtplib
 from email.message import EmailMessage
@@ -10,12 +10,14 @@ from email.mime.text import MIMEText
 from email import encoders
 
 # =============================================================================
-# 0.1 CONFIGURACIÓN DE CORREO ELECTRÓNICO (SMTP)
+# 0.1 CONFIGURACIÓN DE NUBE (ONEDRIVE) Y CORREO
 # =============================================================================
-# Aquí pones el correo Gmail exclusivo que creaste para la app (Ej: inforgem.spence@gmail.com)
-CORREO_REMITENTE = "informeatlas.spence@gmail.com"  
-# Aquí pegas la clave de 16 letras de la "Contraseña de Aplicación" de Google SIN ESPACIOS
-PASSWORD_APLICACION = "jkliuaftlcyenwsa"  
+
+# RUTA EXACTA DE TU ONEDRIVE CORPORATIVO
+RUTA_ONEDRIVE = r"C:\Users\a00596504\OneDrive - ONEVIRTUALOFFICE\Reportes_InforGem"
+
+CORREO_REMITENTE = "inforgem.spence@gmail.com"  
+PASSWORD_APLICACION = "abcdefghijklmnop"  
 
 def enviar_carrito_por_correo(destinatario, lista_informes):
     if not CORREO_REMITENTE or CORREO_REMITENTE == "inforgem.spence@gmail.com":
@@ -26,14 +28,13 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     msg['To'] = destinatario
     msg['Subject'] = f"REVISIÓN PREVIA: Reportes Atlas Copco - {pd.Timestamp.now().strftime('%d/%m/%Y')}"
 
-    cuerpo = f"Estimado/a,\n\nSe adjuntan {len(lista_informes)} reportes de servicio técnico generados en la presente jornada para su revisión previa antes del envío oficial.\n\nEquipos intervenidos:\n"
+    cuerpo = f"Estimado/a,\n\nSe adjuntan {len(lista_informes)} reportes de servicio técnico generados en la presente jornada para su revisión previa.\n\nEquipos intervenidos:\n"
     for item in lista_informes:
         cuerpo += f"- TAG: {item['tag']} | Orden: {item['tipo']}\n"
     cuerpo += "\nSaludos cordiales,\nSistema Integrado InforGem"
 
     msg.attach(MIMEText(cuerpo, 'plain'))
 
-    # Adjuntar cada archivo del carrito
     for item in lista_informes:
         ruta = item['ruta']
         if os.path.exists(ruta):
@@ -45,7 +46,6 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
             msg.attach(part)
 
     try:
-        # Configuración por defecto para Gmail
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(CORREO_REMITENTE, PASSWORD_APLICACION)
@@ -88,7 +88,7 @@ def aplicar_estilos_premium():
 aplicar_estilos_premium()
 
 # =============================================================================
-# 1. DATOS MAESTROS Y CONFIGURACIÓN (Diccionarios de la aplicación)
+# 1. DATOS MAESTROS Y CONFIGURACIÓN
 # =============================================================================
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "admin": "admin123"}
 
@@ -134,7 +134,8 @@ def init_db():
         if "recomendaciones" not in cols: conn.execute("ALTER TABLE intervenciones ADD COLUMN recomendaciones TEXT")
         if "generado_por" not in cols: conn.execute("ALTER TABLE intervenciones ADD COLUMN generado_por TEXT DEFAULT 'Desconocido'")
         
-        conn.execute('''CREATE TABLE IF NOT EXISTS contactos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE)''')
+        try: conn.execute('''CREATE TABLE IF NOT EXISTS contactos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE)''')
+        except: pass
         cursor = conn.execute("SELECT COUNT(*) FROM contactos")
         if cursor.fetchone()[0] == 0: conn.execute("INSERT INTO contactos (nombre) VALUES ('Lorena Rojas')")
 
@@ -153,8 +154,7 @@ def agregar_contacto(nombre):
 
 def eliminar_contacto(nombre):
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.execute("DELETE FROM contactos WHERE nombre = ?", (nombre,))
+        with sqlite3.connect(DB_PATH) as conn: conn.execute("DELETE FROM contactos WHERE nombre = ?", (nombre,))
     except: pass
 
 def obtener_estados_actuales():
@@ -179,29 +179,20 @@ def obtener_todo_el_historial(tag):
         return pd.read_sql_query("SELECT fecha, tipo_intervencion, estado_equipo, generado_por as 'Cuenta Usuario', horas_marcha, horas_carga, p_carga, p_descarga, temp_salida FROM intervenciones WHERE tag = ? ORDER BY id DESC", conn, params=(tag,))
 
 # =============================================================================
-# 3. UTILIDADES: CONVERSIÓN Y SINCRONIZACIÓN EN NUBE
+# 3. CONVERSIÓN A PDF EN WINDOWS (CON DOCX2PDF)
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
-    dir_path = os.path.dirname(ruta_docx)
     try:
-        subprocess.run(["libreoffice", "--headless", "--convert-to", "pdf", "--outdir", dir_path, ruta_docx], check=True, capture_output=True)
-        if os.path.exists(ruta_pdf): return ruta_pdf
-    except: pass
-    try:
+        # Se importa y se inicializa pythoncom por seguridad al usar hilos en Streamlit
+        import pythoncom
+        pythoncom.CoInitialize()
         from docx2pdf import convert
         convert(ruta_docx, ruta_pdf)
         if os.path.exists(ruta_pdf): return ruta_pdf
-    except: pass
+    except Exception as e:
+        print(f"Error PDF: {e}")
     return None
-
-def sincronizar_con_nube(tag, tipo_plan):
-    try:
-        subprocess.run(["git", "add", "."], check=True, capture_output=True, text=True)
-        subprocess.run(["git", "commit", "-m", f"Reporte: {tipo_plan} - {tag}"], check=True)
-        subprocess.run(["git", "push"], check=True)
-        return True, "☁️ Sincronización con Nube Exitosa"
-    except: return False, "⚠️ Datos guardados localmente (Pendiente sincronización)"
 
 # =============================================================================
 # 4. INICIALIZACIÓN DE LA APLICACIÓN Y VARIABLES DE SESIÓN
@@ -240,10 +231,7 @@ def seleccionar_equipo(tag):
         st.session_state.update({'input_estado_eq': "Operativo", 'input_estado': "", 'input_reco': ""})
 
 def volver_catalogo(): st.session_state.equipo_seleccionado = None
-
-def eliminar_del_carrito(idx):
-    st.session_state.carrito_informes.pop(idx)
-
+def eliminar_del_carrito(idx): st.session_state.carrito_informes.pop(idx)
 # =============================================================================
 # 5. PANTALLA 1: SISTEMA DE LOGIN PREMIUM
 # =============================================================================
@@ -273,10 +261,9 @@ else:
     with st.sidebar:
         st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
-        
-        # --- UI DEL CARRITO DE CORREOS PARA REVISIÓN ---
+
         st.markdown("---")
-        st.markdown("### 🛒 Bandeja de Salida (Revisión)")
+        st.markdown("### 🛒 Bandeja de Salida")
         
         if len(st.session_state.carrito_informes) == 0:
             st.info("No hay informes generados para enviar.")
@@ -287,7 +274,7 @@ else:
                 c_btn.button("❌", key=f"del_cart_{i}", help="Quitar", on_click=eliminar_del_carrito, args=(i,))
                 
             st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
-            correo_destino = st.text_input("Enviar a mi correo corporativo:", value="tu_correo@bhp.com", help="Recibe los informes en tu bandeja para revisarlos antes de reenviarlos a tu supervisor.")
+            correo_destino = st.text_input("Enviar a mi correo corporativo:", value="tu_correo@bhp.com")
             
             if st.button("✉️ Enviarme Informes para Revisión", use_container_width=True):
                 with st.spinner("Enviando paquete de correos a tu bandeja..."):
@@ -297,7 +284,6 @@ else:
                         st.session_state.carrito_informes = [] 
                     else:
                         st.error(mensaje)
-        # ----------------------------------------
         
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True):
@@ -445,7 +431,7 @@ else:
             
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("🚀 Generar, Sincronizar y Guardar Reporte Oficial", type="primary", use_container_width=True):
-                with st.spinner('Procesando datos y contactando con la base de datos...'):
+                with st.spinner('Procesando datos y guardando en OneDrive corporativo...'):
                     try:
                         if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
                         else:
@@ -457,10 +443,11 @@ else:
                             
                         doc = DocxTemplate(file_plantilla)
                         context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}
+                        
                         doc.render(context)
                         
                         nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"
-                        folder = os.path.join("Historial_Informes", tag_sel)
+                        folder = os.path.join(RUTA_ONEDRIVE, tag_sel)
                         os.makedirs(folder, exist_ok=True)
                         ruta = os.path.join(folder, nombre_archivo)
                         doc.save(ruta)
@@ -483,8 +470,8 @@ else:
                             "nombre_archivo": nombre_final
                         })
 
-                        st.success(f"✅ ¡Reporte '{nombre_archivo}' generado y añadido a tu bandeja de revisión!")
-                        st.info(sincronizar_con_nube(tag_sel, tipo_plan)[1])
+                        # Mensaje con la ruta exacta para que la puedas encontrar fácilmente
+                        st.success(f"✅ ¡Reporte guardado en OneDrive/Teams!\n\nRuta exacta: `{ruta_final}`")
                         
                         c_d1, c_d2 = st.columns(2)
                         with c_d1:
@@ -492,7 +479,7 @@ else:
                         with c_d2:
                             if ruta_pdf_gen:
                                 with open(ruta_pdf_gen, "rb") as f_pdf: st.download_button("📕 Obtener Oficial (PDF)", f_pdf, file_name=nombre_archivo.replace(".docx", ".pdf"), mime="application/pdf", use_container_width=True)
-                            else: st.button("📕 PDF (En proceso / Revisar nube)", disabled=True, use_container_width=True)
+                            else: st.warning("⚠️ El conversor PDF falló. Revisa que esté instalada la librería en tu PC o usa el botón del archivo Word.", icon="⚠️")
                     except Exception as e: st.error(f"Error sistémico generando reporte: {e}")
 
         with tab3:
@@ -519,7 +506,7 @@ else:
                 else:
                     st.info("ℹ️ El manual o despiece para este modelo aún no ha sido cargado en la plataforma.")
             else:
-                st.warning("⚠️ No hay especificaciones técnicas registradas para este modelo.")
+                st.warning("⚠️ No hasy especificaciones técnicas registradas para este modelo.")
 
         st.markdown("<br><hr>", unsafe_allow_html=True)
         st.markdown("### 📋 Trazabilidad Histórica de Intervenciones")
