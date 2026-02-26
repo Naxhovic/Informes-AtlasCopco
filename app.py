@@ -10,19 +10,19 @@ from email.mime.text import MIMEText
 from email import encoders
 
 # =============================================================================
-# 0.1 CONFIGURACIÓN DE NUBE (ONEDRIVE) Y CORREO
+# 0.1 CONFIGURACIÓN DE NUBE (ENVÍO SILENCIOSO AUTOMÁTICO)
 # =============================================================================
 
-# RUTA EXACTA DE TU ONEDRIVE CORPORATIVO
-RUTA_ONEDRIVE = r"C:\Users\a00596504\OneDrive - ONEVIRTUALOFFICE\Reportes_InforGem"
+# Carpeta temporal donde el PC guardará el archivo antes de enviarlo por correo
+RUTA_ONEDRIVE = "Reportes_Temporales" 
 
-CORREO_REMITENTE = "inforgem.spence@gmail.com"  
-PASSWORD_APLICACION = "abcdefghijklmnop"  
+# 👇 Aquí el programa enviará el correo oculto para que Power Automate lo atrape 👇
+MI_CORREO_CORPORATIVO = "ignacio.a.morales@atlascopco.com"  
+
+CORREO_REMITENTE = "informeatlas.spence@gmail.com"  
+PASSWORD_APLICACION = "jbumdljbdpyomnna"  # <-- Recuerda poner tu contraseña real de Gmail aquí
 
 def enviar_carrito_por_correo(destinatario, lista_informes):
-    if not CORREO_REMITENTE or CORREO_REMITENTE == "inforgem.spence@gmail.com":
-        return False, "⚠️ Por favor configura el correo y contraseña del sistema en el código fuente."
-    
     msg = MIMEMultipart()
     msg['From'] = CORREO_REMITENTE
     msg['To'] = destinatario
@@ -37,12 +37,19 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
 
     for item in lista_informes:
         ruta = item['ruta']
+        
+        # 👇 MAGIA ANTI-OUTLOOK: Quitamos tildes del nombre del adjunto
+        nombre_seguro = item["nombre_archivo"].replace("ó","o").replace("í","i").replace("á","a").replace("é","e").replace("ú","u")
+        
         if os.path.exists(ruta):
             with open(ruta, "rb") as f:
                 part = MIMEBase('application', 'octet-stream')
                 part.set_payload(f.read())
             encoders.encode_base64(part)
-            part.add_header('Content-Disposition', f'attachment; filename="{item["nombre_archivo"]}"')
+            
+            # 👇 Forzamos la etiqueta para que Outlook no lo vuelva .bin
+            part.add_header('Content-Type', 'application/octet-stream', name=nombre_seguro)
+            part.add_header('Content-Disposition', f'attachment; filename="{nombre_seguro}"')
             msg.attach(part)
 
     try:
@@ -51,7 +58,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
         server.login(CORREO_REMITENTE, PASSWORD_APLICACION)
         server.send_message(msg)
         server.quit()
-        return True, "✅ Todos los informes fueron enviados a tu correo corporativo para revisión."
+        return True, "✅ Todos los informes fueron enviados a tu correo corporativo."
     except Exception as e:
         return False, f"❌ Error al enviar el correo: {e}"
 
@@ -62,6 +69,7 @@ st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wid
 
 def aplicar_estilos_premium():
     st.markdown("""
+        <meta name="google" content="notranslate">
         <style>
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --ac-light: #e6f2f7; --bhp-orange: #FF6600; }
         #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
@@ -113,7 +121,7 @@ inventario_equipos = {
     "55-GC-015": ["GA 30", "API501440", "planta borra", "área húmeda"],
     "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "área húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "área húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "área húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "área húmeda"],
     "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "área húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "área húmeda"],
-    "TALLER": ["GA 18", "API335343", "taller", "laboratorio"]
+    "TALLER MECÁNICO": ["GA 18", "API335343", "laboratorio", "taller mecánico"]
 }
 
 # =============================================================================
@@ -184,7 +192,6 @@ def obtener_todo_el_historial(tag):
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
     try:
-        # Se importa y se inicializa pythoncom por seguridad al usar hilos en Streamlit
         import pythoncom
         pythoncom.CoInitialize()
         from docx2pdf import convert
@@ -263,10 +270,10 @@ else:
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
 
         st.markdown("---")
-        st.markdown("### 🛒 Bandeja de Salida")
+        st.markdown("### 🛒 Historial de Sesión")
         
         if len(st.session_state.carrito_informes) == 0:
-            st.info("No hay informes generados para enviar.")
+            st.info("No hay informes generados recientemente.")
         else:
             for i, item in enumerate(st.session_state.carrito_informes):
                 c_name, c_btn = st.columns([4, 1])
@@ -274,9 +281,9 @@ else:
                 c_btn.button("❌", key=f"del_cart_{i}", help="Quitar", on_click=eliminar_del_carrito, args=(i,))
                 
             st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
-            correo_destino = st.text_input("Enviar a mi correo corporativo:", value="tu_correo@bhp.com")
+            correo_destino = st.text_input("Re-enviar a mi correo:", value=MI_CORREO_CORPORATIVO)
             
-            if st.button("✉️ Enviarme Informes para Revisión", use_container_width=True):
+            if st.button("✉️ Re-enviar Informes Manualmente", use_container_width=True):
                 with st.spinner("Enviando paquete de correos a tu bandeja..."):
                     exito, mensaje = enviar_carrito_por_correo(correo_destino, st.session_state.carrito_informes)
                     if exito:
@@ -370,7 +377,7 @@ else:
             ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True)
 
             c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
-            fecha = c5.text_input("Fecha Ejecución", "23 de febrero de 2026")
+            fecha = c5.text_input("Fecha Ejecución", "25 de febrero de 2026")
             tec1 = c6.text_input("Técnico 1", key="input_tec1")
             tec2 = c7.text_input("Técnico 2", key="input_tec2")
             
@@ -413,7 +420,7 @@ else:
             
             h_m = c9.number_input("Horas Marcha Totales", step=1, value=int(st.session_state.input_h_marcha), format="%d")
             h_c = c10.number_input("Horas en Carga", step=1, value=int(st.session_state.input_h_carga), format="%d")
-            unidad_p = c11.selectbox("Unidad de Presión", ["bar", "psi"])
+            unidad_p = c11.selectbox("Unidad de Presión", ["Bar", "psi"])
             
             p_c_str = c12.text_input("P. Carga", value=str(st.session_state.input_p_carga))
             p_d_str = c13.text_input("P. Descarga", value=str(st.session_state.input_p_descarga))
@@ -430,8 +437,10 @@ else:
             reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100)
             
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("🚀 Generar, Sincronizar y Guardar Reporte Oficial", type="primary", use_container_width=True):
-                with st.spinner('Procesando datos y guardando en OneDrive corporativo...'):
+            
+            # 👇 BOTÓN CON LA MAGIA DEL ENVÍO SILENCIOSO AUTOMÁTICO 👇
+            if st.button("🚀 Generar y Enviar a Nube Central", type="primary", use_container_width=True):
+                with st.spinner('Procesando datos y transmitiendo a la nube corporativa...'):
                     try:
                         if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
                         else:
@@ -447,7 +456,7 @@ else:
                         doc.render(context)
                         
                         nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"
-                        folder = os.path.join(RUTA_ONEDRIVE, tag_sel)
+                        folder = RUTA_ONEDRIVE
                         os.makedirs(folder, exist_ok=True)
                         ruta = os.path.join(folder, nombre_archivo)
                         doc.save(ruta)
@@ -470,16 +479,22 @@ else:
                             "nombre_archivo": nombre_final
                         })
 
-                        # Mensaje con la ruta exacta para que la puedas encontrar fácilmente
-                        st.success(f"✅ ¡Reporte guardado en OneDrive/Teams!\n\nRuta exacta: `{ruta_final}`")
+                        # --- EL ENVÍO SILENCIOSO HACIA POWER AUTOMATE ---
+                        informe_actual = [{"tag": tag_sel, "tipo": tipo_plan, "ruta": ruta_final, "nombre_archivo": nombre_final}]
+                        exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informe_actual)
+                        
+                        if exito:
+                            st.success(f"✅ ¡Reporte generado y transmitido exitosamente a la Nube Central (OneDrive)!")
+                        else:
+                            st.warning(f"⚠️ El reporte se generó localmente, pero hubo un error de red al transmitirlo: {mensaje_correo}")
                         
                         c_d1, c_d2 = st.columns(2)
                         with c_d1:
-                            with open(ruta, "rb") as f: st.download_button("📄 Obtener Original (Word)", f, file_name=nombre_archivo, mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
+                            with open(ruta, "rb") as f: st.download_button("📄 Obtener Copia Local (Word)", f, file_name=nombre_archivo, mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
                         with c_d2:
                             if ruta_pdf_gen:
-                                with open(ruta_pdf_gen, "rb") as f_pdf: st.download_button("📕 Obtener Oficial (PDF)", f_pdf, file_name=nombre_archivo.replace(".docx", ".pdf"), mime="application/pdf", use_container_width=True)
-                            else: st.warning("⚠️ El conversor PDF falló. Revisa que esté instalada la librería en tu PC o usa el botón del archivo Word.", icon="⚠️")
+                                with open(ruta_pdf_gen, "rb") as f_pdf: st.download_button("📕 Obtener Copia Local (PDF)", f_pdf, file_name=nombre_archivo.replace(".docx", ".pdf"), mime="application/pdf", use_container_width=True)
+                            else: st.button("📕 PDF (En proceso)", disabled=True, use_container_width=True)
                     except Exception as e: st.error(f"Error sistémico generando reporte: {e}")
 
         with tab3:
@@ -506,7 +521,7 @@ else:
                 else:
                     st.info("ℹ️ El manual o despiece para este modelo aún no ha sido cargado en la plataforma.")
             else:
-                st.warning("⚠️ No hasy especificaciones técnicas registradas para este modelo.")
+                st.warning("⚠️ No hay especificaciones técnicas registradas para este modelo.")
 
         st.markdown("<br><hr>", unsafe_allow_html=True)
         st.markdown("### 📋 Trazabilidad Histórica de Intervenciones")
