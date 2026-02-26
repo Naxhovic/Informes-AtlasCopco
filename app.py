@@ -1,5 +1,6 @@
 import streamlit as st
-from docxtpl import DocxTemplate
+from docxtpl import DocxTemplate, InlineImage
+from docx.shared import Mm
 import os, sqlite3, subprocess
 import pandas as pd
 import smtplib
@@ -8,6 +9,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email import encoders
+from streamlit_drawable_canvas import st_canvas
+from PIL import Image
+import io
 
 # =============================================================================
 # 0.1 CONFIGURACIÓN DE NUBE (ENVÍO SILENCIOSO AUTOMÁTICO)
@@ -21,9 +25,9 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     msg = MIMEMultipart()
     msg['From'] = CORREO_REMITENTE
     msg['To'] = destinatario
-    msg['Subject'] = f"REVISIÓN PREVIA: Reportes Atlas Copco - {pd.Timestamp.now().strftime('%d/%m/%Y')}"
+    msg['Subject'] = f"REVISIÓN PREVIA: Reportes Atlas Copco - Firmados - {pd.Timestamp.now().strftime('%d/%m/%Y')}"
 
-    cuerpo = f"Estimado/a,\n\nSe adjuntan {len(lista_informes)} reportes de servicio técnico generados en la presente jornada para su revisión previa.\n\nEquipos intervenidos:\n"
+    cuerpo = f"Estimado/a,\n\nSe adjuntan {len(lista_informes)} reportes de servicio técnico (Firmados) generados en la presente jornada para su revisión previa.\n\nEquipos intervenidos:\n"
     for item in lista_informes:
         cuerpo += f"- TAG: {item['tag']} | Orden: {item['tipo']}\n"
     cuerpo += "\nSaludos cordiales,\nSistema Integrado InforGem"
@@ -186,33 +190,22 @@ def obtener_todo_el_historial(tag):
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
-    
-    # Aseguramos la ruta exacta (A Linux le gusta así)
     ruta_absoluta = os.path.abspath(ruta_docx)
     carpeta_salida = os.path.dirname(ruta_absoluta)
     
-    # Intento 1: Servidor en la Nube (Linux + LibreOffice)
     try:
         comando = ['libreoffice', '--headless', '--convert-to', 'pdf', ruta_absoluta, '--outdir', carpeta_salida]
         proceso = subprocess.run(comando, capture_output=True, text=True)
-        
-        if os.path.exists(ruta_pdf): 
-            return ruta_pdf
-        else:
-            st.warning(f"⚠️ Mensaje del servidor Linux: {proceso.stderr}")
-    except Exception as e:
-        st.warning(f"⚠️ Error intentando abrir LibreOffice: {e}")
+        if os.path.exists(ruta_pdf): return ruta_pdf
+    except Exception as e: pass
 
-    # Intento 2: Computador Local (Windows + Microsoft Word)
     try:
         import pythoncom
         from docx2pdf import convert
         pythoncom.CoInitialize()
         convert(ruta_absoluta, ruta_pdf)
-        if os.path.exists(ruta_pdf): 
-            return ruta_pdf
-    except Exception as e:
-        pass # Ignoramos el error de Windows si estamos en Linux
+        if os.path.exists(ruta_pdf): return ruta_pdf
+    except Exception as e: pass
         
     return None
 
@@ -226,13 +219,15 @@ default_states = {
     'input_cliente': "Lorena Rojas", 'input_tec1': "Ignacio Morales", 'input_tec2': "emian Sanchez",
     'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
-    'input_reco': "", 'input_estado_eq': "Operativo"
+    'input_reco': "", 'input_estado_eq': "Operativo",
+    'informes_pendientes': [], 'vista_firmas': False  # Nuevas variables para Firmas
 }
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
 
 def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag
+    st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
     if reg:
         st.session_state.input_cliente = reg[1]
@@ -251,8 +246,10 @@ def seleccionar_equipo(tag):
     else:
         st.session_state.update({'input_estado_eq': "Operativo", 'input_estado': "", 'input_reco': ""})
 
-def volver_catalogo(): st.session_state.equipo_seleccionado = None
-# =============================================================================
+def volver_catalogo(): 
+    st.session_state.equipo_seleccionado = None
+    st.session_state.vista_firmas = False
+    # =============================================================================
 # 5. PANTALLA 1: SISTEMA DE LOGIN PREMIUM
 # =============================================================================
 if not st.session_state.logged_in:
@@ -277,18 +274,116 @@ if not st.session_state.logged_in:
 # 6. PANTALLA PRINCIPAL: APLICACIÓN AUTENTICADA
 # =============================================================================
 else:
-    # Sidebar Corporativo (Limpiado: Sin carrito)
+    # Sidebar Corporativo 
     with st.sidebar:
         st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
+
+        # 👇 BOTÓN MÁGICO QUE APARECE SOLO SI HAY REPORTES EN COLA 👇
+        if len(st.session_state.informes_pendientes) > 0:
+            st.markdown("---")
+            st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
+            if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary"):
+                st.session_state.vista_firmas = True
+                st.session_state.equipo_seleccionado = None
+                st.rerun()
 
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True):
             st.session_state.logged_in = False
             st.rerun()
 
-    # --- 6.1 VISTA CATÁLOGO (Dashboard interactivo) ---
-    if st.session_state.equipo_seleccionado is None:
+    # --- 6.1 VISTA DE FIRMAS Y ENVÍO MÚLTIPLE ---
+    if st.session_state.vista_firmas:
+        c_v1, c_v2 = st.columns([1,4])
+        with c_v1: 
+            if st.button("⬅️ Volver", use_container_width=True): volver_catalogo(); st.rerun()
+        with c_v2: 
+            st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas Digital</h1>", unsafe_allow_html=True)
+
+        st.info("💡 **Instrucciones:** Dibuja las firmas en los recuadros usando el mouse o el dedo. Estas firmas se inyectarán automáticamente en todos los documentos de la lista de abajo.")
+        
+        c_tec, c_cli = st.columns(2)
+        with c_tec:
+            st.markdown("### 🧑‍🔧 Firma del Técnico")
+            st.caption(f"Técnico: {st.session_state.informes_pendientes[0]['tec1'] if st.session_state.informes_pendientes else 'N/A'}")
+            canvas_tec = st_canvas(stroke_width=2, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
+            
+        with c_cli:
+            st.markdown("### 👷 Firma del Cliente")
+            st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
+            canvas_cli = st_canvas(stroke_width=2, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
+
+        st.markdown("---")
+        st.markdown(f"### 📑 Equipos a firmar simultáneamente ({len(st.session_state.informes_pendientes)}):")
+        for inf in st.session_state.informes_pendientes:
+            st.markdown(f"- **{inf['tag']}** ({inf['tipo_plan']}) - Área: {inf['area'].title()}")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("🚀 Inyectar Firmas, Generar PDFs y Subir a la Nube", type="primary", use_container_width=True):
+            if canvas_tec.image_data is not None and canvas_cli.image_data is not None:
+                
+                # Función para convertir el trazo a imagen transparente compatible
+                def procesar_imagen_firma(img_data):
+                    img = Image.fromarray(img_data.astype('uint8'), 'RGBA')
+                    img_io = io.BytesIO()
+                    img.save(img_io, format='PNG')
+                    img_io.seek(0)
+                    return img_io
+
+                io_tec = procesar_imagen_firma(canvas_tec.image_data)
+                io_cli = procesar_imagen_firma(canvas_cli.image_data)
+                
+                informes_finales = []
+                with st.spinner("Fabricando documentos, inyectando firmas y transformando a PDF..."):
+                    try:
+                        os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
+                        for inf in st.session_state.informes_pendientes:
+                            doc = DocxTemplate(inf['file_plantilla'])
+                            context = inf['context']
+                            
+                            # Inyectamos la magia
+                            context['firma_tecnico'] = InlineImage(doc, io_tec, width=Mm(40))
+                            context['firma_cliente'] = InlineImage(doc, io_cli, width=Mm(40))
+                            
+                            doc.render(context)
+                            doc.save(inf['ruta_docx'])
+                            
+                            ruta_pdf_gen = convertir_a_pdf(inf['ruta_docx'])
+                            
+                            if ruta_pdf_gen:
+                                ruta_final = ruta_pdf_gen
+                                nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
+                            else:
+                                ruta_final = inf['ruta_docx']
+                                nombre_final = inf['nombre_archivo_base']
+                            
+                            nombre_codificado = f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"
+                            
+                            # Guardamos en la base de datos ahora que ya está terminado
+                            tupla_lista = list(inf['tupla_db'])
+                            tupla_lista[18] = ruta_final
+                            guardar_registro(tuple(tupla_lista))
+                            
+                            informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": nombre_codificado})
+                            
+                        # Enviar el paquete masivo al correo para Power Automate
+                        exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
+                        
+                        if exito:
+                            st.success("✅ ¡PERFECTO! Los documentos se firmaron, convirtieron a PDF y ya están camino a tu OneDrive.")
+                            st.session_state.informes_pendientes = []  # Vaciamos la bandeja
+                            st.balloons()
+                        else:
+                            st.error(f"Error de red: {mensaje_correo}")
+                            
+                    except Exception as e:
+                        st.error(f"Error sistémico procesando las firmas: {e}")
+            else:
+                st.warning("⚠️ Asegúrate de dibujar en ambas pizarras antes de generar los PDFs.")
+
+    # --- 6.2 VISTA CATÁLOGO (Dashboard interactivo) ---
+    elif st.session_state.equipo_seleccionado is None:
         
         st.markdown("""
             <div style="margin-top: 1.5rem; margin-bottom: 2rem; text-align: center;">
@@ -343,7 +438,7 @@ else:
                         st.button("📝 Ingresar", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
                 contador += 1
 
-    # --- 6.2 VISTA FORMULARIO Y GENERACIÓN (Wizard con 3 Tabs) ---
+    # --- 6.3 VISTA FORMULARIO Y GENERACIÓN ---
     else:
         tag_sel = st.session_state.equipo_seleccionado
         mod_d, ser_d, area_d, ubi_d = inventario_equipos[tag_sel]
@@ -428,87 +523,60 @@ else:
             
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # 👇 BOTÓN CON LA MAGIA DEL ENVÍO SILENCIOSO AUTOMÁTICO Y CARPETAS 👇
-            if st.button("🚀 Generar y Enviar a Nube Central", type="primary", use_container_width=True):
-                with st.spinner('Procesando datos y transmitiendo a la nube corporativa...'):
-                    try:
-                        if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
-                        else:
-                            if est_eq == "Fuera de servicio": file_plantilla = "plantilla/fueradeservicio.docx"
-                            elif tipo_plan == "P1": file_plantilla = "plantilla/p1.docx"
-                            elif tipo_plan == "P2": file_plantilla = "plantilla/p2.docx"
-                            elif tipo_plan == "P3": file_plantilla = "plantilla/p3.docx"
-                            else: file_plantilla = "plantilla/inspeccion.docx"
-                            
-                        doc = DocxTemplate(file_plantilla)
-                        context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}
-                        
-                        doc.render(context)
-                        
-                        nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"
-                        folder = RUTA_ONEDRIVE
-                        os.makedirs(folder, exist_ok=True)
-                        ruta = os.path.join(folder, nombre_archivo)
-                        doc.save(ruta)
-                        
-                        ruta_pdf_gen = convertir_a_pdf(ruta)
-                        
-                        try: temp_db = float(t_salida_clean)
-                        except: temp_db = 0.0
-                        
-                        tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, ruta, st.session_state.usuario_actual)
-                        guardar_registro(tupla_db)
-                        
-                        ruta_final = ruta_pdf_gen if ruta_pdf_gen else ruta
-                        nombre_final = nombre_archivo.replace(".docx", ".pdf") if ruta_pdf_gen else nombre_archivo
-                        
-                        # 👇 MAGIA PARA CARPETAS: Inyectamos Área y TAG al nombre
-                        nombre_codificado = f"{area_d.title()}@@{tag_sel}@@{nombre_final}"
-
-                        # --- EL ENVÍO SILENCIOSO HACIA POWER AUTOMATE ---
-                        # Prepara un paquete de 1 solo archivo y lo envía inmediatamente
-                        informe_actual = [{"tag": tag_sel, "tipo": tipo_plan, "ruta": ruta_final, "nombre_archivo": nombre_codificado}]
-                        exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informe_actual)
-                        
-                        if exito:
-                            st.success(f"✅ ¡Reporte generado y transmitido exitosamente a la Nube Central (OneDrive)!")
-                        else:
-                            st.warning(f"⚠️ El reporte se generó localmente, pero hubo un error de red al transmitirlo: {mensaje_correo}")
-                        
-                        c_d1, c_d2 = st.columns(2)
-                        with c_d1:
-                            with open(ruta, "rb") as f: st.download_button("📄 Obtener Copia Local (Word)", f, file_name=nombre_archivo, mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
-                        with c_d2:
-                            if ruta_pdf_gen:
-                                with open(ruta_pdf_gen, "rb") as f_pdf: st.download_button("📕 Obtener Copia Local (PDF)", f_pdf, file_name=nombre_archivo.replace(".docx", ".pdf"), mime="application/pdf", use_container_width=True)
-                            else: st.button("📕 PDF (En proceso)", disabled=True, use_container_width=True)
-                    except Exception as e: st.error(f"Error sistémico generando reporte: {e}")
+            # 👇 NUEVO BOTÓN: AÑADE AL CARRITO EN MEMORIA SIN FIRMAR TODAVÍA 👇
+            if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
+                if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
+                else:
+                    if est_eq == "Fuera de servicio": file_plantilla = "plantilla/fueradeservicio.docx"
+                    elif tipo_plan == "P1": file_plantilla = "plantilla/p1.docx"
+                    elif tipo_plan == "P2": file_plantilla = "plantilla/p2.docx"
+                    elif tipo_plan == "P3": file_plantilla = "plantilla/p3.docx"
+                    else: file_plantilla = "plantilla/inspeccion.docx"
+                    
+                context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}
+                
+                nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"
+                ruta = os.path.join(RUTA_ONEDRIVE, nombre_archivo)
+                
+                try: temp_db = float(t_salida_clean)
+                except: temp_db = 0.0
+                
+                tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
+                
+                # Empacamos todos los datos en memoria
+                st.session_state.informes_pendientes.append({
+                    "tag": tag_sel,
+                    "area": area_d,
+                    "tec1": tec1,
+                    "cli": cli_cont,
+                    "tipo_plan": tipo_plan,
+                    "file_plantilla": file_plantilla,
+                    "context": context,
+                    "tupla_db": tupla_db,
+                    "ruta_docx": ruta,
+                    "nombre_archivo_base": nombre_archivo
+                })
+                
+                st.success("✅ Datos del equipo guardados. Puedes agregar otro equipo de la lista o ir a firmar y enviar.")
+                st.session_state.equipo_seleccionado = None
+                st.rerun()
 
         with tab3:
             st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
             if mod_d in ESPECIFICACIONES:
                 specs = {k: v for k, v in ESPECIFICACIONES[mod_d].items() if k != "Manual"}
-                
                 cols = st.columns(3)
                 for i, (k, v) in enumerate(specs.items()):
                     with cols[i % 3]:
-                        st.markdown(f"""
-                            <div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'>
-                                <span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br>
-                                <span style='color: white; font-size: 1.1em;'>{v}</span>
-                            </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown(f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
                 
                 st.markdown("<hr>", unsafe_allow_html=True)
                 st.markdown("### 📥 Documentación y Manuales")
-                
                 if "Manual" in ESPECIFICACIONES[mod_d] and os.path.exists(ESPECIFICACIONES[mod_d]["Manual"]):
                     with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f:
                         st.download_button(label=f"📕 Descargar Manual de {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
-                else:
-                    st.info("ℹ️ El manual o despiece para este modelo aún no ha sido cargado en la plataforma.")
-            else:
-                st.warning("⚠️ No hay especificaciones técnicas registradas para este modelo.")
+                else: st.info("ℹ️ El manual o despiece para este modelo aún no ha sido cargado en la plataforma.")
+            else: st.warning("⚠️ No hay especificaciones técnicas registradas para este modelo.")
 
         st.markdown("<br><hr>", unsafe_allow_html=True)
         st.markdown("### 📋 Trazabilidad Histórica de Intervenciones")
