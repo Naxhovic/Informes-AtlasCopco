@@ -12,15 +12,10 @@ from email import encoders
 # =============================================================================
 # 0.1 CONFIGURACIÓN DE NUBE (ENVÍO SILENCIOSO AUTOMÁTICO)
 # =============================================================================
-
-# Carpeta temporal donde el PC guardará el archivo antes de enviarlo por correo
 RUTA_ONEDRIVE = "Reportes_Temporales" 
-
-# 👇 Aquí el programa enviará el correo oculto para que Power Automate lo atrape 👇
 MI_CORREO_CORPORATIVO = "ignacio.a.morales@atlascopco.com"  
-
 CORREO_REMITENTE = "informeatlas.spence@gmail.com"  
-PASSWORD_APLICACION = "jbumdljbdpyomnna"  # <-- Recuerda poner tu contraseña real de Gmail aquí
+PASSWORD_APLICACION = "jbumdljbdpyomnna"  
 
 def enviar_carrito_por_correo(destinatario, lista_informes):
     msg = MIMEMultipart()
@@ -221,6 +216,7 @@ def convertir_a_pdf(ruta_docx):
         pass # Ignoramos el error de Windows si estamos en Linux
         
     return None
+
 # =============================================================================
 # 4. INICIALIZACIÓN DE LA APLICACIÓN Y VARIABLES DE SESIÓN
 # =============================================================================
@@ -458,7 +454,7 @@ else:
             
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # 👇 BOTÓN CON LA MAGIA DEL ENVÍO SILENCIOSO AUTOMÁTICO 👇
+            # 👇 BOTÓN CON LA MAGIA DEL ENVÍO SILENCIOSO AUTOMÁTICO Y CARPETAS 👇
             if st.button("🚀 Generar y Enviar a Nube Central", type="primary", use_container_width=True):
                 with st.spinner('Procesando datos y transmitiendo a la nube corporativa...'):
                     try:
@@ -503,7 +499,8 @@ else:
                         })
 
                         # --- EL ENVÍO SILENCIOSO HACIA POWER AUTOMATE ---
-                        informe_actual = [{"tag": tag_sel, "tipo": tipo_plan, "ruta": ruta_final, "nombre_archivo": nombre_codificado}]  # <--- Enviamos con código
+                        informe_actual = [{"tag": tag_sel, "tipo": tipo_plan, "ruta": ruta_final, "nombre_archivo": nombre_codificado}]
+                        exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informe_actual)
                         
                         if exito:
                             st.success(f"✅ ¡Reporte generado y transmitido exitosamente a la Nube Central (OneDrive)!")
