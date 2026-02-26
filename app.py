@@ -492,16 +492,18 @@ else:
                         ruta_final = ruta_pdf_gen if ruta_pdf_gen else ruta
                         nombre_final = nombre_archivo.replace(".docx", ".pdf") if ruta_pdf_gen else nombre_archivo
                         
+                        # 👇 MAGIA PARA CARPETAS: Inyectamos Área y TAG al nombre
+                        nombre_codificado = f"{area_d.title()}@@{tag_sel}@@{nombre_final}"
+                        
                         st.session_state.carrito_informes.append({
                             "tag": tag_sel,
                             "tipo": tipo_plan,
                             "ruta": ruta_final,
-                            "nombre_archivo": nombre_final
+                            "nombre_archivo": nombre_codificado  # <--- Guardamos con código
                         })
 
                         # --- EL ENVÍO SILENCIOSO HACIA POWER AUTOMATE ---
-                        informe_actual = [{"tag": tag_sel, "tipo": tipo_plan, "ruta": ruta_final, "nombre_archivo": nombre_final}]
-                        exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informe_actual)
+                        informe_actual = [{"tag": tag_sel, "tipo": tipo_plan, "ruta": ruta_final, "nombre_archivo": nombre_codificado}]  # <--- Enviamos con código
                         
                         if exito:
                             st.success(f"✅ ¡Reporte generado y transmitido exitosamente a la Nube Central (OneDrive)!")
