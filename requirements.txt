@@ -1,3 +1,4 @@
 streamlit
 docxtpl
 pandas
+streamlit-drawable-canvas
