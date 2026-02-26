@@ -187,20 +187,37 @@ def obtener_todo_el_historial(tag):
         return pd.read_sql_query("SELECT fecha, tipo_intervencion, estado_equipo, generado_por as 'Cuenta Usuario', horas_marcha, horas_carga, p_carga, p_descarga, temp_salida FROM intervenciones WHERE tag = ? ORDER BY id DESC", conn, params=(tag,))
 
 # =============================================================================
-# 3. CONVERSIÓN A PDF EN WINDOWS (CON DOCX2PDF)
+# 3. CONVERSIÓN A PDF HÍBRIDA (NUBE LINUX / LOCAL WINDOWS)
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
+    
+    # Intento 1: Servidor en la Nube (Linux + LibreOffice)
+    try:
+        carpeta_salida = os.path.dirname(ruta_docx)
+        if not carpeta_salida: carpeta_salida = "."
+        
+        # Ejecuta LibreOffice de forma invisible
+        comando = ['libreoffice', '--headless', '--convert-to', 'pdf', ruta_docx, '--outdir', carpeta_salida]
+        subprocess.run(comando, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        if os.path.exists(ruta_pdf): 
+            return ruta_pdf
+    except Exception:
+        pass # Si falla, significa que no estamos en la nube, pasamos al Intento 2
+
+    # Intento 2: Computador Local (Windows + Microsoft Word)
     try:
         import pythoncom
-        pythoncom.CoInitialize()
         from docx2pdf import convert
+        pythoncom.CoInitialize()
         convert(ruta_docx, ruta_pdf)
-        if os.path.exists(ruta_pdf): return ruta_pdf
+        if os.path.exists(ruta_pdf): 
+            return ruta_pdf
     except Exception as e:
-        print(f"Error PDF: {e}")
+        print(f"Error PDF Windows: {e}")
+        
     return None
-
 # =============================================================================
 # 4. INICIALIZACIÓN DE LA APLICACIÓN Y VARIABLES DE SESIÓN
 # =============================================================================
