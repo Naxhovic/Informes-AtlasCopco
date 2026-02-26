@@ -199,7 +199,6 @@ def convertir_a_pdf(ruta_docx):
         if os.path.exists(ruta_pdf): 
             return ruta_pdf
         else:
-            # Si falla, mostrará el error exacto en la página web
             st.warning(f"⚠️ Mensaje del servidor Linux: {proceso.stderr}")
     except Exception as e:
         st.warning(f"⚠️ Error intentando abrir LibreOffice: {e}")
@@ -227,8 +226,7 @@ default_states = {
     'input_cliente': "Lorena Rojas", 'input_tec1': "Ignacio Morales", 'input_tec2': "emian Sanchez",
     'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
-    'input_reco': "", 'input_estado_eq': "Operativo",
-    'carrito_informes': []
+    'input_reco': "", 'input_estado_eq': "Operativo"
 }
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
@@ -254,7 +252,6 @@ def seleccionar_equipo(tag):
         st.session_state.update({'input_estado_eq': "Operativo", 'input_estado': "", 'input_reco': ""})
 
 def volver_catalogo(): st.session_state.equipo_seleccionado = None
-def eliminar_del_carrito(idx): st.session_state.carrito_informes.pop(idx)
 # =============================================================================
 # 5. PANTALLA 1: SISTEMA DE LOGIN PREMIUM
 # =============================================================================
@@ -280,34 +277,11 @@ if not st.session_state.logged_in:
 # 6. PANTALLA PRINCIPAL: APLICACIÓN AUTENTICADA
 # =============================================================================
 else:
-    # Sidebar Corporativo y Carrito
+    # Sidebar Corporativo (Limpiado: Sin carrito)
     with st.sidebar:
         st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
 
-        st.markdown("---")
-        st.markdown("### 🛒 Historial de Sesión")
-        
-        if len(st.session_state.carrito_informes) == 0:
-            st.info("No hay informes generados recientemente.")
-        else:
-            for i, item in enumerate(st.session_state.carrito_informes):
-                c_name, c_btn = st.columns([4, 1])
-                c_name.caption(f"📄 {item['tag']} ({item['tipo']})")
-                c_btn.button("❌", key=f"del_cart_{i}", help="Quitar", on_click=eliminar_del_carrito, args=(i,))
-                
-            st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
-            correo_destino = st.text_input("Re-enviar a mi correo:", value=MI_CORREO_CORPORATIVO)
-            
-            if st.button("✉️ Re-enviar Informes Manualmente", use_container_width=True):
-                with st.spinner("Enviando paquete de correos a tu bandeja..."):
-                    exito, mensaje = enviar_carrito_por_correo(correo_destino, st.session_state.carrito_informes)
-                    if exito:
-                        st.success(mensaje)
-                        st.session_state.carrito_informes = [] 
-                    else:
-                        st.error(mensaje)
-        
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True):
             st.session_state.logged_in = False
@@ -490,15 +464,9 @@ else:
                         
                         # 👇 MAGIA PARA CARPETAS: Inyectamos Área y TAG al nombre
                         nombre_codificado = f"{area_d.title()}@@{tag_sel}@@{nombre_final}"
-                        
-                        st.session_state.carrito_informes.append({
-                            "tag": tag_sel,
-                            "tipo": tipo_plan,
-                            "ruta": ruta_final,
-                            "nombre_archivo": nombre_codificado  # <--- Guardamos con código
-                        })
 
                         # --- EL ENVÍO SILENCIOSO HACIA POWER AUTOMATE ---
+                        # Prepara un paquete de 1 solo archivo y lo envía inmediatamente
                         informe_actual = [{"tag": tag_sel, "tipo": tipo_plan, "ruta": ruta_final, "nombre_archivo": nombre_codificado}]
                         exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informe_actual)
                         
