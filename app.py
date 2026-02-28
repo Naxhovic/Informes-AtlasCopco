@@ -37,7 +37,6 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
 
     for item in lista_informes:
         ruta = item['ruta']
-        
         nombre_seguro = item["nombre_archivo"].replace("ó","o").replace("í","i").replace("á","a").replace("é","e").replace("ú","u")
         
         if os.path.exists(ruta):
@@ -98,97 +97,18 @@ aplicar_estilos_premium()
 # =============================================================================
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "admin": "admin123"}
 
-ESPECIFICACIONES = {
-    "GA 18+": {
-        "Litros de Aceite": "14.1 L", 
-        "Cant. Filtros Aceite": "1", 
-        "N° Parte Filtro Aceite": "1625 4800 00 / 1625 7525 01", 
-        "Cant. Filtros Aire": "1", 
-        "N° Parte Filtro Aire": "1630 2201 36 / 1625 2204 36", 
-        "Tipo de Aceite": "Roto Inject Fluid", 
-        "Manual": "manuales/manual_ga18.pdf"
-    },
-    "GA 30": {
-        "Litros de Aceite": "14.6 L", 
-        "Cant. Filtros Aceite": "1", 
-        "N° Parte Filtro Aceite": "1613 6105 00", 
-        "Cant. Filtros Aire": "1", 
-        "N° Parte Filtro Aire": "1613 7407 00", 
-        "N° Parte Kit": "2901-0326-00 / 2901 0325 00", 
-        "Tipo de Aceite": "Indurance - Xtend Duty", 
-        "Manual": "manuales/manual_ga30.pdf"
-    },
-    "GA 37": {
-        "Litros de Aceite": "14.6 L", 
-        "N° Parte Filtro Aceite": "1613 6105 00", 
-        "N° Parte Filtro Aire": "1613 7407 00", 
-        "N° Parte Separador": "1613 7408 00", 
-        "N° Parte Kit": "2901 1626 00 / 10-1613 8397 02", 
-        "Tipo de Aceite": "Indurance - Xtend Duty", 
-        "Manual": "manuales/manual_ga37.pdf"
-    },
-    "GA 45": {
-        "Litros de Aceite": "17.9 L", 
-        "Cant. Filtros Aceite": "1", 
-        "N° Parte Filtro Aceite": "1613 6105 00", 
-        "Cant. Filtros Aire": "1", 
-        "N° Parte Kit": "2901-0326-00 / 2901 0325 00", 
-        "Tipo de Aceite": "Indurance - Xtend Duty", 
-        "Manual": "manuales/manual_ga45.pdf"
-    },
-    "GA 75": {
-        "Litros de Aceite": "35.2 L", 
-        "Manual": "manuales/manual_ga75.pdf"
-    },
-    "GA 90": {
-        "Litros de Aceite": "69 L", 
-        "Cant. Filtros Aceite": "3", 
-        "N° Parte Filtro Aceite": "1613 6105 00", 
-        "N° Parte Filtro Aire": "2914 5077 00", 
-        "N° Parte Kit": "2901-0776-00", 
-        "Manual": "manuales/manual_ga90.pdf"
-    },
-    "GA 132": {
-        "Litros de Aceite": "93 L", 
-        "Cant. Filtros Aceite": "3", 
-        "N° Parte Filtro Aceite": "1613 6105 90", 
-        "Cant. Filtros Aire": "1", 
-        "N° Parte Filtro Aire": "2914 5077 00", 
-        "N° Parte Kit": "2906 0604 00", 
-        "Tipo de Aceite": "Indurance / Indurance - Xtend Duty", 
-        "Manual": "manuales/manual_ga132.pdf"
-    },
-    "GA 250": {
-        "Litros de Aceite": "130 L", 
-        "Cant. Filtros Aceite": "3", 
-        "Cant. Filtros Aire": "2", 
-        "Tipo de Aceite": "Indurance", 
-        "Manual": "manuales/manual_ga250.pdf"
-    },
-    "ZT 37": {
-        "Litros de Aceite": "23 L", 
-        "Cant. Filtros Aceite": "1", 
-        "N° Parte Filtro Aceite": "1614 8747 00", 
-        "Cant. Filtros Aire": "1", 
-        "N° Parte Filtro Aire": "1613 7407 00", 
-        "N° Parte Kit": "2901-1122-00", 
-        "Tipo de Aceite": "Roto Z fluid", 
-        "Manual": "manuales/manual_zt37.pdf"
-    },
-    "CD 80+": {
-        "Filtro de Gases": "DD/PD 80", 
-        "Desecante": "Alúmina", 
-        "Kit Válvulas": "2901 1622 00", 
-        "Silenciador": "1621 1234 00", 
-        "Manual": "manuales/manual_cd80.pdf"
-    },
-    "CD 630": {
-        "Filtro de Gases": "DD/PD 630", 
-        "Desecante": "Alúmina", 
-        "Kit Válvulas": "2901 1625 00", 
-        "Silenciador": "1621 1235 00", 
-        "Manual": "manuales/manual_cd630.pdf"
-    }
+DEFAULT_SPECS = {
+    "GA 18": {"Litros de Aceite": "14.1 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1625 4800 00 / 1625 7525 01", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1630 2201 36 / 1625 2204 36", "Tipo de Aceite": "Roto Inject Fluid", "Manual": "manuales/manual_ga18.pdf"},
+    "GA 30": {"Litros de Aceite": "14.6 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1613 6105 00", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1613 7407 00", "N° Parte Kit": "2901-0326-00 / 2901 0325 00", "Tipo de Aceite": "Indurance - Xtend Duty", "Manual": "manuales/manual_ga30.pdf"},
+    "GA 37": {"Litros de Aceite": "14.6 L", "N° Parte Filtro Aceite": "1613 6105 00", "N° Parte Filtro Aire": "1613 7407 00", "N° Parte Separador": "1613 7408 00", "N° Parte Kit": "2901 1626 00 / 10-1613 8397 02", "Tipo de Aceite": "Indurance - Xtend Duty", "Manual": "manuales/manual_ga37.pdf"},
+    "GA 45": {"Litros de Aceite": "17.9 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1613 6105 00", "Cant. Filtros Aire": "1", "N° Parte Kit": "2901-0326-00 / 2901 0325 00", "Tipo de Aceite": "Indurance - Xtend Duty", "Manual": "manuales/manual_ga45.pdf"},
+    "GA 75": {"Litros de Aceite": "35.2 L", "Manual": "manuales/manual_ga75.pdf"},
+    "GA 90": {"Litros de Aceite": "69 L", "Cant. Filtros Aceite": "3", "N° Parte Filtro Aceite": "1613 6105 00", "N° Parte Filtro Aire": "2914 5077 00", "N° Parte Kit": "2901-0776-00", "Manual": "manuales/manual_ga90.pdf"},
+    "GA 132": {"Litros de Aceite": "93 L", "Cant. Filtros Aceite": "3", "N° Parte Filtro Aceite": "1613 6105 90", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "2914 5077 00", "N° Parte Kit": "2906 0604 00", "Tipo de Aceite": "Indurance / Indurance - Xtend Duty", "Manual": "manuales/manual_ga132.pdf"},
+    "GA 250": {"Litros de Aceite": "130 L", "Cant. Filtros Aceite": "3", "Cant. Filtros Aire": "2", "Tipo de Aceite": "Indurance", "Manual": "manuales/manual_ga250.pdf"},
+    "ZT 37": {"Litros de Aceite": "23 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1614 8747 00", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1613 7407 00", "N° Parte Kit": "2901-1122-00", "Tipo de Aceite": "Roto Z fluid", "Manual": "manuales/manual_zt37.pdf"},
+    "CD 80+": {"Filtro de Gases": "DD/PD 80", "Desecante": "Alúmina", "Kit Válvulas": "2901 1622 00", "Silenciador": "1621 1234 00", "Manual": "manuales/manual_cd80.pdf"},
+    "CD 630": {"Filtro de Gases": "DD/PD 630", "Desecante": "Alúmina", "Kit Válvulas": "2901 1625 00", "Silenciador": "1621 1235 00", "Manual": "manuales/manual_cd630.pdf"}
 }
 
 inventario_equipos = {
@@ -198,7 +118,7 @@ inventario_equipos = {
     "55-GC-015": ["GA 30", "API501440", "planta borra", "área húmeda"],
     "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "área húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "área húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "área húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "área húmeda"],
     "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "área húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "área húmeda"],
-    "Taller": ["GA 18+", "API335343", "laboratorio", "taller"]
+    "80-GC-001": ["GA 18", "API335343", "laboratorio", "taller mecánico"]
 }
 
 # =============================================================================
@@ -223,18 +143,76 @@ def init_db():
         except: pass
         cursor = conn.execute("SELECT COUNT(*) FROM contactos")
         if cursor.fetchone()[0] == 0: conn.execute("INSERT INTO contactos (nombre) VALUES ('Lorena Rojas')")
+        
+        conn.execute('''CREATE TABLE IF NOT EXISTS especificaciones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, modelo TEXT, clave TEXT, valor TEXT
+        )''')
+
+        conn.execute('''CREATE TABLE IF NOT EXISTS observaciones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, tag TEXT, fecha TEXT, usuario TEXT, texto TEXT
+        )''')
+
+        # 👇 NUEVA TABLA: GUARDA LOS DATOS ESPECÍFICOS DE CADA ÁREA/EQUIPO 👇
+        conn.execute('''CREATE TABLE IF NOT EXISTS datos_equipo (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, tag TEXT, clave TEXT, valor TEXT
+        )''')
+
+# --- Funciones de Gestión de Área (NUEVAS) ---
+def guardar_dato_equipo(tag, clave, valor):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("DELETE FROM datos_equipo WHERE tag = ? AND clave = ?", (tag, clave))
+        conn.execute("INSERT INTO datos_equipo (tag, clave, valor) VALUES (?, ?, ?)", (tag, clave, valor))
+
+def obtener_datos_equipo(tag):
+    datos = {}
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            for tag_db, clave, valor in conn.execute("SELECT tag, clave, valor FROM datos_equipo WHERE tag = ?", (tag,)).fetchall():
+                datos[clave] = valor
+    except: pass
+    return datos
+
+# --- Funciones de Bitácora ---
+def agregar_observacion(tag, usuario, texto):
+    if not texto.strip(): return
+    fecha_actual = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M")
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("INSERT INTO observaciones (tag, fecha, usuario, texto) VALUES (?, ?, ?, ?)", (tag, fecha_actual, usuario.title(), texto.strip()))
+
+def obtener_observaciones(tag):
+    with sqlite3.connect(DB_PATH) as conn:
+        return pd.read_sql_query("SELECT id, fecha, usuario, texto FROM observaciones WHERE tag = ? ORDER BY id DESC", conn, params=(tag,))
+
+def eliminar_observacion(id_obs):
+    try:
+        with sqlite3.connect(DB_PATH) as conn: conn.execute("DELETE FROM observaciones WHERE id = ?", (int(id_obs),))
+    except: pass
+
+# --- Otras funciones BD ---
+def guardar_especificacion_db(modelo, clave, valor):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("DELETE FROM especificaciones WHERE modelo = ? AND clave = ?", (modelo, clave))
+        conn.execute("INSERT INTO especificaciones (modelo, clave, valor) VALUES (?, ?, ?)", (modelo, clave, valor))
+
+def obtener_especificaciones(defaults):
+    specs = {k: dict(v) for k, v in defaults.items()}
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            for mod, clave, valor in conn.execute("SELECT modelo, clave, valor FROM especificaciones").fetchall():
+                if mod not in specs: specs[mod] = {}
+                specs[mod][clave] = valor
+    except: pass
+    return specs
 
 def obtener_contactos():
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            return [row[0] for row in conn.execute("SELECT nombre FROM contactos ORDER BY nombre").fetchall()]
+        with sqlite3.connect(DB_PATH) as conn: return [row[0] for row in conn.execute("SELECT nombre FROM contactos ORDER BY nombre").fetchall()]
     except: return ["Lorena Rojas"]
 
 def agregar_contacto(nombre):
     if not nombre.strip(): return
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.execute("INSERT INTO contactos (nombre) VALUES (?)", (nombre.strip().title(),))
+        with sqlite3.connect(DB_PATH) as conn: conn.execute("INSERT INTO contactos (nombre) VALUES (?)", (nombre.strip().title(),))
     except sqlite3.IntegrityError: pass 
 
 def eliminar_contacto(nombre):
@@ -244,8 +222,7 @@ def eliminar_contacto(nombre):
 
 def obtener_estados_actuales():
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            return {row[0]: row[1] for row in conn.execute('''SELECT tag, estado_equipo FROM intervenciones WHERE id IN (SELECT MAX(id) FROM intervenciones GROUP BY tag)''').fetchall()}
+        with sqlite3.connect(DB_PATH) as conn: return {row[0]: row[1] for row in conn.execute('''SELECT tag, estado_equipo FROM intervenciones WHERE id IN (SELECT MAX(id) FROM intervenciones GROUP BY tag)''').fetchall()}
     except: return {}
 
 def guardar_registro(data_tuple):
@@ -264,7 +241,7 @@ def obtener_todo_el_historial(tag):
         return pd.read_sql_query("SELECT fecha, tipo_intervencion, estado_equipo, generado_por as 'Cuenta Usuario', horas_marcha, horas_carga, p_carga, p_descarga, temp_salida FROM intervenciones WHERE tag = ? ORDER BY id DESC", conn, params=(tag,))
 
 # =============================================================================
-# 3. CONVERSIÓN A PDF HÍBRIDA (NUBE LINUX / LOCAL WINDOWS) - MODO DIAGNÓSTICO
+# 3. CONVERSIÓN A PDF HÍBRIDA
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -273,7 +250,7 @@ def convertir_a_pdf(ruta_docx):
     
     try:
         comando = ['libreoffice', '--headless', '--convert-to', 'pdf', ruta_absoluta, '--outdir', carpeta_salida]
-        proceso = subprocess.run(comando, capture_output=True, text=True)
+        subprocess.run(comando, capture_output=True, text=True)
         if os.path.exists(ruta_pdf): return ruta_pdf
     except Exception as e: pass
 
@@ -291,6 +268,7 @@ def convertir_a_pdf(ruta_docx):
 # 4. INICIALIZACIÓN DE LA APLICACIÓN Y VARIABLES DE SESIÓN
 # =============================================================================
 init_db()
+ESPECIFICACIONES = obtener_especificaciones(DEFAULT_SPECS)
 
 default_states = {
     'logged_in': False, 'usuario_actual': "", 'equipo_seleccionado': None,
@@ -381,7 +359,6 @@ else:
         st.markdown(f"### 📑 Revisión de Informes ({len(st.session_state.informes_pendientes)})")
         st.info("👀 **Para el Cliente:** Por favor, revise el documento oficial antes de firmar.")
 
-        # 👇 VISOR DE PDF INTEGRADO 👇
         for i, inf in enumerate(st.session_state.informes_pendientes):
             with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
                 if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
@@ -413,7 +390,6 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
             if canvas_tec.image_data is not None and canvas_cli.image_data is not None:
-                
                 def procesar_imagen_firma(img_data):
                     img = Image.fromarray(img_data.astype('uint8'), 'RGBA')
                     img_io = io.BytesIO()
@@ -431,7 +407,6 @@ else:
                             doc = DocxTemplate(inf['file_plantilla'])
                             context = inf['context']
                             
-                            # Inyectamos las firmas reales
                             context['firma_tecnico'] = InlineImage(doc, io_tec, width=Mm(40))
                             context['firma_cliente'] = InlineImage(doc, io_cli, width=Mm(40))
                             
@@ -471,7 +446,6 @@ else:
 
     # --- 6.2 VISTA CATÁLOGO (Dashboard interactivo) ---
     elif st.session_state.equipo_seleccionado is None:
-        
         st.markdown("""
             <div style="margin-top: 1.5rem; margin-bottom: 2rem; text-align: center;">
                 <div style="background-color: white; height: 2px; width: 100%;"></div>
@@ -481,10 +455,8 @@ else:
         """, unsafe_allow_html=True)
         
         st.title("🏭 Panel de Control de Equipos")
-        
         estados_db = obtener_estados_actuales()
         total_equipos = len(inventario_equipos)
-        
         operativos = sum(1 for tag in inventario_equipos.keys() if estados_db.get(tag, "Operativo") == "Operativo")
         detenidos = total_equipos - operativos
         
@@ -492,21 +464,16 @@ else:
         m1.metric("📦 Total Activos Mineros", total_equipos)
         m2.metric("🟢 Equipos Operativos", operativos)
         m3.metric("🔴 Fuera de Servicio", detenidos)
-        
         st.markdown("---")
         
         col_filtro, col_busqueda = st.columns([1.2, 2])
-        with col_filtro:
-            filtro_tipo = st.radio("🗂️ Categoría de Equipo:", ["Todos", "Compresores", "Secadores"], horizontal=True)
-        with col_busqueda:
-            busqueda = st.text_input("🔍 Buscar activo por TAG, Modelo o Área...", placeholder="Ejemplo: GA 250, 35-GC-006...").lower()
+        with col_filtro: filtro_tipo = st.radio("🗂️ Categoría de Equipo:", ["Todos", "Compresores", "Secadores"], horizontal=True)
+        with col_busqueda: busqueda = st.text_input("🔍 Buscar activo por TAG, Modelo o Área...", placeholder="Ejemplo: GA 250, 35-GC-006...").lower()
             
         st.markdown("<br>", unsafe_allow_html=True)
-        
         columnas = st.columns(4)
         contador = 0
         for tag, (modelo, serie, area, ubicacion) in inventario_equipos.items():
-            
             es_secador = "CD" in modelo.upper()
             if filtro_tipo == "Compresores" and es_secador: continue
             if filtro_tipo == "Secadores" and not es_secador: continue
@@ -533,10 +500,9 @@ else:
         c_btn, c_tit = st.columns([1, 4])
         with c_btn: st.button("⬅️ Volver", on_click=volver_catalogo, use_container_width=True)
         with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Servicio: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
-        
         st.markdown("<br>", unsafe_allow_html=True)
 
-        tab1, tab2, tab3 = st.tabs(["📋 1. Configuración y Parámetros", "📝 2. Diagnóstico Final", "📚 3. Ficha Técnica"])
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["📋 1. Configuración y Parámetros", "📝 2. Diagnóstico Final", "📚 3. Ficha Técnica", "🔍 4. Bitácora de Observaciones", "👤 5. Gestión de Área"])
         
         with tab1:
             st.markdown("### Datos de la Intervención")
@@ -557,14 +523,11 @@ else:
                 contactos_db = obtener_contactos()
                 opciones = ["➕ Escribir nuevo..."] + contactos_db
                 
-                if st.session_state.input_cliente in opciones:
-                    cli_idx = opciones.index(st.session_state.input_cliente)
-                else:
-                    cli_idx = 1 if len(contactos_db) > 0 else 0
+                if st.session_state.input_cliente in opciones: cli_idx = opciones.index(st.session_state.input_cliente)
+                else: cli_idx = 1 if len(contactos_db) > 0 else 0
                 
                 sc1, sc2 = st.columns([4, 1])
-                with sc1:
-                    cli_sel = st.selectbox("Contacto Cliente", opciones, index=cli_idx)
+                with sc1: cli_sel = st.selectbox("Contacto Cliente", opciones, index=cli_idx)
                 with sc2:
                     st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
                     if cli_sel != "➕ Escribir nuevo...":
@@ -586,14 +549,11 @@ else:
                     st.session_state.input_cliente = cli_sel
 
             st.markdown("<hr>", unsafe_allow_html=True)
-            
             st.markdown("### Mediciones del Equipo")
             c9, c10, c11, c12, c13, c14 = st.columns(6)
-            
             h_m = c9.number_input("Horas Marcha Totales", step=1, value=int(st.session_state.input_h_marcha), format="%d")
             h_c = c10.number_input("Horas en Carga", step=1, value=int(st.session_state.input_h_carga), format="%d")
             unidad_p = c11.selectbox("Unidad de Presión", ["Bar", "psi"])
-            
             p_c_str = c12.text_input("P. Carga", value=str(st.session_state.input_p_carga))
             p_d_str = c13.text_input("P. Descarga", value=str(st.session_state.input_p_descarga))
             t_salida_str = c14.text_input("Temp Salida (°C)", value=str(st.session_state.input_temp))
@@ -609,8 +569,6 @@ else:
             reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100)
             
             st.markdown("<br>", unsafe_allow_html=True)
-            
-            # 👇 AÑADIR A LA BANDEJA Y CREAR VISTA PREVIA 👇
             if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
                 if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
                 else:
@@ -629,7 +587,6 @@ else:
                 except: temp_db = 0.0
                 tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
                 
-                # --- MAGIA DE VISTA PREVIA ---
                 with st.spinner("Creando borrador del documento para vista preliminar..."):
                     doc_prev = DocxTemplate(file_plantilla)
                     ctx_prev = context.copy()
@@ -643,41 +600,131 @@ else:
                     ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
                 
                 st.session_state.informes_pendientes.append({
-                    "tag": tag_sel,
-                    "area": area_d,
-                    "tec1": tec1,
-                    "cli": cli_cont,
-                    "tipo_plan": tipo_plan,
-                    "file_plantilla": file_plantilla,
-                    "context": context,
-                    "tupla_db": tupla_db,
-                    "ruta_docx": ruta,
-                    "nombre_archivo_base": nombre_archivo,
-                    "ruta_prev_pdf": ruta_prev_pdf
+                    "tag": tag_sel, "area": area_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan,
+                    "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db,
+                    "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf
                 })
-                
                 st.success("✅ Datos guardados. Agrega otro equipo o ve a la bandeja para firmar.")
                 st.session_state.equipo_seleccionado = None
                 st.rerun()
 
         with tab3:
             st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
+            with st.expander("✏️ Agregar o Corregir Datos Faltantes (N° Parte, Aceite, etc.)"):
+                with st.form(key=f"form_specs_{tag_sel}"):
+                    st.info(f"💡 Lo que guardes aquí se actualizará para todos los equipos modelo **{mod_d}**.")
+                    c_e1, c_e2 = st.columns(2)
+                    opc_claves = ["N° Parte Filtro Aceite", "N° Parte Filtro Aire", "N° Parte Kit", "N° Parte Separador", "Litros de Aceite", "Tipo de Aceite", "Cant. Filtros Aceite", "Cant. Filtros Aire", "Otro dato nuevo..."]
+                    clave_sel = c_e1.selectbox("¿Qué dato vas a ingresar?", opc_claves)
+                    if clave_sel == "Otro dato nuevo...": clave_final = c_e1.text_input("Escribe el nombre del dato:")
+                    else: clave_final = clave_sel
+                    valor_final = c_e2.text_input("Ingresa el valor (Ej: 1613 6105 00):")
+                    
+                    if st.form_submit_button("💾 Guardar en Base de Datos", use_container_width=True):
+                        if clave_final and valor_final:
+                            guardar_especificacion_db(mod_d, clave_final.strip(), valor_final.strip())
+                            st.success("✅ ¡Dato guardado! Actualizando la ficha...")
+                            st.rerun()
+                        else: st.error("⚠️ Debes llenar el valor a guardar.")
+            
             if mod_d in ESPECIFICACIONES:
                 specs = {k: v for k, v in ESPECIFICACIONES[mod_d].items() if k != "Manual"}
-                cols = st.columns(3)
-                for i, (k, v) in enumerate(specs.items()):
-                    with cols[i % 3]:
-                        st.markdown(f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
-                
+                if specs:
+                    cols = st.columns(3)
+                    for i, (k, v) in enumerate(specs.items()):
+                        with cols[i % 3]: st.markdown(f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
+                else: st.info("No hay datos técnicos registrados aún. ¡Sé el primero en agregar uno arriba!")
+                    
                 st.markdown("<hr>", unsafe_allow_html=True)
                 st.markdown("### 📥 Documentación y Manuales")
                 if "Manual" in ESPECIFICACIONES[mod_d] and os.path.exists(ESPECIFICACIONES[mod_d]["Manual"]):
-                    with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f:
-                        st.download_button(label=f"📕 Descargar Manual de {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
+                    with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f: st.download_button(label=f"📕 Descargar Manual de {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
                 else: st.info("ℹ️ El manual o despiece para este modelo aún no ha sido cargado en la plataforma.")
-            else: st.warning("⚠️ No hay especificaciones técnicas registradas para este modelo.")
+            else: st.warning(f"⚠️ No hay especificaciones técnicas base para el modelo {mod_d}.")
+
+        with tab4:
+            st.markdown(f"### 🔍 Bitácora Permanente del Equipo: {tag_sel}")
+            st.info("💡 Usa este espacio para dejar notas importantes sobre el estado general del equipo, mañas, vibraciones, o condiciones crónicas para que los futuros técnicos las tengan en cuenta.")
+            
+            with st.form(key=f"form_obs_{tag_sel}"):
+                nueva_obs = st.text_area("Escribe una nueva observación o nota técnica para este equipo:", height=100)
+                if st.form_submit_button("➕ Dejar constancia en la bitácora", use_container_width=True):
+                    if nueva_obs:
+                        agregar_observacion(tag_sel, st.session_state.usuario_actual, nueva_obs)
+                        st.success("✅ Observación registrada con éxito.")
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ Debes escribir algo antes de guardar.")
+            
+            st.markdown("---")
+            st.markdown("#### 📜 Historial de Observaciones Anteriores")
+            df_obs = obtener_observaciones(tag_sel)
+            
+            if not df_obs.empty:
+                for _, row in df_obs.iterrows():
+                    col_obs, col_del = st.columns([11, 1])
+                    with col_obs:
+                        st.markdown(f"""
+                            <div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #FF6600;'>
+                                <small style='color: #aeb9cc;'><b>👤 Técnico: {row['usuario']}</b> &nbsp;|&nbsp; 📅 Fecha: {row['fecha']}</small><br>
+                                <span style='color: white; font-size: 1.05em;'>{row['texto']}</span>
+                            </div>
+                        """, unsafe_allow_html=True)
+                    with col_del:
+                        st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+                        if st.button("🗑️", key=f"del_obs_{row['id']}", help="Borrar esta nota"):
+                            eliminar_observacion(row['id'])
+                            st.rerun()
+            else:
+                st.caption("No hay observaciones registradas para este equipo aún. ¡Escribe la primera!")
+
+        # 👇 MAGIA ACTUALIZADA: PESTAÑA 5 CON PEA Y FRECUENCIA RADIAL 👇
+        with tab5:
+            st.markdown(f"### 👤 Información de Contactos y Seguridad del Área: {tag_sel}")
+            st.info("💡 Asigna y actualiza los dueños del área, el PEA y la frecuencia radial correspondientes a este equipo.")
+
+            with st.expander("✏️ Editar o Agregar Contacto / Dato de Seguridad"):
+                with st.form(key=f"form_area_{tag_sel}"):
+                    c_a1, c_a2 = st.columns(2)
+                    
+                    # 👈 ¡AQUÍ SE AGREGARON LAS NUEVAS OPCIONES!
+                    opc_area = ["Dueño de Área (Turno 1-3)", "Dueño de Área (Turno 2-4)", "PEA", "Frecuencia Radial", "Supervisor a cargo", "Jefe de Turno", "Otro cargo..."]
+                    clave_sel_area = c_a1.selectbox("¿Qué dato vas a ingresar?", opc_area)
+                    
+                    if clave_sel_area == "Otro cargo...":
+                        clave_final_area = c_a1.text_input("Escribe el nombre del cargo/dato:")
+                    else:
+                        clave_final_area = clave_sel_area
+                        
+                    valor_final_area = c_a2.text_input("Ingresa la información:")
+                    
+                    if st.form_submit_button("💾 Guardar Información", use_container_width=True):
+                        if clave_final_area and valor_final_area:
+                            guardar_dato_equipo(tag_sel, clave_final_area.strip(), valor_final_area.strip())
+                            st.success("✅ ¡Dato actualizado exitosamente!")
+                            st.rerun()
+                        else:
+                            st.error("⚠️ Debes llenar ambos campos.")
+
+            datos_equipo = obtener_datos_equipo(tag_sel)
+
+            # 👈 Tarjetas predeterminadas para que siempre aparezcan visibles
+            if "Dueño de Área (Turno 1-3)" not in datos_equipo: datos_equipo["Dueño de Área (Turno 1-3)"] = "No asignado"
+            if "Dueño de Área (Turno 2-4)" not in datos_equipo: datos_equipo["Dueño de Área (Turno 2-4)"] = "No asignado"
+            if "PEA" not in datos_equipo: datos_equipo["PEA"] = "No asignado"
+            if "Frecuencia Radial" not in datos_equipo: datos_equipo["Frecuencia Radial"] = "No asignada"
+
+            cols_area = st.columns(2)
+            for i, (k, v) in enumerate(datos_equipo.items()):
+                with cols_area[i % 2]:
+                    st.markdown(f"""
+                        <div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #FF6600;'>
+                            <span style='color: #aeb9cc; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br>
+                            <span style='color: white; font-size: 1.1em;'>{v}</span>
+                        </div>
+                    """, unsafe_allow_html=True)
 
         st.markdown("<br><hr>", unsafe_allow_html=True)
-        st.markdown("### 📋 Trazabilidad Histórica de Intervenciones")
+        st.markdown("### 📋 Trazabilidad Histórica de Intervenciones (Reportes Creados)")
         df_hist = obtener_todo_el_historial(tag_sel)
         if not df_hist.empty: st.dataframe(df_hist, use_container_width=True)
