@@ -2,3 +2,5 @@ streamlit
 docxtpl
 pandas
 streamlit-drawable-canvas
+gspread
+google-auth
