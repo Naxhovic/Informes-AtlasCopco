@@ -22,7 +22,6 @@ def aplicar_estilos_premium():
     st.markdown("""
         <style>
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --ac-light: #e6f2f7; --bhp-orange: #FF6600; }
-        /* Eliminamos el 'header {visibility: hidden;}' que rompía Edge */
         #MainMenu {visibility: hidden;} footer {visibility: hidden;}
         
         div.stButton > button:first-child {
@@ -76,7 +75,7 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. GOOGLE SHEETS Y CACHÉ OPTIMIZADO
+# 2. GOOGLE SHEETS Y CACHÉ OPTIMIZADO (A PRUEBA DE FALLOS)
 # =============================================================================
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
@@ -86,39 +85,52 @@ def get_gspread_client():
 
 def get_sheet(sheet_name):
     try:
-        doc = get_gspread_client().open("BaseDatos")
+        doc = get_gspread_client().open("Base_Datos_InforGem")
         if sheet_name in [hoja.title for hoja in doc.worksheets()]: return doc.worksheet(sheet_name)
         return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e:
         if "200" in str(e): st.error("🚨 El archivo debe ser Google Sheets nativo, no Excel (.xlsx).")
         return None
 
-# --- Helpers de Lectura/Escritura (Con Caché para Evitar Bloqueos) ---
+# --- Helpers de Lectura/Escritura ---
 def guardar_dato(sheet_name, row_data):
     try:
-        get_sheet(sheet_name).append_row(row_data)
-        st.cache_data.clear()
+        hoja = get_sheet(sheet_name)
+        if hoja: 
+            hoja.append_row(row_data)
+            st.cache_data.clear()
     except: pass
 
 @st.cache_data(ttl=60, show_spinner=False)
 def get_contactos():
-    try: return sorted(list(set([r[0] for r in get_sheet("contactos").get_all_values() if len(r)>1 and r[1]=="ACTIVO"])))
+    try:
+        hoja = get_sheet("contactos")
+        if not hoja: return []
+        return sorted(list(set([r[0] for r in hoja.get_all_values() if len(r)>1 and r[1]=="ACTIVO"])))
     except: return []
 
 @st.cache_data(ttl=60, show_spinner=False)
 def get_estados_equipos():
-    try: return {r[0]: r[17] for r in get_sheet("intervenciones").get_all_values() if len(r) >= 18}
+    try:
+        hoja = get_sheet("intervenciones")
+        if not hoja: return {}
+        return {r[0]: r[17] for r in hoja.get_all_values() if len(r) >= 18}
     except: return {}
 
 @st.cache_data(ttl=60, show_spinner=False)
 def get_historial(tag):
-    try: return pd.DataFrame([{"fecha": r[5], "tipo": r[15], "estado": r[17], "user": r[19], "h_marcha": r[12]} for r in get_sheet("intervenciones").get_all_values() if len(r) >= 20 and r[0] == tag][::-1])
+    try:
+        hoja = get_sheet("intervenciones")
+        if not hoja: return pd.DataFrame()
+        return pd.DataFrame([{"fecha": r[5], "tipo": r[15], "estado": r[17], "user": r[19], "h_marcha": r[12]} for r in hoja.get_all_values() if len(r) >= 20 and r[0] == tag][::-1])
     except: return pd.DataFrame()
 
 @st.cache_data(ttl=60, show_spinner=False)
 def get_ultimo_registro(tag):
     try:
-        for r in reversed(get_sheet("intervenciones").get_all_values()):
+        hoja = get_sheet("intervenciones")
+        if not hoja: return None
+        for r in reversed(hoja.get_all_values()):
             if len(r) >= 20 and r[0] == tag: return r
     except: pass
     return None
@@ -127,7 +139,9 @@ def get_ultimo_registro(tag):
 def get_especificaciones():
     specs = {k: dict(v) for k, v in DEFAULT_SPECS.items()}
     try:
-        for r in get_sheet("especificaciones").get_all_values():
+        hoja = get_sheet("especificaciones")
+        if not hoja: return specs
+        for r in hoja.get_all_values():
             if len(r) >= 3:
                 if r[0] not in specs: specs[r[0]] = {}
                 specs[r[0]][r[1]] = r[2]
@@ -136,13 +150,25 @@ def get_especificaciones():
 
 @st.cache_data(ttl=60, show_spinner=False)
 def get_datos_area(tag):
-    try: return {r[1]: r[2] for r in get_sheet("datos_equipo").get_all_values() if len(r) >= 3 and r[0] == tag}
+    try:
+        hoja = get_sheet("datos_equipo")
+        if not hoja: return {}
+        return {r[1]: r[2] for r in hoja.get_all_values() if len(r) >= 3 and r[0] == tag}
     except: return {}
 
 @st.cache_data(ttl=60, show_spinner=False)
 def get_observaciones(tag):
-    try: return pd.DataFrame([{"id": r[0], "fecha": r[2], "user": r[3], "texto": r[4]} for r in get_sheet("observaciones").get_all_values() if len(r)>=6 and r[1]==tag and r[5]=="ACTIVO"][::-1])
-    except: return pd.DataFrame()
+    cols = ["id", "fecha", "user", "texto"]
+    try:
+        hoja = get_sheet("observaciones")
+        if not hoja: return pd.DataFrame(columns=cols)
+        data = hoja.get_all_values()
+        obs = [{"id": r[0], "fecha": r[2], "user": r[3], "texto": r[4]} for r in data if len(r)>=6 and r[1]==tag and r[5]=="ACTIVO"]
+        df = pd.DataFrame(obs)
+        if not df.empty: return df.iloc[::-1]
+        return pd.DataFrame(columns=cols)
+    except: 
+        return pd.DataFrame(columns=cols)
 
 # =============================================================================
 # 3. UTILIDADES (PDF Y CORREO)
