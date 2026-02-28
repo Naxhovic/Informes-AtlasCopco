@@ -129,13 +129,16 @@ def get_gspread_client():
     return gspread.authorize(creds)
 
 def get_sheet(sheet_name):
-    client = get_gspread_client()
-    doc = client.open("Base_Datos_InforGem")
     try:
-        return doc.worksheet(sheet_name)
-    except gspread.WorksheetNotFound:
-        # Si la hoja no existe, la crea automáticamente (¡A prueba de errores!)
-        return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
+        client = get_gspread_client()
+        doc = client.open("BaseDatos")
+        try:
+            return doc.worksheet(sheet_name)
+        except gspread.WorksheetNotFound:
+            return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
+    except Exception as e:
+        st.error(f"🚨 ERROR DE CONEXIÓN CON GOOGLE: {e}")
+        return None
 
 # --- Funciones de Gestión de Área ---
 def guardar_dato_equipo(tag, clave, valor):
