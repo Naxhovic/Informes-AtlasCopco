@@ -119,7 +119,7 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. CONEXIÓN INMORTAL A GOOGLE SHEETS
+# 2. CONEXIÓN INMORTAL Y OPTIMIZADA A GOOGLE SHEETS (ANTI-BLOQUEOS)
 # =============================================================================
 @st.cache_resource
 def get_gspread_client():
@@ -131,22 +131,13 @@ def get_gspread_client():
 def get_sheet(sheet_name):
     try:
         client = get_gspread_client()
-        doc = client.open("BaseDatos")
-        
-        # Leemos todas las pestañas disponibles
+        doc = client.open("Base_Datos_InforGem")
         pestañas = [hoja.title for hoja in doc.worksheets()]
-        
-        if sheet_name in pestañas:
-            return doc.worksheet(sheet_name)
-        else:
-            # Si la pestaña no existe, el robot la crea solo
-            return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
-            
+        if sheet_name in pestañas: return doc.worksheet(sheet_name)
+        else: return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e:
-        if "200" in str(e):
-            st.error("🚨 ERROR DE FORMATO: Tu archivo en Google Drive es un Excel tradicional (.xlsx). Debes crear una 'Hoja de cálculo de Google' nativa.")
-        else:
-            st.error(f"🚨 ERROR DE CONEXIÓN CON GOOGLE: {e}")
+        if "200" in str(e): st.error("🚨 ERROR DE FORMATO: Tu archivo en Google Drive es un Excel tradicional (.xlsx). Debes crear una 'Hoja de cálculo de Google' nativa.")
+        else: st.error(f"🚨 ERROR DE CONEXIÓN CON GOOGLE: {e}")
         return None
 
 # --- Funciones de Gestión de Área ---
@@ -154,16 +145,17 @@ def guardar_dato_equipo(tag, clave, valor):
     try:
         sheet = get_sheet("datos_equipo")
         sheet.append_row([tag, clave, valor])
+        st.cache_data.clear() # Limpiamos memoria para ver los cambios de inmediato
     except: pass
 
+@st.cache_data(ttl=30, show_spinner=False)
 def obtener_datos_equipo(tag):
     datos = {}
     try:
         sheet = get_sheet("datos_equipo")
         data = sheet.get_all_values()
         for row in data:
-            if len(row) >= 3 and row[0] == tag:
-                datos[row[1]] = row[2] # El más nuevo sobrescribe al viejo
+            if len(row) >= 3 and row[0] == tag: datos[row[1]] = row[2]
     except: pass
     return datos
 
@@ -171,22 +163,21 @@ def obtener_datos_equipo(tag):
 def agregar_observacion(tag, usuario, texto):
     if not texto.strip(): return
     fecha_actual = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M")
-    id_obs = str(uuid.uuid4())[:8] # ID único corto
+    id_obs = str(uuid.uuid4())[:8]
     try:
         sheet = get_sheet("observaciones")
         sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"])
+        st.cache_data.clear()
     except: pass
 
+@st.cache_data(ttl=30, show_spinner=False)
 def obtener_observaciones(tag):
     try:
         sheet = get_sheet("observaciones")
         data = sheet.get_all_values()
-        obs = []
-        for row in data:
-            if len(row) >= 6 and row[1] == tag and row[5] == "ACTIVO":
-                obs.append({"id": row[0], "fecha": row[2], "usuario": row[3], "texto": row[4]})
+        obs = [{"id": r[0], "fecha": r[2], "usuario": r[3], "texto": r[4]} for r in data if len(r) >= 6 and r[1] == tag and r[5] == "ACTIVO"]
         df = pd.DataFrame(obs)
-        if not df.empty: return df.iloc[::-1] # Invierte para mostrar los más nuevos arriba
+        if not df.empty: return df.iloc[::-1]
         return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
     except: return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
 
@@ -195,6 +186,7 @@ def eliminar_observacion(id_obs):
         sheet = get_sheet("observaciones")
         cell = sheet.find(id_obs)
         if cell: sheet.update_cell(cell.row, 6, "ELIMINADO")
+        st.cache_data.clear()
     except: pass
 
 # --- Funciones de Especificaciones ---
@@ -202,14 +194,15 @@ def guardar_especificacion_db(modelo, clave, valor):
     try:
         sheet = get_sheet("especificaciones")
         sheet.append_row([modelo, clave, valor])
+        st.cache_data.clear()
     except: pass
 
+@st.cache_data(ttl=60, show_spinner=False)
 def obtener_especificaciones(defaults):
     specs = {k: dict(v) for k, v in defaults.items()}
     try:
         sheet = get_sheet("especificaciones")
-        data = sheet.get_all_values()
-        for row in data:
+        for row in sheet.get_all_values():
             if len(row) >= 3:
                 mod, clave, valor = row[0], row[1], row[2]
                 if mod not in specs: specs[mod] = {}
@@ -218,13 +211,12 @@ def obtener_especificaciones(defaults):
     return specs
 
 # --- Funciones de Contactos ---
+@st.cache_data(ttl=30, show_spinner=False)
 def obtener_contactos():
     try:
         sheet = get_sheet("contactos")
-        data = sheet.get_all_values()
-        contactos = [row[0] for row in data if len(row) > 1 and row[1] == "ACTIVO"]
-        if not contactos: return ["Lorena Rojas"]
-        return sorted(list(set(contactos)))
+        contactos = [row[0] for row in sheet.get_all_values() if len(row) > 1 and row[1] == "ACTIVO"]
+        return sorted(list(set(contactos))) if contactos else ["Lorena Rojas"]
     except: return ["Lorena Rojas"]
 
 def agregar_contacto(nombre):
@@ -232,56 +224,49 @@ def agregar_contacto(nombre):
     try:
         sheet = get_sheet("contactos")
         sheet.append_row([nombre.strip().title(), "ACTIVO"])
+        st.cache_data.clear()
     except: pass
 
 def eliminar_contacto(nombre):
     try:
         sheet = get_sheet("contactos")
-        cells = sheet.findall(nombre)
-        for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO")
+        for cell in sheet.findall(nombre): sheet.update_cell(cell.row, 2, "ELIMINADO")
+        st.cache_data.clear()
     except: pass
 
 # --- Funciones de Historial de Intervenciones ---
 def guardar_registro(data_tuple):
     try:
         sheet = get_sheet("intervenciones")
-        row = [str(x) for x in data_tuple]
-        sheet.append_row(row)
+        sheet.append_row([str(x) for x in data_tuple])
+        st.cache_data.clear()
     except: pass
 
+@st.cache_data(ttl=30, show_spinner=False)
 def buscar_ultimo_registro(tag):
     try:
         sheet = get_sheet("intervenciones")
-        data = sheet.get_all_values()
-        for row in reversed(data):
-            if len(row) >= 20 and row[0] == tag:
-                return (row[5], row[6], row[9], row[14], row[15], row[7], row[8], row[10], row[11], row[12], row[13], row[16], row[17])
+        for row in reversed(sheet.get_all_values()):
+            if len(row) >= 20 and row[0] == tag: return (row[5], row[6], row[9], row[14], row[15], row[7], row[8], row[10], row[11], row[12], row[13], row[16], row[17])
     except: pass
     return None
 
+@st.cache_data(ttl=30, show_spinner=False)
 def obtener_todo_el_historial(tag):
     try:
         sheet = get_sheet("intervenciones")
-        data = sheet.get_all_values()
-        hist = []
-        for row in data:
-            if len(row) >= 20 and row[0] == tag:
-                hist.append({
-                    "fecha": row[5], "tipo_intervencion": row[15], "estado_equipo": row[17],
-                    "Cuenta Usuario": row[19], "horas_marcha": row[12], "horas_carga": row[13],
-                    "p_carga": row[10], "p_descarga": row[11], "temp_salida": row[9]
-                })
+        hist = [{"fecha": r[5], "tipo_intervencion": r[15], "estado_equipo": r[17], "Cuenta Usuario": r[19], "horas_marcha": r[12], "horas_carga": r[13], "p_carga": r[10], "p_descarga": r[11], "temp_salida": r[9]} for r in sheet.get_all_values() if len(r) >= 20 and r[0] == tag]
         df = pd.DataFrame(hist)
         if not df.empty: return df.iloc[::-1]
         return pd.DataFrame()
     except: return pd.DataFrame()
 
+@st.cache_data(ttl=30, show_spinner=False)
 def obtener_estados_actuales():
     estados = {}
     try:
         sheet = get_sheet("intervenciones")
-        data = sheet.get_all_values()
-        for row in data:
+        for row in sheet.get_all_values():
             if len(row) >= 18: estados[row[0]] = row[17]
     except: pass
     return estados
@@ -548,7 +533,6 @@ else:
         with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Servicio: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # 👇 AHORA SOLO HAY 4 PESTAÑAS 👇
         tab1, tab2, tab3, tab4 = st.tabs(["📋 1. Reporte y Diagnóstico", "📚 2. Ficha Técnica", "🔍 3. Bitácora de Observaciones", "👤 4. Gestión de Área"])
         
         with tab1:
@@ -609,7 +593,6 @@ else:
             p_d_clean = p_d_str.replace(',', '.')
             t_salida_clean = t_salida_str.replace(',', '.')
 
-            # 👇 AQUÍ SE UNIÓ EL DIAGNÓSTICO FINAL A LA PESTAÑA 1 👇
             st.markdown("<hr>", unsafe_allow_html=True)
             st.markdown("### Evaluación y Diagnóstico Final")
             est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True)
@@ -656,7 +639,6 @@ else:
                 st.session_state.equipo_seleccionado = None
                 st.rerun()
 
-        # 👇 PESTAÑA 2: Ficha Técnica (Antes Pestaña 3) 👇
         with tab2:
             st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
             with st.expander("✏️ Agregar o Corregir Datos Faltantes (N° Parte, Aceite, etc.)"):
@@ -692,7 +674,6 @@ else:
                 else: st.info("ℹ️ El manual o despiece para este modelo aún no ha sido cargado en la plataforma.")
             else: st.warning(f"⚠️ No hay especificaciones técnicas base para el modelo {mod_d}.")
 
-        # 👇 PESTAÑA 3: Bitácora (Antes Pestaña 4) 👇
         with tab3:
             st.markdown(f"### 🔍 Bitácora Permanente del Equipo: {tag_sel}")
             st.info("💡 Usa este espacio para dejar notas importantes sobre el estado general del equipo.")
@@ -730,7 +711,6 @@ else:
             else:
                 st.caption("No hay observaciones registradas para este equipo aún. ¡Escribe la primera!")
 
-        # 👇 PESTAÑA 4: Gestión de Área (Antes Pestaña 5) 👇
         with tab4:
             st.markdown(f"### 👤 Información de Contactos y Seguridad del Área: {tag_sel}")
             st.info("💡 Asigna y actualiza los dueños del área, el PEA y la frecuencia radial correspondientes a este equipo.")
