@@ -395,8 +395,16 @@ else:
                     with open(inf['ruta_prev_pdf'], "rb") as f:
                         base64_pdf = base64.b64encode(f.read()).decode('utf-8')
                     
-                    # Cambiamos iframe por embed, que es mucho más compatible con Edge y Chrome
-                    pdf_display = f'<embed src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600" type="application/pdf">'
+                    # Intento corporativo definitivo con <object>
+                    pdf_display = f'''
+                    <object data="data:application/pdf;base64,{base64_pdf}" type="application/pdf" width="100%" height="600px">
+                        <div style="background-color: #2b303b; padding: 20px; border-radius: 8px; text-align: center;">
+                            <h4 style="color: #FF6600;">⚠️ Vista previa bloqueada por tu navegador</h4>
+                            <p style="color: white;">Las políticas de seguridad de este computador no permiten mostrar el PDF aquí adentro.</p>
+                            <p style="color: #aeb9cc;"><b>No te preocupes:</b> El documento se generó perfectamente. Usa el botón de abajo para descargarlo y revisarlo antes de firmar.</p>
+                        </div>
+                    </object>
+                    '''
                     st.markdown(pdf_display, unsafe_allow_html=True)
                     
                     with open(inf['ruta_prev_pdf'], "rb") as f2:
