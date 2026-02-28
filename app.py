@@ -12,6 +12,7 @@ from email import encoders
 from streamlit_drawable_canvas import st_canvas
 from PIL import Image
 import io
+import base64
 
 # =============================================================================
 # 0.1 CONFIGURACIÓN DE NUBE (ENVÍO SILENCIOSO AUTOMÁTICO)
@@ -37,7 +38,6 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     for item in lista_informes:
         ruta = item['ruta']
         
-        # 👇 MAGIA ANTI-OUTLOOK: Quitamos tildes del nombre del adjunto
         nombre_seguro = item["nombre_archivo"].replace("ó","o").replace("í","i").replace("á","a").replace("é","e").replace("ú","u")
         
         if os.path.exists(ruta):
@@ -46,7 +46,6 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
                 part.set_payload(f.read())
             encoders.encode_base64(part)
             
-            # 👇 Forzamos la etiqueta para que Outlook no lo vuelva .bin
             part.add_header('Content-Type', 'application/octet-stream', name=nombre_seguro)
             part.add_header('Content-Disposition', f'attachment; filename="{nombre_seguro}"')
             msg.attach(part)
@@ -100,17 +99,96 @@ aplicar_estilos_premium()
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "admin": "admin123"}
 
 ESPECIFICACIONES = {
-    "GA 18": {"Litros de Aceite": "8 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1623 0514 00", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1622 1855 01", "N° Parte Separador": "1622 0871 00", "Tipo de Aceite": "Roto Inject Fluid", "Manual": "manuales/manual_ga18.pdf"},
-    "GA 30": {"Litros de Aceite": "14.6 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1613 6105 00", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1613 7407 00", "N° Parte Kit": "2901-0326-00 - 2901 0325 00", "Tipo de Aceite": "Indurance - Xtend Duty", "Manual": "manuales/manual_ga30.pdf"},
-    "GA 37": {"Litros de Aceite": "14.6 L", "N° Parte Filtro Aceite": "1613 6105 00", "N° Parte Filtro Aire": "1613 7407 00", "N° Parte Separador": "1613 7408 00", "N° Parte Kit": "2901 1626 00 - 10-1613 8397 02 / 2901-0326-00", "Tipo de Aceite": "Indurance - Xtend Duty", "Manual": "manuales/manual_ga37.pdf"},
-    "GA 45": {"Litros de Aceite": "17.9 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1613 6105 00", "N° Parte Kit": "2901-0326-00 - 2901 0325 00", "Tipo de Aceite": "Indurance - Xtend Duty / Xtend duty", "Manual": "manuales/manual_ga45.pdf"},
-    "GA 75": {"Litros de Aceite": "35.2 L", "Manual": "manuales/manual_ga75.pdf"},
-    "GA 90": {"Litros de Aceite": "69 L", "Cant. Filtros Aceite": "3", "N° Parte Filtro Aceite": "1613 6105 00", "N° Parte Filtro Aire": "2914 5077 00", "N° Parte Kit": "2901-0776-00", "Manual": "manuales/manual_ga90.pdf"},
-    "GA 132": {"Litros de Aceite": "93 L", "Cant. Filtros Aceite": "3", "N° Parte Filtro Aceite": "1613 6105 90", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "2914 5077 00", "N° Parte Kit": "2906 0604 00", "Tipo de Aceite": "Indurance / Indurance - Xtend Duty", "Manual": "manuales/manual_ga132.pdf"},
-    "GA 250": {"Litros de Aceite": "130 L", "Cant. Filtros Aceite": "3", "Cant. Filtros Aire": "2", "Tipo de Aceite": "Indurance", "Manual": "manuales/manual_ga250.pdf"},
-    "ZT 37": {"Litros de Aceite": "11 L / 23 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1614 8747 00", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1613 7407 00", "N° Parte Kit": "2901-1122-00", "Tipo de Aceite": "Roto Z fluid", "Manual": "manuales/manual_zt37.pdf"},
-    "CD 80+": {"Filtro de Gases": "DD/PD 80", "Desecante": "Alúmina", "Kit Válvulas": "2901 1622 00", "Silenciador": "1621 1234 00", "Manual": "manuales/manual_cd80.pdf"},
-    "CD 630": {"Filtro de Gases": "DD/PD 630", "Desecante": "Alúmina", "Kit Válvulas": "2901 1625 00", "Silenciador": "1621 1235 00", "Manual": "manuales/manual_cd630.pdf"}
+    "GA 18+": {
+        "Litros de Aceite": "14.1 L", 
+        "Cant. Filtros Aceite": "1", 
+        "N° Parte Filtro Aceite": "1625 4800 00 / 1625 7525 01", 
+        "Cant. Filtros Aire": "1", 
+        "N° Parte Filtro Aire": "1630 2201 36 / 1625 2204 36", 
+        "Tipo de Aceite": "Roto Inject Fluid", 
+        "Manual": "manuales/manual_ga18.pdf"
+    },
+    "GA 30": {
+        "Litros de Aceite": "14.6 L", 
+        "Cant. Filtros Aceite": "1", 
+        "N° Parte Filtro Aceite": "1613 6105 00", 
+        "Cant. Filtros Aire": "1", 
+        "N° Parte Filtro Aire": "1613 7407 00", 
+        "N° Parte Kit": "2901-0326-00 / 2901 0325 00", 
+        "Tipo de Aceite": "Indurance - Xtend Duty", 
+        "Manual": "manuales/manual_ga30.pdf"
+    },
+    "GA 37": {
+        "Litros de Aceite": "14.6 L", 
+        "N° Parte Filtro Aceite": "1613 6105 00", 
+        "N° Parte Filtro Aire": "1613 7407 00", 
+        "N° Parte Separador": "1613 7408 00", 
+        "N° Parte Kit": "2901 1626 00 / 10-1613 8397 02", 
+        "Tipo de Aceite": "Indurance - Xtend Duty", 
+        "Manual": "manuales/manual_ga37.pdf"
+    },
+    "GA 45": {
+        "Litros de Aceite": "17.9 L", 
+        "Cant. Filtros Aceite": "1", 
+        "N° Parte Filtro Aceite": "1613 6105 00", 
+        "Cant. Filtros Aire": "1", 
+        "N° Parte Kit": "2901-0326-00 / 2901 0325 00", 
+        "Tipo de Aceite": "Indurance - Xtend Duty", 
+        "Manual": "manuales/manual_ga45.pdf"
+    },
+    "GA 75": {
+        "Litros de Aceite": "35.2 L", 
+        "Manual": "manuales/manual_ga75.pdf"
+    },
+    "GA 90": {
+        "Litros de Aceite": "69 L", 
+        "Cant. Filtros Aceite": "3", 
+        "N° Parte Filtro Aceite": "1613 6105 00", 
+        "N° Parte Filtro Aire": "2914 5077 00", 
+        "N° Parte Kit": "2901-0776-00", 
+        "Manual": "manuales/manual_ga90.pdf"
+    },
+    "GA 132": {
+        "Litros de Aceite": "93 L", 
+        "Cant. Filtros Aceite": "3", 
+        "N° Parte Filtro Aceite": "1613 6105 90", 
+        "Cant. Filtros Aire": "1", 
+        "N° Parte Filtro Aire": "2914 5077 00", 
+        "N° Parte Kit": "2906 0604 00", 
+        "Tipo de Aceite": "Indurance / Indurance - Xtend Duty", 
+        "Manual": "manuales/manual_ga132.pdf"
+    },
+    "GA 250": {
+        "Litros de Aceite": "130 L", 
+        "Cant. Filtros Aceite": "3", 
+        "Cant. Filtros Aire": "2", 
+        "Tipo de Aceite": "Indurance", 
+        "Manual": "manuales/manual_ga250.pdf"
+    },
+    "ZT 37": {
+        "Litros de Aceite": "23 L", 
+        "Cant. Filtros Aceite": "1", 
+        "N° Parte Filtro Aceite": "1614 8747 00", 
+        "Cant. Filtros Aire": "1", 
+        "N° Parte Filtro Aire": "1613 7407 00", 
+        "N° Parte Kit": "2901-1122-00", 
+        "Tipo de Aceite": "Roto Z fluid", 
+        "Manual": "manuales/manual_zt37.pdf"
+    },
+    "CD 80+": {
+        "Filtro de Gases": "DD/PD 80", 
+        "Desecante": "Alúmina", 
+        "Kit Válvulas": "2901 1622 00", 
+        "Silenciador": "1621 1234 00", 
+        "Manual": "manuales/manual_cd80.pdf"
+    },
+    "CD 630": {
+        "Filtro de Gases": "DD/PD 630", 
+        "Desecante": "Alúmina", 
+        "Kit Válvulas": "2901 1625 00", 
+        "Silenciador": "1621 1235 00", 
+        "Manual": "manuales/manual_cd630.pdf"
+    }
 }
 
 inventario_equipos = {
@@ -120,7 +198,7 @@ inventario_equipos = {
     "55-GC-015": ["GA 30", "API501440", "planta borra", "área húmeda"],
     "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "área húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "área húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "área húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "área húmeda"],
     "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "área húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "área húmeda"],
-    "TALLER MECÁNICO": ["GA 18", "API335343", "laboratorio", "taller mecánico"]
+    "Taller": ["GA 18+", "API335343", "laboratorio", "taller"]
 }
 
 # =============================================================================
@@ -220,7 +298,7 @@ default_states = {
     'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
     'input_reco': "", 'input_estado_eq': "Operativo",
-    'informes_pendientes': [], 'vista_firmas': False  # Nuevas variables para Firmas
+    'informes_pendientes': [], 'vista_firmas': False
 }
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
@@ -274,12 +352,10 @@ if not st.session_state.logged_in:
 # 6. PANTALLA PRINCIPAL: APLICACIÓN AUTENTICADA
 # =============================================================================
 else:
-    # Sidebar Corporativo 
     with st.sidebar:
         st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
 
-        # 👇 BOTÓN MÁGICO QUE APARECE SOLO SI HAY REPORTES EN COLA 👇
         if len(st.session_state.informes_pendientes) > 0:
             st.markdown("---")
             st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
@@ -301,29 +377,43 @@ else:
         with c_v2: 
             st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas Digital</h1>", unsafe_allow_html=True)
 
-        st.info("💡 **Instrucciones:** Dibuja las firmas en los recuadros usando el mouse o el dedo. Estas firmas se inyectarán automáticamente en todos los documentos de la lista de abajo.")
+        st.markdown("---")
+        st.markdown(f"### 📑 Revisión de Informes ({len(st.session_state.informes_pendientes)})")
+        st.info("👀 **Para el Cliente:** Por favor, revise el documento oficial antes de firmar.")
+
+        # 👇 VISOR DE PDF INTEGRADO 👇
+        for i, inf in enumerate(st.session_state.informes_pendientes):
+            with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
+                if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
+                    with open(inf['ruta_prev_pdf'], "rb") as f:
+                        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+                    
+                    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="500" type="application/pdf"></iframe>'
+                    st.markdown(pdf_display, unsafe_allow_html=True)
+                    
+                    with open(inf['ruta_prev_pdf'], "rb") as f2:
+                        st.download_button("📥 Descargar Borrador (PDF)", f2, file_name=f"Borrador_{inf['tag']}.pdf", mime="application/pdf", key=f"dl_prev_{i}")
+                else:
+                    st.warning("⚠️ La vista preliminar en PDF no está disponible. Verifique la conexión con LibreOffice.")
+
+        st.markdown("---")
+        st.info("💡 **Instrucciones:** Dibuja las firmas en los recuadros usando el mouse o el dedo.")
         
         c_tec, c_cli = st.columns(2)
         with c_tec:
             st.markdown("### 🧑‍🔧 Firma del Técnico")
             st.caption(f"Técnico: {st.session_state.informes_pendientes[0]['tec1'] if st.session_state.informes_pendientes else 'N/A'}")
-            canvas_tec = st_canvas(stroke_width=2, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
+            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
             
         with c_cli:
             st.markdown("### 👷 Firma del Cliente")
             st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
-            canvas_cli = st_canvas(stroke_width=2, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
-
-        st.markdown("---")
-        st.markdown(f"### 📑 Equipos a firmar simultáneamente ({len(st.session_state.informes_pendientes)}):")
-        for inf in st.session_state.informes_pendientes:
-            st.markdown(f"- **{inf['tag']}** ({inf['tipo_plan']}) - Área: {inf['area'].title()}")
+            canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
 
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🚀 Inyectar Firmas, Generar PDFs y Subir a la Nube", type="primary", use_container_width=True):
+        if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
             if canvas_tec.image_data is not None and canvas_cli.image_data is not None:
                 
-                # Función para convertir el trazo a imagen transparente compatible
                 def procesar_imagen_firma(img_data):
                     img = Image.fromarray(img_data.astype('uint8'), 'RGBA')
                     img_io = io.BytesIO()
@@ -335,14 +425,13 @@ else:
                 io_cli = procesar_imagen_firma(canvas_cli.image_data)
                 
                 informes_finales = []
-                with st.spinner("Fabricando documentos, inyectando firmas y transformando a PDF..."):
+                with st.spinner("Fabricando documentos oficiales, inyectando firmas y transformando a PDF..."):
                     try:
-                        os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
                         for inf in st.session_state.informes_pendientes:
                             doc = DocxTemplate(inf['file_plantilla'])
                             context = inf['context']
                             
-                            # Inyectamos la magia
+                            # Inyectamos las firmas reales
                             context['firma_tecnico'] = InlineImage(doc, io_tec, width=Mm(40))
                             context['firma_cliente'] = InlineImage(doc, io_cli, width=Mm(40))
                             
@@ -360,19 +449,17 @@ else:
                             
                             nombre_codificado = f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"
                             
-                            # Guardamos en la base de datos ahora que ya está terminado
                             tupla_lista = list(inf['tupla_db'])
                             tupla_lista[18] = ruta_final
                             guardar_registro(tuple(tupla_lista))
                             
                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": nombre_codificado})
                             
-                        # Enviar el paquete masivo al correo para Power Automate
                         exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
                         
                         if exito:
-                            st.success("✅ ¡PERFECTO! Los documentos se firmaron, convirtieron a PDF y ya están camino a tu OneDrive.")
-                            st.session_state.informes_pendientes = []  # Vaciamos la bandeja
+                            st.success("✅ ¡PERFECTO! Los documentos oficiales se firmaron, convirtieron a PDF y ya están camino a tu OneDrive.")
+                            st.session_state.informes_pendientes = []  
                             st.balloons()
                         else:
                             st.error(f"Error de red: {mensaje_correo}")
@@ -380,7 +467,7 @@ else:
                     except Exception as e:
                         st.error(f"Error sistémico procesando las firmas: {e}")
             else:
-                st.warning("⚠️ Asegúrate de dibujar en ambas pizarras antes de generar los PDFs.")
+                st.warning("⚠️ Asegúrate de dibujar en ambas pizarras antes de generar los PDFs finales.")
 
     # --- 6.2 VISTA CATÁLOGO (Dashboard interactivo) ---
     elif st.session_state.equipo_seleccionado is None:
@@ -523,7 +610,7 @@ else:
             
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # 👇 NUEVO BOTÓN: AÑADE AL CARRITO EN MEMORIA SIN FIRMAR TODAVÍA 👇
+            # 👇 AÑADIR A LA BANDEJA Y CREAR VISTA PREVIA 👇
             if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
                 if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
                 else:
@@ -540,10 +627,21 @@ else:
                 
                 try: temp_db = float(t_salida_clean)
                 except: temp_db = 0.0
-                
                 tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
                 
-                # Empacamos todos los datos en memoria
+                # --- MAGIA DE VISTA PREVIA ---
+                with st.spinner("Creando borrador del documento para vista preliminar..."):
+                    doc_prev = DocxTemplate(file_plantilla)
+                    ctx_prev = context.copy()
+                    ctx_prev['firma_tecnico'] = "" 
+                    ctx_prev['firma_cliente'] = ""
+                    doc_prev.render(ctx_prev)
+                    
+                    os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
+                    ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}")
+                    doc_prev.save(ruta_prev_docx)
+                    ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
+                
                 st.session_state.informes_pendientes.append({
                     "tag": tag_sel,
                     "area": area_d,
@@ -554,10 +652,11 @@ else:
                     "context": context,
                     "tupla_db": tupla_db,
                     "ruta_docx": ruta,
-                    "nombre_archivo_base": nombre_archivo
+                    "nombre_archivo_base": nombre_archivo,
+                    "ruta_prev_pdf": ruta_prev_pdf
                 })
                 
-                st.success("✅ Datos del equipo guardados. Puedes agregar otro equipo de la lista o ir a firmar y enviar.")
+                st.success("✅ Datos guardados. Agrega otro equipo o ve a la bandeja para firmar.")
                 st.session_state.equipo_seleccionado = None
                 st.rerun()
 
