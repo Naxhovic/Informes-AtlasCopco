@@ -131,13 +131,22 @@ def get_gspread_client():
 def get_sheet(sheet_name):
     try:
         client = get_gspread_client()
-        doc = client.open("BaseDatos")
-        try:
+        doc = client.open("Base_Datos_InforGem")
+        
+        # Leemos todas las pestañas disponibles
+        pestañas = [hoja.title for hoja in doc.worksheets()]
+        
+        if sheet_name in pestañas:
             return doc.worksheet(sheet_name)
-        except gspread.WorksheetNotFound:
+        else:
+            # Si la pestaña no existe, el robot la crea solo
             return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
+            
     except Exception as e:
-        st.error(f"🚨 ERROR DE CONEXIÓN CON GOOGLE: {e}")
+        if "200" in str(e):
+            st.error("🚨 ERROR DE FORMATO: Tu archivo en Google Drive es un Excel tradicional (.xlsx). Debes crear una 'Hoja de cálculo de Google' nativa.")
+        else:
+            st.error(f"🚨 ERROR DE CONEXIÓN CON GOOGLE: {e}")
         return None
 
 # --- Funciones de Gestión de Área ---
@@ -539,7 +548,8 @@ else:
         with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Servicio: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
-        tab1, tab2, tab3, tab4, tab5 = st.tabs(["📋 1. Configuración y Parámetros", "📝 2. Diagnóstico Final", "📚 3. Ficha Técnica", "🔍 4. Bitácora de Observaciones", "👤 5. Gestión de Área"])
+        # 👇 AHORA SOLO HAY 4 PESTAÑAS 👇
+        tab1, tab2, tab3, tab4 = st.tabs(["📋 1. Reporte y Diagnóstico", "📚 2. Ficha Técnica", "🔍 3. Bitácora de Observaciones", "👤 4. Gestión de Área"])
         
         with tab1:
             st.markdown("### Datos de la Intervención")
@@ -599,8 +609,9 @@ else:
             p_d_clean = p_d_str.replace(',', '.')
             t_salida_clean = t_salida_str.replace(',', '.')
 
-        with tab2:
-            st.markdown("### Evaluación y Conclusiones")
+            # 👇 AQUÍ SE UNIÓ EL DIAGNÓSTICO FINAL A LA PESTAÑA 1 👇
+            st.markdown("<hr>", unsafe_allow_html=True)
+            st.markdown("### Evaluación y Diagnóstico Final")
             est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True)
             est_ent = st.text_area("Descripción Condición Final:", key="input_estado", height=100)
             reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100)
@@ -645,7 +656,8 @@ else:
                 st.session_state.equipo_seleccionado = None
                 st.rerun()
 
-        with tab3:
+        # 👇 PESTAÑA 2: Ficha Técnica (Antes Pestaña 3) 👇
+        with tab2:
             st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
             with st.expander("✏️ Agregar o Corregir Datos Faltantes (N° Parte, Aceite, etc.)"):
                 with st.form(key=f"form_specs_{tag_sel}"):
@@ -680,7 +692,8 @@ else:
                 else: st.info("ℹ️ El manual o despiece para este modelo aún no ha sido cargado en la plataforma.")
             else: st.warning(f"⚠️ No hay especificaciones técnicas base para el modelo {mod_d}.")
 
-        with tab4:
+        # 👇 PESTAÑA 3: Bitácora (Antes Pestaña 4) 👇
+        with tab3:
             st.markdown(f"### 🔍 Bitácora Permanente del Equipo: {tag_sel}")
             st.info("💡 Usa este espacio para dejar notas importantes sobre el estado general del equipo.")
             
@@ -717,7 +730,8 @@ else:
             else:
                 st.caption("No hay observaciones registradas para este equipo aún. ¡Escribe la primera!")
 
-        with tab5:
+        # 👇 PESTAÑA 4: Gestión de Área (Antes Pestaña 5) 👇
+        with tab4:
             st.markdown(f"### 👤 Información de Contactos y Seguridad del Área: {tag_sel}")
             st.info("💡 Asigna y actualiza los dueños del área, el PEA y la frecuencia radial correspondientes a este equipo.")
 
