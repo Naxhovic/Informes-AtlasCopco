@@ -1,7 +1,7 @@
 import streamlit as st
 from docxtpl import DocxTemplate, InlineImage
 from docx.shared import Mm
-import os, sqlite3, subprocess
+import os, subprocess
 import pandas as pd
 import smtplib
 from email.message import EmailMessage
@@ -13,9 +13,13 @@ from streamlit_drawable_canvas import st_canvas
 from PIL import Image
 import io
 import base64
+import gspread
+from google.oauth2.service_account import Credentials
+import json
+import uuid
 
 # =============================================================================
-# 0.1 CONFIGURACIÓN DE NUBE (ENVÍO SILENCIOSO AUTOMÁTICO)
+# 0.1 CONFIGURACIÓN DE NUBE Y CORREO
 # =============================================================================
 RUTA_ONEDRIVE = "Reportes_Temporales" 
 MI_CORREO_CORPORATIVO = "ignacio.a.morales@atlascopco.com"  
@@ -44,7 +48,6 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
                 part = MIMEBase('application', 'octet-stream')
                 part.set_payload(f.read())
             encoders.encode_base64(part)
-            
             part.add_header('Content-Type', 'application/octet-stream', name=nombre_seguro)
             part.add_header('Content-Disposition', f'attachment; filename="{nombre_seguro}"')
             msg.attach(part)
@@ -60,7 +63,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
         return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 CONFIGURACIÓN DE PÁGINA Y ESTILOS CORPORATIVOS
+# 0.2 ESTILOS PREMIUM
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
 
@@ -74,18 +77,12 @@ def aplicar_estilos_premium():
             background-color: var(--ac-blue); color: white; border-radius: 6px; border: none;
             font-weight: 600; padding: 0.5rem 1rem; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        div.stButton > button:first-child:hover {
-            background-color: var(--ac-dark); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); color: white;
-        }
-        .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus {
-            border-color: var(--ac-blue) !important; box-shadow: 0 0 0 1px var(--ac-blue) !important;
-        }
+        div.stButton > button:first-child:hover { background-color: var(--ac-dark); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus { border-color: var(--ac-blue) !important; box-shadow: 0 0 0 1px var(--ac-blue) !important; }
         h1, h2, h3 { font-family: 'Segoe UI', sans-serif; font-weight: 700; }
         h1 { border-bottom: 3px solid var(--ac-blue); padding-bottom: 10px; }
-        div[data-testid="stVerticalBlock"] div[data-testid="stContainer"] { transition: all 0.3s ease; }
-        div[data-testid="stVerticalBlock"] div[data-testid="stContainer"]:hover { border-color: var(--ac-blue); }
         .stTabs [data-baseweb="tab-list"] { gap: 24px; }
-        .stTabs [data-baseweb="tab"] { height: 50px; white-space: pre-wrap; border-radius: 4px 4px 0 0; gap: 1px; padding-top: 10px; padding-bottom: 10px; }
+        .stTabs [data-baseweb="tab"] { height: 50px; white-space: pre-wrap; border-radius: 4px 4px 0 0; padding-top: 10px; padding-bottom: 10px; }
         .stTabs [aria-selected="true"] { background-color: var(--ac-light); border-bottom: 3px solid var(--ac-blue); color: var(--ac-dark); font-weight: 600; }
         </style>
     """, unsafe_allow_html=True)
@@ -93,7 +90,7 @@ def aplicar_estilos_premium():
 aplicar_estilos_premium()
 
 # =============================================================================
-# 1. DATOS MAESTROS Y CONFIGURACIÓN
+# 1. DATOS MAESTROS
 # =============================================================================
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "admin": "admin123"}
 
@@ -122,53 +119,39 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. FUNCIONES DE BASE DE DATOS Y ESTADO LOCAL (SQLite)
+# 2. CONEXIÓN INMORTAL A GOOGLE SHEETS
 # =============================================================================
-DB_PATH = "historial_equipos.db"
+@st.cache_resource
+def get_gspread_client():
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    creds_dict = json.loads(st.secrets["gcp_json"])
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    return gspread.authorize(creds)
 
-def init_db():
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute('''CREATE TABLE IF NOT EXISTS intervenciones (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, tag TEXT, modelo TEXT, numero_serie TEXT, area TEXT, ubicacion TEXT,
-            fecha TEXT, cliente_contacto TEXT, tecnico_1 TEXT, tecnico_2 TEXT, temp_salida REAL, p_carga TEXT, p_descarga TEXT,
-            horas_marcha REAL, horas_carga REAL, estado_entrega TEXT, tipo_intervencion TEXT, recomendaciones TEXT, 
-            estado_equipo TEXT DEFAULT 'Operativo', ruta_archivo TEXT, generado_por TEXT DEFAULT 'Desconocido'
-        )''')
-        cols = [info[1] for info in conn.execute("PRAGMA table_info(intervenciones)").fetchall()]
-        if "estado_equipo" not in cols: conn.execute("ALTER TABLE intervenciones ADD COLUMN estado_equipo TEXT DEFAULT 'Operativo'")
-        if "recomendaciones" not in cols: conn.execute("ALTER TABLE intervenciones ADD COLUMN recomendaciones TEXT")
-        if "generado_por" not in cols: conn.execute("ALTER TABLE intervenciones ADD COLUMN generado_por TEXT DEFAULT 'Desconocido'")
-        
-        try: conn.execute('''CREATE TABLE IF NOT EXISTS contactos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE)''')
-        except: pass
-        cursor = conn.execute("SELECT COUNT(*) FROM contactos")
-        if cursor.fetchone()[0] == 0: conn.execute("INSERT INTO contactos (nombre) VALUES ('Lorena Rojas')")
-        
-        conn.execute('''CREATE TABLE IF NOT EXISTS especificaciones (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, modelo TEXT, clave TEXT, valor TEXT
-        )''')
+def get_sheet(sheet_name):
+    client = get_gspread_client()
+    doc = client.open("Base_Datos_InforGem")
+    try:
+        return doc.worksheet(sheet_name)
+    except gspread.WorksheetNotFound:
+        # Si la hoja no existe, la crea automáticamente (¡A prueba de errores!)
+        return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
 
-        conn.execute('''CREATE TABLE IF NOT EXISTS observaciones (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, tag TEXT, fecha TEXT, usuario TEXT, texto TEXT
-        )''')
-
-        # 👇 NUEVA TABLA: GUARDA LOS DATOS ESPECÍFICOS DE CADA ÁREA/EQUIPO 👇
-        conn.execute('''CREATE TABLE IF NOT EXISTS datos_equipo (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, tag TEXT, clave TEXT, valor TEXT
-        )''')
-
-# --- Funciones de Gestión de Área (NUEVAS) ---
+# --- Funciones de Gestión de Área ---
 def guardar_dato_equipo(tag, clave, valor):
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("DELETE FROM datos_equipo WHERE tag = ? AND clave = ?", (tag, clave))
-        conn.execute("INSERT INTO datos_equipo (tag, clave, valor) VALUES (?, ?, ?)", (tag, clave, valor))
+    try:
+        sheet = get_sheet("datos_equipo")
+        sheet.append_row([tag, clave, valor])
+    except: pass
 
 def obtener_datos_equipo(tag):
     datos = {}
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            for tag_db, clave, valor in conn.execute("SELECT tag, clave, valor FROM datos_equipo WHERE tag = ?", (tag,)).fetchall():
-                datos[clave] = valor
+        sheet = get_sheet("datos_equipo")
+        data = sheet.get_all_values()
+        for row in data:
+            if len(row) >= 3 and row[0] == tag:
+                datos[row[1]] = row[2] # El más nuevo sobrescribe al viejo
     except: pass
     return datos
 
@@ -176,69 +159,120 @@ def obtener_datos_equipo(tag):
 def agregar_observacion(tag, usuario, texto):
     if not texto.strip(): return
     fecha_actual = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M")
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("INSERT INTO observaciones (tag, fecha, usuario, texto) VALUES (?, ?, ?, ?)", (tag, fecha_actual, usuario.title(), texto.strip()))
+    id_obs = str(uuid.uuid4())[:8] # ID único corto
+    try:
+        sheet = get_sheet("observaciones")
+        sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"])
+    except: pass
 
 def obtener_observaciones(tag):
-    with sqlite3.connect(DB_PATH) as conn:
-        return pd.read_sql_query("SELECT id, fecha, usuario, texto FROM observaciones WHERE tag = ? ORDER BY id DESC", conn, params=(tag,))
+    try:
+        sheet = get_sheet("observaciones")
+        data = sheet.get_all_values()
+        obs = []
+        for row in data:
+            if len(row) >= 6 and row[1] == tag and row[5] == "ACTIVO":
+                obs.append({"id": row[0], "fecha": row[2], "usuario": row[3], "texto": row[4]})
+        df = pd.DataFrame(obs)
+        if not df.empty: return df.iloc[::-1] # Invierte para mostrar los más nuevos arriba
+        return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
+    except: return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
 
 def eliminar_observacion(id_obs):
     try:
-        with sqlite3.connect(DB_PATH) as conn: conn.execute("DELETE FROM observaciones WHERE id = ?", (int(id_obs),))
+        sheet = get_sheet("observaciones")
+        cell = sheet.find(id_obs)
+        if cell: sheet.update_cell(cell.row, 6, "ELIMINADO")
     except: pass
 
-# --- Otras funciones BD ---
+# --- Funciones de Especificaciones ---
 def guardar_especificacion_db(modelo, clave, valor):
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("DELETE FROM especificaciones WHERE modelo = ? AND clave = ?", (modelo, clave))
-        conn.execute("INSERT INTO especificaciones (modelo, clave, valor) VALUES (?, ?, ?)", (modelo, clave, valor))
+    try:
+        sheet = get_sheet("especificaciones")
+        sheet.append_row([modelo, clave, valor])
+    except: pass
 
 def obtener_especificaciones(defaults):
     specs = {k: dict(v) for k, v in defaults.items()}
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            for mod, clave, valor in conn.execute("SELECT modelo, clave, valor FROM especificaciones").fetchall():
+        sheet = get_sheet("especificaciones")
+        data = sheet.get_all_values()
+        for row in data:
+            if len(row) >= 3:
+                mod, clave, valor = row[0], row[1], row[2]
                 if mod not in specs: specs[mod] = {}
                 specs[mod][clave] = valor
     except: pass
     return specs
 
+# --- Funciones de Contactos ---
 def obtener_contactos():
     try:
-        with sqlite3.connect(DB_PATH) as conn: return [row[0] for row in conn.execute("SELECT nombre FROM contactos ORDER BY nombre").fetchall()]
+        sheet = get_sheet("contactos")
+        data = sheet.get_all_values()
+        contactos = [row[0] for row in data if len(row) > 1 and row[1] == "ACTIVO"]
+        if not contactos: return ["Lorena Rojas"]
+        return sorted(list(set(contactos)))
     except: return ["Lorena Rojas"]
 
 def agregar_contacto(nombre):
     if not nombre.strip(): return
     try:
-        with sqlite3.connect(DB_PATH) as conn: conn.execute("INSERT INTO contactos (nombre) VALUES (?)", (nombre.strip().title(),))
-    except sqlite3.IntegrityError: pass 
+        sheet = get_sheet("contactos")
+        sheet.append_row([nombre.strip().title(), "ACTIVO"])
+    except: pass
 
 def eliminar_contacto(nombre):
     try:
-        with sqlite3.connect(DB_PATH) as conn: conn.execute("DELETE FROM contactos WHERE nombre = ?", (nombre,))
+        sheet = get_sheet("contactos")
+        cells = sheet.findall(nombre)
+        for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO")
     except: pass
 
-def obtener_estados_actuales():
-    try:
-        with sqlite3.connect(DB_PATH) as conn: return {row[0]: row[1] for row in conn.execute('''SELECT tag, estado_equipo FROM intervenciones WHERE id IN (SELECT MAX(id) FROM intervenciones GROUP BY tag)''').fetchall()}
-    except: return {}
-
+# --- Funciones de Historial de Intervenciones ---
 def guardar_registro(data_tuple):
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute('''INSERT INTO intervenciones 
-            (tag, modelo, numero_serie, area, ubicacion, fecha, cliente_contacto, tecnico_1, tecnico_2, temp_salida, 
-            p_carga, p_descarga, horas_marcha, horas_carga, estado_entrega, tipo_intervencion, recomendaciones, estado_equipo, ruta_archivo, generado_por)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', data_tuple)
+    try:
+        sheet = get_sheet("intervenciones")
+        row = [str(x) for x in data_tuple]
+        sheet.append_row(row)
+    except: pass
 
 def buscar_ultimo_registro(tag):
-    with sqlite3.connect(DB_PATH) as conn:
-        return conn.execute('''SELECT fecha, cliente_contacto, temp_salida, estado_entrega, tipo_intervencion, tecnico_1, tecnico_2, p_carga, p_descarga, horas_marcha, horas_carga, recomendaciones, estado_equipo FROM intervenciones WHERE tag = ? ORDER BY id DESC LIMIT 1''', (tag,)).fetchone()
+    try:
+        sheet = get_sheet("intervenciones")
+        data = sheet.get_all_values()
+        for row in reversed(data):
+            if len(row) >= 20 and row[0] == tag:
+                return (row[5], row[6], row[9], row[14], row[15], row[7], row[8], row[10], row[11], row[12], row[13], row[16], row[17])
+    except: pass
+    return None
 
 def obtener_todo_el_historial(tag):
-    with sqlite3.connect(DB_PATH) as conn:
-        return pd.read_sql_query("SELECT fecha, tipo_intervencion, estado_equipo, generado_por as 'Cuenta Usuario', horas_marcha, horas_carga, p_carga, p_descarga, temp_salida FROM intervenciones WHERE tag = ? ORDER BY id DESC", conn, params=(tag,))
+    try:
+        sheet = get_sheet("intervenciones")
+        data = sheet.get_all_values()
+        hist = []
+        for row in data:
+            if len(row) >= 20 and row[0] == tag:
+                hist.append({
+                    "fecha": row[5], "tipo_intervencion": row[15], "estado_equipo": row[17],
+                    "Cuenta Usuario": row[19], "horas_marcha": row[12], "horas_carga": row[13],
+                    "p_carga": row[10], "p_descarga": row[11], "temp_salida": row[9]
+                })
+        df = pd.DataFrame(hist)
+        if not df.empty: return df.iloc[::-1]
+        return pd.DataFrame()
+    except: return pd.DataFrame()
+
+def obtener_estados_actuales():
+    estados = {}
+    try:
+        sheet = get_sheet("intervenciones")
+        data = sheet.get_all_values()
+        for row in data:
+            if len(row) >= 18: estados[row[0]] = row[17]
+    except: pass
+    return estados
 
 # =============================================================================
 # 3. CONVERSIÓN A PDF HÍBRIDA
@@ -252,7 +286,7 @@ def convertir_a_pdf(ruta_docx):
         comando = ['libreoffice', '--headless', '--convert-to', 'pdf', ruta_absoluta, '--outdir', carpeta_salida]
         subprocess.run(comando, capture_output=True, text=True)
         if os.path.exists(ruta_pdf): return ruta_pdf
-    except Exception as e: pass
+    except: pass
 
     try:
         import pythoncom
@@ -260,14 +294,13 @@ def convertir_a_pdf(ruta_docx):
         pythoncom.CoInitialize()
         convert(ruta_absoluta, ruta_pdf)
         if os.path.exists(ruta_pdf): return ruta_pdf
-    except Exception as e: pass
+    except: pass
         
     return None
 
 # =============================================================================
 # 4. INICIALIZACIÓN DE LA APLICACIÓN Y VARIABLES DE SESIÓN
 # =============================================================================
-init_db()
 ESPECIFICACIONES = obtener_especificaciones(DEFAULT_SPECS)
 
 default_states = {
@@ -424,6 +457,7 @@ else:
                             
                             nombre_codificado = f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"
                             
+                            # Guardamos en Google Sheets
                             tupla_lista = list(inf['tupla_db'])
                             tupla_lista[18] = ruta_final
                             guardar_registro(tuple(tupla_lista))
@@ -621,11 +655,12 @@ else:
                     valor_final = c_e2.text_input("Ingresa el valor (Ej: 1613 6105 00):")
                     
                     if st.form_submit_button("💾 Guardar en Base de Datos", use_container_width=True):
-                        if clave_final and valor_final:
-                            guardar_especificacion_db(mod_d, clave_final.strip(), valor_final.strip())
-                            st.success("✅ ¡Dato guardado! Actualizando la ficha...")
-                            st.rerun()
-                        else: st.error("⚠️ Debes llenar el valor a guardar.")
+                        with st.spinner("Guardando en la nube..."):
+                            if clave_final and valor_final:
+                                guardar_especificacion_db(mod_d, clave_final.strip(), valor_final.strip())
+                                st.success("✅ ¡Dato guardado en Google Sheets!")
+                                st.rerun()
+                            else: st.error("⚠️ Debes llenar el valor a guardar.")
             
             if mod_d in ESPECIFICACIONES:
                 specs = {k: v for k, v in ESPECIFICACIONES[mod_d].items() if k != "Manual"}
@@ -644,17 +679,18 @@ else:
 
         with tab4:
             st.markdown(f"### 🔍 Bitácora Permanente del Equipo: {tag_sel}")
-            st.info("💡 Usa este espacio para dejar notas importantes sobre el estado general del equipo, mañas, vibraciones, o condiciones crónicas para que los futuros técnicos las tengan en cuenta.")
+            st.info("💡 Usa este espacio para dejar notas importantes sobre el estado general del equipo.")
             
             with st.form(key=f"form_obs_{tag_sel}"):
                 nueva_obs = st.text_area("Escribe una nueva observación o nota técnica para este equipo:", height=100)
                 if st.form_submit_button("➕ Dejar constancia en la bitácora", use_container_width=True):
-                    if nueva_obs:
-                        agregar_observacion(tag_sel, st.session_state.usuario_actual, nueva_obs)
-                        st.success("✅ Observación registrada con éxito.")
-                        st.rerun()
-                    else:
-                        st.warning("⚠️ Debes escribir algo antes de guardar.")
+                    with st.spinner("Guardando en la nube..."):
+                        if nueva_obs:
+                            agregar_observacion(tag_sel, st.session_state.usuario_actual, nueva_obs)
+                            st.success("✅ Observación registrada con éxito en Google Sheets.")
+                            st.rerun()
+                        else:
+                            st.warning("⚠️ Debes escribir algo antes de guardar.")
             
             st.markdown("---")
             st.markdown("#### 📜 Historial de Observaciones Anteriores")
@@ -678,7 +714,6 @@ else:
             else:
                 st.caption("No hay observaciones registradas para este equipo aún. ¡Escribe la primera!")
 
-        # 👇 MAGIA ACTUALIZADA: PESTAÑA 5 CON PEA Y FRECUENCIA RADIAL 👇
         with tab5:
             st.markdown(f"### 👤 Información de Contactos y Seguridad del Área: {tag_sel}")
             st.info("💡 Asigna y actualiza los dueños del área, el PEA y la frecuencia radial correspondientes a este equipo.")
@@ -686,29 +721,21 @@ else:
             with st.expander("✏️ Editar o Agregar Contacto / Dato de Seguridad"):
                 with st.form(key=f"form_area_{tag_sel}"):
                     c_a1, c_a2 = st.columns(2)
-                    
-                    # 👈 ¡AQUÍ SE AGREGARON LAS NUEVAS OPCIONES!
                     opc_area = ["Dueño de Área (Turno 1-3)", "Dueño de Área (Turno 2-4)", "PEA", "Frecuencia Radial", "Supervisor a cargo", "Jefe de Turno", "Otro cargo..."]
                     clave_sel_area = c_a1.selectbox("¿Qué dato vas a ingresar?", opc_area)
-                    
-                    if clave_sel_area == "Otro cargo...":
-                        clave_final_area = c_a1.text_input("Escribe el nombre del cargo/dato:")
-                    else:
-                        clave_final_area = clave_sel_area
-                        
+                    if clave_sel_area == "Otro cargo...": clave_final_area = c_a1.text_input("Escribe el nombre del cargo/dato:")
+                    else: clave_final_area = clave_sel_area
                     valor_final_area = c_a2.text_input("Ingresa la información:")
                     
                     if st.form_submit_button("💾 Guardar Información", use_container_width=True):
-                        if clave_final_area and valor_final_area:
-                            guardar_dato_equipo(tag_sel, clave_final_area.strip(), valor_final_area.strip())
-                            st.success("✅ ¡Dato actualizado exitosamente!")
-                            st.rerun()
-                        else:
-                            st.error("⚠️ Debes llenar ambos campos.")
+                        with st.spinner("Guardando en la nube..."):
+                            if clave_final_area and valor_final_area:
+                                guardar_dato_equipo(tag_sel, clave_final_area.strip(), valor_final_area.strip())
+                                st.success("✅ ¡Dato actualizado exitosamente en Google Sheets!")
+                                st.rerun()
+                            else: st.error("⚠️ Debes llenar ambos campos.")
 
             datos_equipo = obtener_datos_equipo(tag_sel)
-
-            # 👈 Tarjetas predeterminadas para que siempre aparezcan visibles
             if "Dueño de Área (Turno 1-3)" not in datos_equipo: datos_equipo["Dueño de Área (Turno 1-3)"] = "No asignado"
             if "Dueño de Área (Turno 2-4)" not in datos_equipo: datos_equipo["Dueño de Área (Turno 2-4)"] = "No asignado"
             if "PEA" not in datos_equipo: datos_equipo["PEA"] = "No asignado"
