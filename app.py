@@ -65,7 +65,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
 # =============================================================================
 # 0.2 ESTILOS PREMIUM
 # =============================================================================
-st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
+st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
 def aplicar_estilos_premium():
     st.markdown("""
