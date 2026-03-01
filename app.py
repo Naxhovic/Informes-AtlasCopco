@@ -52,7 +52,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (Corregido y Limpio)
+# 0.2 ESTILOS PREMIUM (Diseño UI/UX NATIVO)
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
 
@@ -60,54 +60,50 @@ def aplicar_estilos_premium():
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap');
-        
-        :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; --bg-card: #151a22; }
-        
+        :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, [class*="css"] { font-family: 'Montserrat', sans-serif !important; }
-        
         #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
         
+        /* Botones estándar (Guardar, Login) */
         div.stButton > button:first-child {
             background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%);
-            color: white; border-radius: 8px; border: none; font-weight: 600; letter-spacing: 0.5px;
-            padding: 0.6rem 1.2rem; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem;
+            transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4);
         }
+        div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
         
-        div.stButton > button:first-child:hover { 
-            transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 124, 166, 0.6); 
-        }
-
-        div[data-testid="column"] div.stButton > button {
+        /* Animación de Tarjetas Nativas (Hover 3D) */
+        [data-testid="stVerticalBlockBorderWrapper"] {
             background: linear-gradient(145deg, #1a212b, #151a22) !important;
-            border: 1px solid #2b3543 !important;
-            border-radius: 12px !important;
-            color: white !important;
-            font-size: 1.4rem !important;
-            font-weight: 800 !important;
-            padding: 1.5rem 1rem !important;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-            width: 100% !important;
+            border-radius: 12px !important; border: 1px solid #2b3543 !important;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important;
         }
-        
-        div[data-testid="column"] div.stButton > button:hover {
+        [data-testid="stVerticalBlockBorderWrapper"]:hover {
             transform: translateY(-6px) !important;
+            box-shadow: 0 10px 25px rgba(0, 124, 166, 0.25) !important;
             border-color: var(--ac-blue) !important;
-            box-shadow: 0 12px 25px rgba(0, 124, 166, 0.3) !important;
-            background: #1e2530 !important;
         }
         
+        /* MAGIA: Diseño especial SÓLO para el botón del TAG en el catálogo */
+        div[class^="st-key-btn_"] button {
+            background: transparent !important; border: 1px solid rgba(255,255,255,0.05) !important;
+            color: white !important; font-size: 1.6rem !important; font-weight: 800 !important;
+            padding: 1.2rem !important; border-radius: 8px !important; box-shadow: none !important;
+        }
+        div[class^="st-key-btn_"] button:hover {
+            background: rgba(0, 124, 166, 0.2) !important; border-color: var(--ac-blue) !important;
+            color: #fff !important; box-shadow: inset 0 0 15px rgba(0,124,166,0.3) !important;
+        }
+        
+        /* Entradas de texto */
         .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select { 
             border-radius: 6px !important; border: 1px solid #2b3543 !important; 
-            background-color: #1e2530 !important; color: white !important; transition: all 0.3s ease;
+            background-color: #1e2530 !important; color: white !important;
         }
-        
         .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus { 
-            border-color: var(--bhp-orange) !important; box-shadow: 0 0 10px rgba(255, 102, 0, 0.3) !important; 
+            border-color: var(--bhp-orange) !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.3) !important; 
         }
-        
-        .stTabs [data-baseweb="tab-list"] { gap: 10px; border-bottom: 2px solid #2b3543; padding-bottom: 5px; }
-        .stTabs [data-baseweb="tab"] { background-color: transparent; border: none; color: #8c9eb5; font-weight: 600; }
+        .stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #2b3543; }
         .stTabs [aria-selected="true"] { color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; }
         </style>
     """, unsafe_allow_html=True)
@@ -136,7 +132,7 @@ inventario_equipos = {
     "55-GC-015": ["GA 30", "API501440", "planta borra", "área húmeda"],
     "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "área húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "área húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "área húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "área húmeda"],
     "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "área húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "área húmeda"],
-    "80-GC-001": ["GA 18", "API335343", "Taller", "Taller"]
+    "Taller": ["GA 18", "API335343", "Taller", "Taller"]
 }
 
 # =============================================================================
@@ -383,9 +379,7 @@ else:
                     if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
                         try: pdf_viewer(inf['ruta_prev_pdf'], width=700, height=600)
                         except Exception as e: st.error(f"No se pudo desplegar el visor: {e}")
-                        
                         st.markdown("<br>", unsafe_allow_html=True)
-                        # DOS BOTONES: PDF y Word
                         col_dl1, col_dl2 = st.columns(2)
                         with col_dl1:
                             with open(inf['ruta_prev_pdf'], "rb") as f2: 
@@ -461,18 +455,15 @@ else:
             if busqueda in tag.lower() or busqueda in area.lower() or busqueda in modelo.lower():
                 estado = estados_db.get(tag, "Operativo")
                 if estado == "Operativo":
-                    color_borde = "#00e676"; badge_html = "<span style='background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid #00e676; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 0 10px rgba(0,230,118,0.4); text-transform: uppercase; letter-spacing: 1px;'>OPERATIVO</span>"
+                    color_borde = "#00e676"; badge_html = "<div style='background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid #00e676; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-block;'>OPERATIVO</div>"
                 else:
-                    color_borde = "#ff1744"; badge_html = "<span style='background: rgba(255,23,68,0.15); color: #ff1744; border: 1px solid #ff1744; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 0 10px rgba(255,23,68,0.4); text-transform: uppercase; letter-spacing: 1px;'>FUERA DE SERVICIO</span>"
+                    color_borde = "#ff1744"; badge_html = "<div style='background: rgba(255,23,68,0.15); color: #ff1744; border: 1px solid #ff1744; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-block;'>FUERA DE SERVICIO</div>"
                 
                 with columnas[contador % 4]:
-                    st.markdown(f"""
-                    <div class="tarjeta-equipo" style="border-top: 4px solid {color_borde};">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">{badge_html}</div>
-                        <h3 style="color: white; margin: 0 0 5px 0; font-size: 1.4rem; font-weight: 800;">{tag}</h3>
-                        <p style="color: #8c9eb5; margin: 0; font-size: 0.9rem; font-weight: 400;"><strong style="color:#007CA6;">{modelo}</strong> &bull; {area.title()}</p>
-                    </div>""", unsafe_allow_html=True)
-                    st.button(" ", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
+                    with st.container(border=True):
+                        st.markdown(f"<div style='border-top: 4px solid {color_borde}; padding-top: 10px; text-align: center; margin-top:-10px;'>{badge_html}</div>", unsafe_allow_html=True)
+                        st.button(f"{tag}", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
+                        st.markdown(f"<p style='color: #8c9eb5; margin-top: 5px; font-size: 0.85rem; text-align: center;'><strong style='color:#007CA6;'>{modelo}</strong> &bull; {area.title()}</p>", unsafe_allow_html=True)
                 contador += 1
 
     # --- 6.3 VISTA FORMULARIO Y GENERACIÓN ---
