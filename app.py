@@ -154,17 +154,21 @@ def get_sheet(sheet_name):
 def guardar_dato_equipo(tag, clave, valor):
     try:
         sheet = get_sheet("datos_equipo")
-        sheet.append_row([tag, clave, valor])
+        if sheet:
+            sheet.append_row([tag, clave, valor])
+            st.cache_data.clear() # Limpia la memoria al guardar
     except: pass
 
+@st.cache_data(ttl=60, show_spinner=False)
 def obtener_datos_equipo(tag):
     datos = {}
     try:
         sheet = get_sheet("datos_equipo")
-        data = sheet.get_all_values()
-        for row in data:
-            if len(row) >= 3 and row[0] == tag:
-                datos[row[1]] = row[2] # El más nuevo sobrescribe al viejo
+        if sheet:
+            data = sheet.get_all_values()
+            for row in data:
+                if len(row) >= 3 and row[0] == tag:
+                    datos[row[1]] = row[2]
     except: pass
     return datos
 
@@ -172,56 +176,67 @@ def obtener_datos_equipo(tag):
 def agregar_observacion(tag, usuario, texto):
     if not texto.strip(): return
     fecha_actual = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M")
-    id_obs = str(uuid.uuid4())[:8] # ID único corto
+    id_obs = str(uuid.uuid4())[:8] 
     try:
         sheet = get_sheet("observaciones")
-        sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"])
+        if sheet:
+            sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"])
+            st.cache_data.clear()
     except: pass
 
+@st.cache_data(ttl=60, show_spinner=False)
 def obtener_observaciones(tag):
+    cols = ["id", "fecha", "usuario", "texto"]
     try:
         sheet = get_sheet("observaciones")
+        if not sheet: return pd.DataFrame(columns=cols)
         data = sheet.get_all_values()
-        obs = []
-        for row in data:
-            if len(row) >= 6 and row[1] == tag and row[5] == "ACTIVO":
-                obs.append({"id": row[0], "fecha": row[2], "usuario": row[3], "texto": row[4]})
+        obs = [{"id": r[0], "fecha": r[2], "usuario": r[3], "texto": r[4]} for r in data if len(r) >= 6 and r[1] == tag and r[5] == "ACTIVO"]
         df = pd.DataFrame(obs)
-        if not df.empty: return df.iloc[::-1] # Invierte para mostrar los más nuevos arriba
-        return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
-    except: return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
+        if not df.empty: return df.iloc[::-1] 
+        return pd.DataFrame(columns=cols)
+    except: return pd.DataFrame(columns=cols)
 
 def eliminar_observacion(id_obs):
     try:
         sheet = get_sheet("observaciones")
-        cell = sheet.find(id_obs)
-        if cell: sheet.update_cell(cell.row, 6, "ELIMINADO")
+        if sheet:
+            cell = sheet.find(id_obs)
+            if cell: 
+                sheet.update_cell(cell.row, 6, "ELIMINADO")
+                st.cache_data.clear()
     except: pass
 
 # --- Funciones de Especificaciones ---
 def guardar_especificacion_db(modelo, clave, valor):
     try:
         sheet = get_sheet("especificaciones")
-        sheet.append_row([modelo, clave, valor])
+        if sheet:
+            sheet.append_row([modelo, clave, valor])
+            st.cache_data.clear()
     except: pass
 
+@st.cache_data(ttl=60, show_spinner=False)
 def obtener_especificaciones(defaults):
     specs = {k: dict(v) for k, v in defaults.items()}
     try:
         sheet = get_sheet("especificaciones")
-        data = sheet.get_all_values()
-        for row in data:
-            if len(row) >= 3:
-                mod, clave, valor = row[0], row[1], row[2]
-                if mod not in specs: specs[mod] = {}
-                specs[mod][clave] = valor
+        if sheet:
+            data = sheet.get_all_values()
+            for row in data:
+                if len(row) >= 3:
+                    mod, clave, valor = row[0], row[1], row[2]
+                    if mod not in specs: specs[mod] = {}
+                    specs[mod][clave] = valor
     except: pass
     return specs
 
 # --- Funciones de Contactos ---
+@st.cache_data(ttl=60, show_spinner=False)
 def obtener_contactos():
     try:
         sheet = get_sheet("contactos")
+        if not sheet: return ["Lorena Rojas"]
         data = sheet.get_all_values()
         contactos = [row[0] for row in data if len(row) > 1 and row[1] == "ACTIVO"]
         if not contactos: return ["Lorena Rojas"]
@@ -232,37 +247,47 @@ def agregar_contacto(nombre):
     if not nombre.strip(): return
     try:
         sheet = get_sheet("contactos")
-        sheet.append_row([nombre.strip().title(), "ACTIVO"])
+        if sheet:
+            sheet.append_row([nombre.strip().title(), "ACTIVO"])
+            st.cache_data.clear()
     except: pass
 
 def eliminar_contacto(nombre):
     try:
         sheet = get_sheet("contactos")
-        cells = sheet.findall(nombre)
-        for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO")
+        if sheet:
+            cells = sheet.findall(nombre)
+            for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO")
+            st.cache_data.clear()
     except: pass
 
 # --- Funciones de Historial de Intervenciones ---
 def guardar_registro(data_tuple):
     try:
         sheet = get_sheet("intervenciones")
-        row = [str(x) for x in data_tuple]
-        sheet.append_row(row)
+        if sheet:
+            row = [str(x) for x in data_tuple]
+            sheet.append_row(row)
+            st.cache_data.clear()
     except: pass
 
+@st.cache_data(ttl=60, show_spinner=False)
 def buscar_ultimo_registro(tag):
     try:
         sheet = get_sheet("intervenciones")
-        data = sheet.get_all_values()
-        for row in reversed(data):
-            if len(row) >= 20 and row[0] == tag:
-                return (row[5], row[6], row[9], row[14], row[15], row[7], row[8], row[10], row[11], row[12], row[13], row[16], row[17])
+        if sheet:
+            data = sheet.get_all_values()
+            for row in reversed(data):
+                if len(row) >= 20 and row[0] == tag:
+                    return (row[5], row[6], row[9], row[14], row[15], row[7], row[8], row[10], row[11], row[12], row[13], row[16], row[17])
     except: pass
     return None
 
+@st.cache_data(ttl=60, show_spinner=False)
 def obtener_todo_el_historial(tag):
     try:
         sheet = get_sheet("intervenciones")
+        if not sheet: return pd.DataFrame()
         data = sheet.get_all_values()
         hist = []
         for row in data:
@@ -277,13 +302,15 @@ def obtener_todo_el_historial(tag):
         return pd.DataFrame()
     except: return pd.DataFrame()
 
+@st.cache_data(ttl=60, show_spinner=False)
 def obtener_estados_actuales():
     estados = {}
     try:
         sheet = get_sheet("intervenciones")
-        data = sheet.get_all_values()
-        for row in data:
-            if len(row) >= 18: estados[row[0]] = row[17]
+        if sheet:
+            data = sheet.get_all_values()
+            for row in data:
+                if len(row) >= 18: estados[row[0]] = row[17]
     except: pass
     return estados
 
