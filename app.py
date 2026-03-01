@@ -23,7 +23,6 @@ CORREO_REMITENTE = "informeatlas.spence@gmail.com"
 PASSWORD_APLICACION = "jbumdljbdpyomnna"
 
 def enviar_carrito_por_correo(destinatario, lista_informes):
-    """Genera y envía un correo con múltiples reportes PDF adjuntos."""
     msg = MIMEMultipart()
     msg['From'] = CORREO_REMITENTE
     msg['To'] = destinatario
@@ -53,51 +52,45 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (Diseño UI/UX)
+# 0.2 ESTILOS PREMIUM (Tarjetas Clickeables y Hover 3D)
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
 
 def aplicar_estilos_premium():
     st.markdown("""
+        <meta name="google" content="notranslate">
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap');
-        
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; --bg-card: #151a22; }
-        
         html, body, [class*="css"] { font-family: 'Montserrat', sans-serif !important; }
-        
         #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
         
         div.stButton > button:first-child {
-            background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%);
-            color: white; border-radius: 8px; border: none; font-weight: 600; letter-spacing: 0.5px;
-            padding: 0.6rem 1.2rem; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4);
+            background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; letter-spacing: 0.5px; padding: 0.6rem 1.2rem; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4);
         }
-        div.stButton > button:first-child:hover { 
-            transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 124, 166, 0.6); 
-        }
+        div.stButton > button:first-child:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 124, 166, 0.6); }
         
-        .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select { 
-            border-radius: 6px !important; border: 1px solid #2b3543 !important; 
-            background-color: #1e2530 !important; color: white !important; transition: all 0.3s ease;
-        }
-        .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus { 
-            border-color: var(--bhp-orange) !important; box-shadow: 0 0 10px rgba(255, 102, 0, 0.3) !important; 
-        }
+        .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select { border-radius: 6px !important; border: 1px solid #2b3543 !important; background-color: #1e2530 !important; color: white !important; transition: all 0.3s ease; }
+        .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus { border-color: var(--bhp-orange) !important; box-shadow: 0 0 10px rgba(255, 102, 0, 0.3) !important; }
         
-        .stTabs [data-baseweb="tab-list"] { gap: 10px; border-bottom: 2px solid #2b3543; padding-bottom: 5px; }
-        .stTabs [data-baseweb="tab"] { 
-            background-color: transparent; border: none; color: #8c9eb5; font-weight: 600; transition: color 0.3s ease;
+        /* 🪄 MAGIA CSS: Tarjetas que funcionan como botones enteros */
+        div[data-testid="column"] { position: relative; }
+        .tarjeta-equipo {
+            background: linear-gradient(145deg, #1a212b, #151a22); border: 1px solid #2b3543; border-radius: 12px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); min-height: 140px; cursor: pointer;
         }
-        .stTabs [aria-selected="true"] { 
-            color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; background: transparent !important;
+        div[data-testid="column"]:hover .tarjeta-equipo {
+            transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0, 124, 166, 0.3); border-color: var(--ac-blue);
         }
-        
-        .main { animation: fadeIn 0.8s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Oculta el botón real y lo estira transparente sobre la tarjeta */
+        div.element-container:has(.tarjeta-equipo) + div.element-container {
+            position: absolute !important; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+        }
+        div.element-container:has(.tarjeta-equipo) + div.element-container button {
+            opacity: 0 !important; width: 100% !important; height: 100% !important; cursor: pointer !important; margin: 0 !important;
+        }
         </style>
     """, unsafe_allow_html=True)
+aplicar_estilos_premium()
 
 # =============================================================================
 # 1. DATOS MAESTROS (INVENTARIO Y USUARIOS)
@@ -123,7 +116,7 @@ inventario_equipos = {
     "55-GC-015": ["GA 30", "API501440", "planta borra", "área húmeda"],
     "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "área húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "área húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "área húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "área húmeda"],
     "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "área húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "área húmeda"],
-    "80-GC-001": ["GA 18", "API335343", "laboratorio", "taller mecánico"]
+    "80-GC-001": ["GA 18", "API335343", "taller", "taller"]
 }
 
 # =============================================================================
@@ -131,13 +124,11 @@ inventario_equipos = {
 # =============================================================================
 @st.cache_resource
 def get_gspread_client():
-    """Autentica la conexión con la API de Google Drive/Sheets."""
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
     creds_dict = json.loads(st.secrets["gcp_json"])
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     return gspread.authorize(creds)
 def get_sheet(sheet_name):
-    """Busca o crea una pestaña específica en la base de datos."""
     try:
         client = get_gspread_client()
         doc = client.open("BaseDatos")
@@ -145,7 +136,6 @@ def get_sheet(sheet_name):
         except gspread.exceptions.WorksheetNotFound: return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e: return None
 
-# --- FUNCIONES DE LECTURA (Protegidas con Caché contra Error 429) ---
 @st.cache_data(ttl=120)
 def obtener_datos_equipo(tag):
     datos = {}
@@ -223,7 +213,6 @@ def obtener_estados_actuales():
     except: pass
     return estados
 
-# --- FUNCIONES DE ESCRITURA (Limpian el caché para mostrar datos en vivo) ---
 def guardar_dato_equipo(tag, clave, valor):
     try:
         sheet = get_sheet("datos_equipo")
@@ -263,7 +252,6 @@ def eliminar_contacto(nombre):
             for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO"); st.cache_data.clear()
     except: pass
 def guardar_registro(data_tuple):
-    """Guarda el informe final en Google Sheets. Incluye sistema Anti-Escalera y reintentos."""
     for intento in range(3):
         try:
             sheet = get_sheet("intervenciones")
@@ -278,7 +266,6 @@ def guardar_registro(data_tuple):
 # 3. CONVERSIÓN A PDF HÍBRIDA
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
-    """Convierte el archivo Word generado en un PDF no editable."""
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
     ruta_absoluta = os.path.abspath(ruta_docx)
     carpeta_salida = os.path.dirname(ruta_absoluta)
@@ -310,7 +297,6 @@ default_states = {
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
 def seleccionar_equipo(tag):
-    """Carga los datos previos del equipo seleccionado para autocompletar el formulario."""
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
     if reg:
@@ -415,7 +401,7 @@ else:
                     except Exception as e: st.error(f"Error sistémico procesando las firmas: {e}")
             else: st.warning("⚠️ Asegúrate de dibujar en ambas pizarras antes de generar los PDFs finales.")
 
-    # --- 6.2 VISTA CATÁLOGO (Dashboard Interactivo PREMIUM) ---
+    # --- 6.2 VISTA CATÁLOGO (DASHBOARD CINETICO Y PREMIUM) ---
     elif st.session_state.equipo_seleccionado is None:
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(0,124,166,0) 0%, rgba(0,124,166,0.1) 50%, rgba(0,124,166,0) 100%); padding: 20px; border-radius: 15px;">
@@ -423,18 +409,19 @@ else:
                 <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">Sistema Integrado de Control de Activos • Hidrometalurgia</p>
             </div>
         """, unsafe_allow_html=True)
-        st.title("🏭 Panel de Control de Equipos Hidrometalurgia")
-        estados_db = obtener_estados_actuales(); total_equipos = len(inventario_equipos); operativos = sum(1 for tag in inventario_equipos.keys() if estados_db.get(tag, "Operativo") == "Operativo"); detenidos = total_equipos - operativos
+        estados_db = obtener_estados_actuales(); total_equipos = len(inventario_equipos); operativos = sum(1 for tag in inventario_equipos.keys() if estados_db.get(tag, "Operativo") == "Operativo"); fuera_servicio = total_equipos - operativos
         
         m1, m2, m3 = st.columns(3)
         with m1: st.markdown(f"<div style='background: #1e2530; border-left: 5px solid #8c9eb5; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center;'><p style='color: #8c9eb5; margin:0; font-size:1rem; font-weight:600; text-transform:uppercase;'>📦 Total Activos</p><h2 style='color: white; margin:0; font-size:2.5rem; font-weight:800;'>{total_equipos}</h2></div>", unsafe_allow_html=True)
         with m2: st.markdown(f"<div style='background: #1e2530; border-left: 5px solid #00e676; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,230,118,0.1); text-align: center;'><p style='color: #8c9eb5; margin:0; font-size:1rem; font-weight:600; text-transform:uppercase;'>🟢 Operativos</p><h2 style='color: #00e676; margin:0; font-size:2.5rem; font-weight:800;'>{operativos}</h2></div>", unsafe_allow_html=True)
-        with m3: st.markdown(f"<div style='background: #1e2530; border-left: 5px solid #ff1744; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(255,23,68,0.1); text-align: center;'><p style='color: #8c9eb5; margin:0; font-size:1rem; font-weight:600; text-transform:uppercase;'>🔴 Fuera de Servicio</p><h2 style='color: #ff1744; margin:0; font-size:2.5rem; font-weight:800;'>{detenidos}</h2></div>", unsafe_allow_html=True)
+        with m3: st.markdown(f"<div style='background: #1e2530; border-left: 5px solid #ff1744; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(255,23,68,0.1); text-align: center;'><p style='color: #8c9eb5; margin:0; font-size:1rem; font-weight:600; text-transform:uppercase;'>🔴 Fuera de Servicio</p><h2 style='color: #ff1744; margin:0; font-size:2.5rem; font-weight:800;'>{fuera_servicio}</h2></div>", unsafe_allow_html=True)
         st.markdown("<br><hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
+        
         col_filtro, col_busqueda = st.columns([1.2, 2])
         with col_filtro: filtro_tipo = st.radio("🗂️ Categoría de Equipo:", ["Todos", "Compresores", "Secadores"], horizontal=True)
         with col_busqueda: busqueda = st.text_input("🔍 Buscar activo por TAG, Modelo o Área...", placeholder="Ejemplo: GA 250, 35-GC-006...").lower()
         st.markdown("<br>", unsafe_allow_html=True); columnas = st.columns(4); contador = 0
+        
         for tag, (modelo, serie, area, ubicacion) in inventario_equipos.items():
             es_secador = "CD" in modelo.upper()
             if filtro_tipo == "Compresores" and es_secador: continue
@@ -442,17 +429,19 @@ else:
             if busqueda in tag.lower() or busqueda in area.lower() or busqueda in modelo.lower():
                 estado = estados_db.get(tag, "Operativo")
                 if estado == "Operativo":
-                    color_borde = "#00e676"; badge_html = "<span style='background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid #00e676; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 0 10px rgba(0,230,118,0.4); text-transform: uppercase;'>OPERATIVO</span>"
+                    color_borde = "#00e676"; badge_html = "<span style='background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid #00e676; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 0 10px rgba(0,230,118,0.4); text-transform: uppercase; letter-spacing: 1px;'>OPERATIVO</span>"
                 else:
-                    color_borde = "#ff1744"; badge_html = "<span style='background: rgba(255,23,68,0.15); color: #ff1744; border: 1px solid #ff1744; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 0 10px rgba(255,23,68,0.4); text-transform: uppercase;'>DETENIDO</span>"
+                    color_borde = "#ff1744"; badge_html = "<span style='background: rgba(255,23,68,0.15); color: #ff1744; border: 1px solid #ff1744; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 0 10px rgba(255,23,68,0.4); text-transform: uppercase; letter-spacing: 1px;'>FUERA DE SERVICIO</span>"
+                
                 with columnas[contador % 4]:
                     st.markdown(f"""
-                    <div style="background: linear-gradient(145deg, #1a212b, #151a22); border: 1px solid #2b3543; border-top: 4px solid {color_borde}; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
+                    <div class="tarjeta-equipo" style="border-top: 4px solid {color_borde};">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">{badge_html}</div>
                         <h3 style="color: white; margin: 0 0 5px 0; font-size: 1.4rem; font-weight: 800;">{tag}</h3>
                         <p style="color: #8c9eb5; margin: 0; font-size: 0.9rem; font-weight: 400;"><strong style="color:#007CA6;">{modelo}</strong> &bull; {area.title()}</p>
                     </div>""", unsafe_allow_html=True)
-                    st.button("⚙️ Gestionar Activo", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
+                    # Botón Invisible Superpuesto a la tarjeta
+                    st.button(" ", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
                 contador += 1
 
     # --- 6.3 VISTA FORMULARIO Y GENERACIÓN ---
