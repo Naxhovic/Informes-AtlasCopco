@@ -409,12 +409,13 @@ else:
                 if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
                     
                     # VISOR DE PDFS ROBUSTO (INYECTADO EN BYTES)
+                    # VISOR DE PDFS ROBUSTO (INYECTADO EN BYTES)
                     try:
                         with open(inf['ruta_prev_pdf'], "rb") as f_pdf:
                             pdf_bytes = f_pdf.read()
                         
-                        # Le pasamos los bytes crudos directamente con el parámetro 'input='
-                        pdf_viewer(input=pdf_bytes, width=750, height=600)
+                        # Pasamos los bytes directo en la primera posición
+                        pdf_viewer(pdf_bytes, width=750, height=600)
                         
                     except Exception as e:
                         # Si falla, mostrará el error real en rojo
