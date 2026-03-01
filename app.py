@@ -4,6 +4,7 @@ from docx.shared import Mm
 import os, subprocess
 import pandas as pd
 import smtplib
+import time
 from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -23,9 +24,9 @@ from streamlit_pdf_viewer import pdf_viewer
 # 0.1 CONFIGURACIÓN DE NUBE Y CORREO
 # =============================================================================
 RUTA_ONEDRIVE = "Reportes_Temporales" 
-MI_CORREO_CORPORATIVO = "ignacio.a.morales@atlascopco.com"  
-CORREO_REMITENTE = "informeatlas.spence@gmail.com"  
-PASSWORD_APLICACION = "jbumdljbdpyomnna"  
+MI_CORREO_CORPORATIVO = "ignacio.a.morales@atlascopco.com"
+CORREO_REMITENTE = "informeatlas.spence@gmail.com"
+PASSWORD_APLICACION = "jbumdljbdpyomnna"
 
 def enviar_carrito_por_correo(destinatario, lista_informes):
     msg = MIMEMultipart()
@@ -120,7 +121,7 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. CONEXIÓN INMORTAL A GOOGLE SHEETS
+# 2. CONEXIÓN OPTIMIZADA A GOOGLE SHEETS
 # =============================================================================
 @st.cache_resource
 def get_gspread_client():
@@ -133,16 +134,11 @@ def get_sheet(sheet_name):
     try:
         client = get_gspread_client()
         doc = client.open("BaseDatos")
-        
-        # Leemos todas las pestañas disponibles
-        pestañas = [hoja.title for hoja in doc.worksheets()]
-        
-        if sheet_name in pestañas:
+        try:
+            # OPTIMIZACIÓN: Evita leer todas las hojas, va directo a la que necesita.
             return doc.worksheet(sheet_name)
-        else:
-            # Si la pestaña no existe, el robot la crea solo
+        except gspread.exceptions.WorksheetNotFound:
             return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
-            
     except Exception as e:
         if "200" in str(e):
             st.error("🚨 ERROR DE FORMATO: Tu archivo en Google Drive es un Excel tradicional (.xlsx). Debes crear una 'Hoja de cálculo de Google' nativa.")
@@ -154,17 +150,18 @@ def get_sheet(sheet_name):
 def guardar_dato_equipo(tag, clave, valor):
     try:
         sheet = get_sheet("datos_equipo")
-        sheet.append_row([tag, clave, valor])
+        if sheet: sheet.append_row([tag, clave, valor])
     except: pass
 
 def obtener_datos_equipo(tag):
     datos = {}
     try:
         sheet = get_sheet("datos_equipo")
-        data = sheet.get_all_values()
-        for row in data:
-            if len(row) >= 3 and row[0] == tag:
-                datos[row[1]] = row[2] # El más nuevo sobrescribe al viejo
+        if sheet:
+            data = sheet.get_all_values()
+            for row in data:
+                if len(row) >= 3 and row[0] == tag:
+                    datos[row[1]] = row[2]
     except: pass
     return datos
 
@@ -172,49 +169,52 @@ def obtener_datos_equipo(tag):
 def agregar_observacion(tag, usuario, texto):
     if not texto.strip(): return
     fecha_actual = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M")
-    id_obs = str(uuid.uuid4())[:8] # ID único corto
+    id_obs = str(uuid.uuid4())[:8]
     try:
         sheet = get_sheet("observaciones")
-        sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"])
+        if sheet: sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"])
     except: pass
 
 def obtener_observaciones(tag):
     try:
         sheet = get_sheet("observaciones")
-        data = sheet.get_all_values()
-        obs = []
-        for row in data:
-            if len(row) >= 6 and row[1] == tag and row[5] == "ACTIVO":
-                obs.append({"id": row[0], "fecha": row[2], "usuario": row[3], "texto": row[4]})
-        df = pd.DataFrame(obs)
-        if not df.empty: return df.iloc[::-1] # Invierte para mostrar los más nuevos arriba
-        return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
-    except: return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
+        if sheet:
+            data = sheet.get_all_values()
+            obs = []
+            for row in data:
+                if len(row) >= 6 and row[1] == tag and row[5] == "ACTIVO":
+                    obs.append({"id": row[0], "fecha": row[2], "usuario": row[3], "texto": row[4]})
+            df = pd.DataFrame(obs)
+            if not df.empty: return df.iloc[::-1]
+    except: pass
+    return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
 
 def eliminar_observacion(id_obs):
     try:
         sheet = get_sheet("observaciones")
-        cell = sheet.find(id_obs)
-        if cell: sheet.update_cell(cell.row, 6, "ELIMINADO")
+        if sheet:
+            cell = sheet.find(id_obs)
+            if cell: sheet.update_cell(cell.row, 6, "ELIMINADO")
     except: pass
 
 # --- Funciones de Especificaciones ---
 def guardar_especificacion_db(modelo, clave, valor):
     try:
         sheet = get_sheet("especificaciones")
-        sheet.append_row([modelo, clave, valor])
+        if sheet: sheet.append_row([modelo, clave, valor])
     except: pass
 
 def obtener_especificaciones(defaults):
     specs = {k: dict(v) for k, v in defaults.items()}
     try:
         sheet = get_sheet("especificaciones")
-        data = sheet.get_all_values()
-        for row in data:
-            if len(row) >= 3:
-                mod, clave, valor = row[0], row[1], row[2]
-                if mod not in specs: specs[mod] = {}
-                specs[mod][clave] = valor
+        if sheet:
+            data = sheet.get_all_values()
+            for row in data:
+                if len(row) >= 3:
+                    mod, clave, valor = row[0], row[1], row[2]
+                    if mod not in specs: specs[mod] = {}
+                    specs[mod][clave] = valor
     except: pass
     return specs
 
@@ -222,82 +222,81 @@ def obtener_especificaciones(defaults):
 def obtener_contactos():
     try:
         sheet = get_sheet("contactos")
-        data = sheet.get_all_values()
-        contactos = [row[0] for row in data if len(row) > 1 and row[1] == "ACTIVO"]
-        if not contactos: return ["Lorena Rojas"]
-        return sorted(list(set(contactos)))
-    except: return ["Lorena Rojas"]
+        if sheet:
+            data = sheet.get_all_values()
+            contactos = [row[0] for row in data if len(row) > 1 and row[1] == "ACTIVO"]
+            if contactos: return sorted(list(set(contactos)))
+    except: pass
+    return ["Lorena Rojas"]
 
 def agregar_contacto(nombre):
     if not nombre.strip(): return
     try:
         sheet = get_sheet("contactos")
-        sheet.append_row([nombre.strip().title(), "ACTIVO"])
+        if sheet: sheet.append_row([nombre.strip().title(), "ACTIVO"])
     except: pass
 
 def eliminar_contacto(nombre):
     try:
         sheet = get_sheet("contactos")
-        cells = sheet.findall(nombre)
-        for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO")
+        if sheet:
+            cells = sheet.findall(nombre)
+            for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO")
     except: pass
 
 # --- Funciones de Historial de Intervenciones ---
 def guardar_registro(data_tuple):
-    # Intentará guardar hasta 3 veces si hay fallos de red
+    # SOLUCIÓN FALLOS SILENCIOSOS: Intenta guardar hasta 3 veces. Si falla, espera 5 seg.
     for intento in range(3):
         try:
-            def get_sheet(sheet_name):
-    try:
-        client = get_gspread_client()
-        doc = client.open("BaseDatos")
-        try:
-            # Intenta abrir la pestaña directamente (ahorra un 50% de cuota)
-            return doc.worksheet(sheet_name)
-        except gspread.exceptions.WorksheetNotFound:
-            # Si no existe, la crea
-            return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
-    except Exception as e:
-        if "200" in str(e):
-            st.error("🚨 ERROR DE FORMATO: Tu archivo en Drive es un Excel (.xlsx). Debe ser un Sheet nativo.")
-        else:
-            st.error(f"🚨 ERROR DE CONEXIÓN CON GOOGLE: {e}")
-        return None
+            sheet = get_sheet("intervenciones")
+            if sheet is not None:
+                row = [str(x) for x in data_tuple]
+                sheet.append_row(row)
+                return True # Guardado exitoso
+        except Exception as e:
+            time.sleep(5)
+    return False # Falló las 3 veces
 
 def buscar_ultimo_registro(tag):
     try:
         sheet = get_sheet("intervenciones")
-        data = sheet.get_all_values()
-        for row in reversed(data):
-            if len(row) >= 20 and row[0] == tag:
-                return (row[5], row[6], row[9], row[14], row[15], row[7], row[8], row[10], row[11], row[12], row[13], row[16], row[17])
+        if sheet:
+            data = sheet.get_all_values()
+            for row in reversed(data):
+                if len(row) >= 20 and row[0] == tag:
+                    return (row[5], row[6], row[9], row[14], row[15], row[7], row[8], row[10], row[11], row[12], row[13], row[16], row[17])
     except: pass
     return None
 
 def obtener_todo_el_historial(tag):
     try:
         sheet = get_sheet("intervenciones")
-        data = sheet.get_all_values()
-        hist = []
-        for row in data:
-            if len(row) >= 20 and row[0] == tag:
-                hist.append({
-                    "fecha": row[5], "tipo_intervencion": row[15], "estado_equipo": row[17],
-                    "Cuenta Usuario": row[19], "horas_marcha": row[12], "horas_carga": row[13],
-                    "p_carga": row[10], "p_descarga": row[11], "temp_salida": row[9]
-                })
-        df = pd.DataFrame(hist)
-        if not df.empty: return df.iloc[::-1]
-        return pd.DataFrame()
-    except: return pd.DataFrame()
+        if sheet:
+            data = sheet.get_all_values()
+            hist = []
+            for row in data:
+                if len(row) >= 20 and row[0] == tag:
+                    hist.append({
+                        "fecha": row[5], "tipo_intervencion": row[15], "estado_equipo": row[17],
+                        "Cuenta Usuario": row[19], "horas_marcha": row[12], "horas_carga": row[13],
+                        "p_carga": row[10], "p_descarga": row[11], "temp_salida": row[9]
+                    })
+            df = pd.DataFrame(hist)
+            if not df.empty: return df.iloc[::-1]
+    except: pass
+    return pd.DataFrame()
 
+# SOLUCIÓN ERROR 429: Caché guarda los estados por 60 segundos para no saturar a Google.
+@st.cache_data(ttl=60)
 def obtener_estados_actuales():
     estados = {}
     try:
         sheet = get_sheet("intervenciones")
-        data = sheet.get_all_values()
-        for row in data:
-            if len(row) >= 18: estados[row[0]] = row[17]
+        if sheet:
+            data = sheet.get_all_values()
+            for row in data:
+                if len(row) >= 18: estados[row[0]] = row[17]
     except: pass
     return estados
 # =============================================================================
@@ -341,6 +340,7 @@ for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
 
 def seleccionar_equipo(tag):
+    time.sleep(2)
     st.session_state.equipo_seleccionado = tag
     st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
@@ -381,11 +381,13 @@ if not st.session_state.logged_in:
                 p_in = st.text_input("Contraseña", type="password")
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.form_submit_button("Acceder de forma segura", type="primary", use_container_width=True):
+                    time.sleep(2)
                     if u_in in USUARIOS and USUARIOS[u_in] == p_in:
                         st.session_state.update({'logged_in': True, 'usuario_actual': u_in})
                         st.rerun()
                     else: st.error("❌ Credenciales inválidas.")
-                    # =============================================================================
+
+# =============================================================================
 # 6. PANTALLA PRINCIPAL: APLICACIÓN AUTENTICADA
 # =============================================================================
 else:
@@ -397,6 +399,7 @@ else:
             st.markdown("---")
             st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
             if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary"):
+                time.sleep(2)
                 st.session_state.vista_firmas = True
                 st.session_state.equipo_seleccionado = None
                 st.rerun()
@@ -492,13 +495,13 @@ else:
                             
                             nombre_codificado = f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"
                             
-                            # Guardamos en Google Sheets con validación
+                            # Guardamos en Google Sheets (Con sistema anti-fallos)
                             tupla_lista = list(inf['tupla_db'])
                             tupla_lista[18] = ruta_final
                             
                             guardado_ok = guardar_registro(tuple(tupla_lista))
                             if not guardado_ok:
-                                st.error(f"⚠️ El PDF se generó y envió, pero la base de datos de Google superó su límite. Verifica el catálogo en 1 minuto.")
+                                st.error(f"⚠️ Error: El PDF de {inf['tag']} se generó y envió, pero la base de datos de Google superó su límite. Verifica el catálogo en 1 minuto.")
                             
                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": nombre_codificado})
                             
