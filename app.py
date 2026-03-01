@@ -52,7 +52,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (Tarjetas Clickeables y Hover 3D)
+# 0.2 ESTILOS PREMIUM (Corregido y Limpio)
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
 
@@ -71,41 +71,44 @@ def aplicar_estilos_premium():
             background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%);
             color: white; border-radius: 8px; border: none; font-weight: 600; letter-spacing: 0.5px;
             padding: 0.6rem 1.2rem; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4);
         }
         
         div.stButton > button:first-child:hover { 
             transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 124, 166, 0.6); 
         }
+
+        div[data-testid="column"] div.stButton > button {
+            background: linear-gradient(145deg, #1a212b, #151a22) !important;
+            border: 1px solid #2b3543 !important;
+            border-radius: 12px !important;
+            color: white !important;
+            font-size: 1.4rem !important;
+            font-weight: 800 !important;
+            padding: 1.5rem 1rem !important;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+            width: 100% !important;
+        }
+        
+        div[data-testid="column"] div.stButton > button:hover {
+            transform: translateY(-6px) !important;
+            border-color: var(--ac-blue) !important;
+            box-shadow: 0 12px 25px rgba(0, 124, 166, 0.3) !important;
+            background: #1e2530 !important;
+        }
         
         .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select { 
             border-radius: 6px !important; border: 1px solid #2b3543 !important; 
-            background-color: #1e2530 !important; color: white !important; transition: all 0.3s ease; 
+            background-color: #1e2530 !important; color: white !important; transition: all 0.3s ease;
         }
         
         .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus { 
             border-color: var(--bhp-orange) !important; box-shadow: 0 0 10px rgba(255, 102, 0, 0.3) !important; 
         }
         
-        div[data-testid="column"] { position: relative; }
-        
-        .tarjeta-equipo {
-            background: linear-gradient(145deg, #1a212b, #151a22); border: 1px solid #2b3543; 
-            border-radius: 12px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); 
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); min-height: 140px; cursor: pointer;
-        }
-        
-        div[data-testid="column"]:hover .tarjeta-equipo {
-            transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0, 124, 166, 0.3); border-color: var(--ac-blue);
-        }
-        
-        div.element-container:has(.tarjeta-equipo) + div.element-container {
-            position: absolute !important; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
-        }
-        
-        div.element-container:has(.tarjeta-equipo) + div.element-container button {
-            opacity: 0 !important; width: 100% !important; height: 100% !important; cursor: pointer !important; margin: 0 !important;
-        }
+        .stTabs [data-baseweb="tab-list"] { gap: 10px; border-bottom: 2px solid #2b3543; padding-bottom: 5px; }
+        .stTabs [data-baseweb="tab"] { background-color: transparent; border: none; color: #8c9eb5; font-weight: 600; }
+        .stTabs [aria-selected="true"] { color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -133,7 +136,7 @@ inventario_equipos = {
     "55-GC-015": ["GA 30", "API501440", "planta borra", "área húmeda"],
     "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "área húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "área húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "área húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "área húmeda"],
     "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "área húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "área húmeda"],
-    "80-GC-001": ["GA 18", "API335343", "taller", "taller"]
+    "80-GC-001": ["GA 18", "API335343", "Taller", "Taller"]
 }
 
 # =============================================================================
@@ -451,14 +454,14 @@ else:
                     color_borde = "#ff1744"; badge_html = "<span style='background: rgba(255,23,68,0.15); color: #ff1744; border: 1px solid #ff1744; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 0 10px rgba(255,23,68,0.4); text-transform: uppercase; letter-spacing: 1px;'>FUERA DE SERVICIO</span>"
                 
                 with columnas[contador % 4]:
+                    # Parte superior visual (Neón, Status, Detalles)
                     st.markdown(f"""
-                    <div class="tarjeta-equipo" style="border-top: 4px solid {color_borde};">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">{badge_html}</div>
-                        <h3 style="color: white; margin: 0 0 5px 0; font-size: 1.4rem; font-weight: 800;">{tag}</h3>
-                        <p style="color: #8c9eb5; margin: 0; font-size: 0.9rem; font-weight: 400;"><strong style="color:#007CA6;">{modelo}</strong> &bull; {area.title()}</p>
+                    <div style="border-top: 4px solid {color_borde}; padding-top: 12px; margin-bottom: 5px;">
+                        <div style="margin-bottom: 12px;">{badge_html}</div>
+                        <p style="color: #8c9eb5; margin: 0; font-size: 0.9rem; line-height: 1.4;"><strong style="color:#007CA6;">{modelo}</strong><br>{area.title()}</p>
                     </div>""", unsafe_allow_html=True)
-                    # Botón Invisible Superpuesto a la tarjeta
-                    st.button(" ", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
+                    # El TAG AHORA ES EL BOTÓN (Con diseño 3D y hover interactivo)
+                    st.button(f"{tag}", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
                 contador += 1
 
     # --- 6.3 VISTA FORMULARIO Y GENERACIÓN ---
