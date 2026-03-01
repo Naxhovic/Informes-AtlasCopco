@@ -5,7 +5,6 @@ import os, subprocess
 import pandas as pd
 import smtplib
 import time
-from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
@@ -13,7 +12,6 @@ from email import encoders
 from streamlit_drawable_canvas import st_canvas
 from PIL import Image
 import io
-import base64
 import gspread
 from google.oauth2.service_account import Credentials
 import json
@@ -29,6 +27,7 @@ CORREO_REMITENTE = "informeatlas.spence@gmail.com"
 PASSWORD_APLICACION = "jbumdljbdpyomnna"
 
 def enviar_carrito_por_correo(destinatario, lista_informes):
+    """Genera y envía un correo con múltiples reportes PDF adjuntos."""
     msg = MIMEMultipart()
     msg['From'] = CORREO_REMITENTE
     msg['To'] = destinatario
@@ -44,7 +43,6 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     for item in lista_informes:
         ruta = item['ruta']
         nombre_seguro = item["nombre_archivo"].replace("ó","o").replace("í","i").replace("á","a").replace("é","e").replace("ú","u")
-        
         if os.path.exists(ruta):
             with open(ruta, "rb") as f:
                 part = MIMEBase('application', 'octet-stream')
@@ -70,6 +68,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
 
 def aplicar_estilos_premium():
+    """Inyecta CSS personalizado para adaptar los colores a Atlas Copco / BHP."""
     st.markdown("""
         <meta name="google" content="notranslate">
         <style>
@@ -92,7 +91,7 @@ def aplicar_estilos_premium():
 aplicar_estilos_premium()
 
 # =============================================================================
-# 1. DATOS MAESTROS
+# 1. DATOS MAESTROS (INVENTARIO Y USUARIOS)
 # =============================================================================
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "admin": "admin123"}
 
@@ -125,12 +124,14 @@ inventario_equipos = {
 # =============================================================================
 @st.cache_resource
 def get_gspread_client():
+    """Autentica la conexión con la API de Google Drive/Sheets."""
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
     creds_dict = json.loads(st.secrets["gcp_json"])
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     return gspread.authorize(creds)
 
 def get_sheet(sheet_name):
+    """Busca o crea una pestaña específica en la base de datos."""
     try:
         client = get_gspread_client()
         doc = client.open("BaseDatos")
@@ -141,7 +142,7 @@ def get_sheet(sheet_name):
     except Exception as e:
         return None
 
-# --- FUNCIONES DE LECTURA (CON CACHÉ) ---
+# --- FUNCIONES DE LECTURA (Protegidas con Caché contra Error 429) ---
 @st.cache_data(ttl=120)
 def obtener_datos_equipo(tag):
     datos = {}
@@ -226,7 +227,7 @@ def obtener_estados_actuales():
     except: pass
     return estados
 
-# --- FUNCIONES DE ESCRITURA (LIMPIAN EL CACHÉ) ---
+# --- FUNCIONES DE ESCRITURA (Limpian el caché para mostrar datos en vivo) ---
 def guardar_dato_equipo(tag, clave, valor):
     try:
         sheet = get_sheet("datos_equipo")
@@ -283,7 +284,7 @@ def eliminar_contacto(nombre):
     except: pass
 
 def guardar_registro(data_tuple):
-    # LA MAGIA ANTI-ESCALERA: insert_row asegura que siempre se pegue en la Columna A
+    """Guarda el informe final en Google Sheets. Incluye sistema Anti-Escalera y reintentos."""
     for intento in range(3):
         try:
             sheet = get_sheet("intervenciones")
@@ -300,10 +301,10 @@ def guardar_registro(data_tuple):
 # 3. CONVERSIÓN A PDF HÍBRIDA
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
+    """Convierte el archivo Word generado en un PDF no editable."""
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
     ruta_absoluta = os.path.abspath(ruta_docx)
     carpeta_salida = os.path.dirname(ruta_absoluta)
-    
     try:
         comando = ['libreoffice', '--headless', '--convert-to', 'pdf', ruta_absoluta, '--outdir', carpeta_salida]
         subprocess.run(comando, capture_output=True, text=True)
@@ -317,11 +318,10 @@ def convertir_a_pdf(ruta_docx):
         convert(ruta_absoluta, ruta_pdf)
         if os.path.exists(ruta_pdf): return ruta_pdf
     except: pass
-        
     return None
 
 # =============================================================================
-# 4. INICIALIZACIÓN DE LA APLICACIÓN Y VARIABLES DE SESIÓN
+# 4. INICIALIZACIÓN DE VARIABLES DE SESIÓN
 # =============================================================================
 ESPECIFICACIONES = obtener_especificaciones(DEFAULT_SPECS)
 
@@ -337,6 +337,8 @@ for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
 
 def seleccionar_equipo(tag):
+    """Carga los datos previos del equipo seleccionado para autocompletar el formulario."""
+    time.sleep(1)
     st.session_state.equipo_seleccionado = tag
     st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
@@ -417,24 +419,20 @@ else:
         st.info("👀 **Para el Cliente:** Por favor, revise el documento oficial antes de firmar.")
 
         for i, inf in enumerate(st.session_state.informes_pendientes):
-            c_exp, c_del = st.columns([12, 1]) # Columna ancha para PDF, delgada para la X
-            
+            c_exp, c_del = st.columns([12, 1]) 
             with c_exp:
                 with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
                     if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
                         try:
                             with open(inf['ruta_prev_pdf'], "rb") as f_pdf:
-                                pdf_bytes = f_pdf.read()
-                            pdf_viewer(pdf_bytes, width=700, height=600)
+                                pdf_viewer(f_pdf.read(), width=700, height=600)
                         except Exception as e:
                             st.error(f"No se pudo desplegar el visor: {e}")
-                        
                         st.markdown("<br>", unsafe_allow_html=True)
                         with open(inf['ruta_prev_pdf'], "rb") as f2:
                             st.download_button("📥 Descargar Borrador (PDF)", f2, file_name=f"Borrador_{inf['tag']}.pdf", mime="application/pdf", key=f"dl_prev_{i}")
                     else:
                         st.warning("⚠️ La vista preliminar en PDF no está disponible.")
-            
             with c_del:
                 st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
                 if st.button("❌", key=f"del_inf_{i}", help="Quitar este informe de la bandeja"):
@@ -452,7 +450,6 @@ else:
             st.markdown("### 🧑‍🔧 Firma del Técnico")
             st.caption(f"Técnico: {st.session_state.informes_pendientes[0]['tec1'] if st.session_state.informes_pendientes else 'N/A'}")
             canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
-            
         with c_cli:
             st.markdown("### 👷 Firma del Cliente")
             st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
@@ -477,15 +474,12 @@ else:
                         for inf in st.session_state.informes_pendientes:
                             doc = DocxTemplate(inf['file_plantilla'])
                             context = inf['context']
-                            
                             context['firma_tecnico'] = InlineImage(doc, io_tec, width=Mm(40))
                             context['firma_cliente'] = InlineImage(doc, io_cli, width=Mm(40))
-                            
                             doc.render(context)
                             doc.save(inf['ruta_docx'])
                             
                             ruta_pdf_gen = convertir_a_pdf(inf['ruta_docx'])
-                            
                             if ruta_pdf_gen:
                                 ruta_final = ruta_pdf_gen
                                 nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
@@ -497,22 +491,19 @@ else:
                             
                             tupla_lista = list(inf['tupla_db'])
                             tupla_lista[18] = ruta_final
-                            
                             guardado_ok = guardar_registro(tuple(tupla_lista))
                             if not guardado_ok:
-                                st.error(f"⚠️ El PDF de {inf['tag']} se generó y envió, pero Google Sheets está saturado. Revisa tu Excel.")
+                                st.error(f"⚠️ El PDF de {inf['tag']} se generó y envió, pero la base de datos de Google superó su límite. Verifica el catálogo en 1 minuto.")
                             
                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": nombre_codificado})
                             
                         exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
-                        
                         if exito:
                             st.success("✅ ¡PERFECTO! Los documentos oficiales se firmaron, convirtieron a PDF y ya están camino a tu OneDrive.")
                             st.session_state.informes_pendientes = []  
                             st.balloons()
                         else:
                             st.error(f"Error de red: {mensaje_correo}")
-                            
                     except Exception as e:
                         st.error(f"Error sistémico procesando las firmas: {e}")
             else:
@@ -596,7 +587,6 @@ else:
             with c8:
                 contactos_db = obtener_contactos()
                 opciones = ["➕ Escribir nuevo..."] + contactos_db
-                
                 if st.session_state.input_cliente in opciones: cli_idx = opciones.index(st.session_state.input_cliente)
                 else: cli_idx = 1 if len(contactos_db) > 0 else 0
                 
@@ -653,7 +643,6 @@ else:
                     else: file_plantilla = "plantilla/inspeccion.docx"
                     
                 context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}
-                
                 nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"
                 ruta = os.path.join(RUTA_ONEDRIVE, nombre_archivo)
                 
@@ -692,7 +681,6 @@ else:
                     if clave_sel == "Otro dato nuevo...": clave_final = c_e1.text_input("Escribe el nombre del dato:")
                     else: clave_final = clave_sel
                     valor_final = c_e2.text_input("Ingresa el valor:")
-                    
                     if st.form_submit_button("💾 Guardar en Base de Datos", use_container_width=True):
                         if clave_final and valor_final:
                             guardar_especificacion_db(mod_d, clave_final.strip(), valor_final.strip())
