@@ -58,21 +58,16 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
 
 def aplicar_estilos_premium():
-    """Inyecta CSS Premium: Fuentes de Google, Efectos Neón, Sombras 3D y Degradados."""
     st.markdown("""
-        <meta name="google" content="notranslate">
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap');
         
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; --bg-card: #151a22; }
         
-        /* Tipografía global */
         html, body, [class*="css"] { font-family: 'Montserrat', sans-serif !important; }
         
-        /* Ocultar elementos de Streamlit */
         #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
         
-        /* Botones estilo Moderno */
         div.stButton > button:first-child {
             background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%);
             color: white; border-radius: 8px; border: none; font-weight: 600; letter-spacing: 0.5px;
@@ -83,7 +78,6 @@ def aplicar_estilos_premium():
             transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 124, 166, 0.6); 
         }
         
-        /* Entradas de texto y selectores premium */
         .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select { 
             border-radius: 6px !important; border: 1px solid #2b3543 !important; 
             background-color: #1e2530 !important; color: white !important; transition: all 0.3s ease;
@@ -92,7 +86,6 @@ def aplicar_estilos_premium():
             border-color: var(--bhp-orange) !important; box-shadow: 0 0 10px rgba(255, 102, 0, 0.3) !important; 
         }
         
-        /* Pestañas (Tabs) elegantes */
         .stTabs [data-baseweb="tab-list"] { gap: 10px; border-bottom: 2px solid #2b3543; padding-bottom: 5px; }
         .stTabs [data-baseweb="tab"] { 
             background-color: transparent; border: none; color: #8c9eb5; font-weight: 600; transition: color 0.3s ease;
@@ -101,12 +94,10 @@ def aplicar_estilos_premium():
             color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; background: transparent !important;
         }
         
-        /* Animación suave al cargar */
         .main { animation: fadeIn 0.8s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         </style>
     """, unsafe_allow_html=True)
-aplicar_estilos_premium()
 
 # =============================================================================
 # 1. DATOS MAESTROS (INVENTARIO Y USUARIOS)
