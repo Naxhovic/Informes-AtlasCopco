@@ -76,9 +76,9 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. GOOGLE SHEETS Y CACHÉ OPTIMIZADO (A PRUEBA DE FALLOS)
+# 2. GOOGLE SHEETS (VERSIÓN CLÁSICA DIRECTA)
 # =============================================================================
-@st.cache_resource(show_spinner=False)
+@st.cache_resource
 def get_gspread_client():
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
     creds = Credentials.from_service_account_info(json.loads(st.secrets["gcp_json"]), scopes=scope)
@@ -86,7 +86,7 @@ def get_gspread_client():
 
 def get_sheet(sheet_name):
     try:
-        doc = get_gspread_client().open("BaseDatos")
+        doc = get_gspread_client().open("Base_Datos_InforGem")
         if sheet_name in [hoja.title for hoja in doc.worksheets()]: return doc.worksheet(sheet_name)
         return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e:
@@ -97,12 +97,9 @@ def get_sheet(sheet_name):
 def guardar_dato_equipo(tag, clave, valor):
     try:
         sheet = get_sheet("datos_equipo")
-        if sheet:
-            sheet.append_row([tag, clave, valor])
-            st.cache_data.clear() 
+        if sheet: sheet.append_row([tag, clave, valor])
     except: pass
 
-@st.cache_data(ttl=60, show_spinner=False)
 def obtener_datos_equipo(tag):
     datos = {}
     try:
@@ -110,8 +107,7 @@ def obtener_datos_equipo(tag):
         if sheet:
             data = sheet.get_all_values()
             for row in data:
-                if len(row) >= 3 and row[0] == tag:
-                    datos[row[1]] = row[2]
+                if len(row) >= 3 and row[0] == tag: datos[row[1]] = row[2]
     except: pass
     return datos
 
@@ -122,12 +118,9 @@ def agregar_observacion(tag, usuario, texto):
     id_obs = str(uuid.uuid4())[:8] 
     try:
         sheet = get_sheet("observaciones")
-        if sheet:
-            sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"])
-            st.cache_data.clear()
+        if sheet: sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"])
     except: pass
 
-@st.cache_data(ttl=60, show_spinner=False)
 def obtener_observaciones(tag):
     cols = ["id", "fecha", "usuario", "texto"]
     try:
@@ -145,21 +138,16 @@ def eliminar_observacion(id_obs):
         sheet = get_sheet("observaciones")
         if sheet:
             cell = sheet.find(id_obs)
-            if cell: 
-                sheet.update_cell(cell.row, 6, "ELIMINADO")
-                st.cache_data.clear()
+            if cell: sheet.update_cell(cell.row, 6, "ELIMINADO")
     except: pass
 
 # --- Funciones de Especificaciones ---
 def guardar_especificacion_db(modelo, clave, valor):
     try:
         sheet = get_sheet("especificaciones")
-        if sheet:
-            sheet.append_row([modelo, clave, valor])
-            st.cache_data.clear()
+        if sheet: sheet.append_row([modelo, clave, valor])
     except: pass
 
-@st.cache_data(ttl=60, show_spinner=False)
 def obtener_especificaciones(defaults):
     specs = {k: dict(v) for k, v in defaults.items()}
     try:
@@ -175,7 +163,6 @@ def obtener_especificaciones(defaults):
     return specs
 
 # --- Funciones de Contactos ---
-@st.cache_data(ttl=60, show_spinner=False)
 def obtener_contactos():
     try:
         sheet = get_sheet("contactos")
@@ -190,9 +177,7 @@ def agregar_contacto(nombre):
     if not nombre.strip(): return
     try:
         sheet = get_sheet("contactos")
-        if sheet:
-            sheet.append_row([nombre.strip().title(), "ACTIVO"])
-            st.cache_data.clear()
+        if sheet: sheet.append_row([nombre.strip().title(), "ACTIVO"])
     except: pass
 
 def eliminar_contacto(nombre):
@@ -201,7 +186,6 @@ def eliminar_contacto(nombre):
         if sheet:
             cells = sheet.findall(nombre)
             for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO")
-            st.cache_data.clear()
     except: pass
 
 # --- Funciones de Historial de Intervenciones ---
@@ -211,10 +195,8 @@ def guardar_registro(data_tuple):
         if sheet:
             row = [str(x) for x in data_tuple]
             sheet.append_row(row)
-            st.cache_data.clear()
     except: pass
 
-@st.cache_data(ttl=60, show_spinner=False)
 def buscar_ultimo_registro(tag):
     try:
         sheet = get_sheet("intervenciones")
@@ -226,7 +208,6 @@ def buscar_ultimo_registro(tag):
     except: pass
     return None
 
-@st.cache_data(ttl=60, show_spinner=False)
 def obtener_todo_el_historial(tag):
     try:
         sheet = get_sheet("intervenciones")
@@ -245,7 +226,6 @@ def obtener_todo_el_historial(tag):
         return pd.DataFrame()
     except: return pd.DataFrame()
 
-@st.cache_data(ttl=60, show_spinner=False)
 def obtener_estados_actuales():
     estados = {}
     try:
@@ -351,7 +331,7 @@ else:
             with st.expander(f"📄 Previsualizar: {inf['tag']}"):
                 if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
                     
-                    # VISOR DE PDFS ROBUSTO (NO LO BLOQUEA EL NAVEGADOR)
+                    # VISOR DE PDFS ROBUSTO (NO LO BLOQUEA EL NAVEGADOR CORPORATIVO)
                     try:
                         pdf_viewer(inf['ruta_prev_pdf'], width=750, height=600)
                     except Exception as e:
@@ -462,7 +442,7 @@ else:
             up = m3.selectbox("Unidad", ["Bar", "psi"])
             pc = m4.text_input("P. Carga", st.session_state.input_p_carga)
             
-            # EL BUG ESTÁ ARREGLADO AQUÍ: 'pd' -> 'p_desc'
+            # 👇 AQUÍ ESTÁ EL ARREGLO PARA QUE PANDAS NO FALLE 👇
             p_desc = m5.text_input("P. Descarga", st.session_state.input_p_descarga)
             ts = m6.text_input("Temp Salida", st.session_state.input_temp)
 
