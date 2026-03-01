@@ -52,66 +52,44 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (Corregido y Limpio)
+# 0.2 ESTILOS PREMIUM (Tarjetas Clickeables y Hover 3D)
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
 
 def aplicar_estilos_premium():
     st.markdown("""
+        <meta name="google" content="notranslate">
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap');
-        
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; --bg-card: #151a22; }
-        
         html, body, [class*="css"] { font-family: 'Montserrat', sans-serif !important; }
-        
         #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
         
         div.stButton > button:first-child {
-            background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%);
-            color: white; border-radius: 8px; border: none; font-weight: 600; letter-spacing: 0.5px;
-            padding: 0.6rem 1.2rem; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; letter-spacing: 0.5px; padding: 0.6rem 1.2rem; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4);
         }
+        div.stButton > button:first-child:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 124, 166, 0.6); }
         
-        div.stButton > button:first-child:hover { 
-            transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 124, 166, 0.6); 
-        }
-
-        div[data-testid="column"] div.stButton > button {
-            background: linear-gradient(145deg, #1a212b, #151a22) !important;
-            border: 1px solid #2b3543 !important;
-            border-radius: 12px !important;
-            color: white !important;
-            font-size: 1.4rem !important;
-            font-weight: 800 !important;
-            padding: 1.5rem 1rem !important;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-            width: 100% !important;
-        }
+        .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select { border-radius: 6px !important; border: 1px solid #2b3543 !important; background-color: #1e2530 !important; color: white !important; transition: all 0.3s ease; }
+        .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus { border-color: var(--bhp-orange) !important; box-shadow: 0 0 10px rgba(255, 102, 0, 0.3) !important; }
         
-        div[data-testid="column"] div.stButton > button:hover {
-            transform: translateY(-6px) !important;
-            border-color: var(--ac-blue) !important;
-            box-shadow: 0 12px 25px rgba(0, 124, 166, 0.3) !important;
-            background: #1e2530 !important;
+        /* 🪄 MAGIA CSS: Tarjetas que funcionan como botones enteros */
+        div[data-testid="column"] { position: relative; }
+        .tarjeta-equipo {
+            background: linear-gradient(145deg, #1a212b, #151a22); border: 1px solid #2b3543; border-radius: 12px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); min-height: 140px; cursor: pointer;
         }
-        
-        .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select { 
-            border-radius: 6px !important; border: 1px solid #2b3543 !important; 
-            background-color: #1e2530 !important; color: white !important; transition: all 0.3s ease;
+        div[data-testid="column"]:hover .tarjeta-equipo {
+            transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0, 124, 166, 0.3); border-color: var(--ac-blue);
         }
-        
-        .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus { 
-            border-color: var(--bhp-orange) !important; box-shadow: 0 0 10px rgba(255, 102, 0, 0.3) !important; 
+        /* Oculta el botón real y lo estira transparente sobre la tarjeta */
+        div.element-container:has(.tarjeta-equipo) + div.element-container {
+            position: absolute !important; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
         }
-        
-        .stTabs [data-baseweb="tab-list"] { gap: 10px; border-bottom: 2px solid #2b3543; padding-bottom: 5px; }
-        .stTabs [data-baseweb="tab"] { background-color: transparent; border: none; color: #8c9eb5; font-weight: 600; }
-        .stTabs [aria-selected="true"] { color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; }
+        div.element-container:has(.tarjeta-equipo) + div.element-container button {
+            opacity: 0 !important; width: 100% !important; height: 100% !important; cursor: pointer !important; margin: 0 !important;
+        }
         </style>
     """, unsafe_allow_html=True)
-aplicar_estilos_premium()
 
 # =============================================================================
 # 1. DATOS MAESTROS (INVENTARIO Y USUARIOS)
@@ -137,7 +115,7 @@ inventario_equipos = {
     "55-GC-015": ["GA 30", "API501440", "planta borra", "área húmeda"],
     "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "área húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "área húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "área húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "área húmeda"],
     "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "área húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "área húmeda"],
-    "80-GC-001": ["GA 18", "API335343", "Taller", "Taller"]
+    "80-GC-001": ["GA 18", "API335343", "taller", "taller"]
 }
 
 # =============================================================================
@@ -507,4 +485,46 @@ else:
                 else: file_plantilla = "plantilla/fueradeservicio.docx" if est_eq == "Fuera de servicio" else f"plantilla/{tipo_plan.lower()}.docx" if tipo_plan in ["P1", "P2", "P3"] else "plantilla/inspeccion.docx"
                 context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}; nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"; ruta = os.path.join(RUTA_ONEDRIVE, nombre_archivo); temp_db = float(t_salida_clean) if t_salida_clean.replace('.', '', 1).isdigit() else 0.0; tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
                 with st.spinner("Creando borrador del documento para vista preliminar..."):
-                    doc_prev = DocxTemplate(file_plantilla); ctx_prev = context.
+                    doc_prev = DocxTemplate(file_plantilla); ctx_prev = context.copy(); ctx_prev['firma_tecnico'] = ""; ctx_prev['firma_cliente'] = ""; doc_prev.render(ctx_prev); os.makedirs(RUTA_ONEDRIVE, exist_ok=True); ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}"); doc_prev.save(ruta_prev_docx); ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
+                st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf}); st.success("✅ Datos guardados. Agrega otro equipo o ve a la bandeja para firmar."); st.session_state.equipo_seleccionado = None; st.rerun()
+        with tab2:
+            st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
+            with st.expander("✏️ Agregar o Corregir Datos Faltantes"):
+                with st.form(key=f"form_specs_{tag_sel}"):
+                    c_e1, c_e2 = st.columns(2); opc_claves = ["N° Parte Filtro Aceite", "N° Parte Filtro Aire", "N° Parte Kit", "N° Parte Separador", "Litros de Aceite", "Tipo de Aceite", "Cant. Filtros Aceite", "Cant. Filtros Aire", "Otro dato nuevo..."]; clave_sel = c_e1.selectbox("¿Qué dato vas a ingresar?", opc_claves); clave_final = c_e1.text_input("Escribe el nombre del dato:") if clave_sel == "Otro dato nuevo..." else clave_sel; valor_final = c_e2.text_input("Ingresa el valor:")
+                    if st.form_submit_button("💾 Guardar en Base de Datos", use_container_width=True):
+                        if clave_final and valor_final: guardar_especificacion_db(mod_d, clave_final.strip(), valor_final.strip()); st.success("✅ ¡Dato guardado!"); st.rerun()
+            if mod_d in ESPECIFICACIONES:
+                specs = {k: v for k, v in ESPECIFICACIONES[mod_d].items() if k != "Manual"}
+                if specs:
+                    cols = st.columns(3)
+                    for i, (k, v) in enumerate(specs.items()):
+                        with cols[i % 3]: st.markdown(f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
+                st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### 📥 Documentación y Manuales")
+                if "Manual" in ESPECIFICACIONES[mod_d] and os.path.exists(ESPECIFICACIONES[mod_d]["Manual"]):
+                    with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f: st.download_button(label=f"📕 Descargar Manual de {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
+        with tab3:
+            st.markdown(f"### 🔍 Bitácora Permanente del Equipo: {tag_sel}")
+            with st.form(key=f"form_obs_{tag_sel}"):
+                nueva_obs = st.text_area("Escribe una nueva observación:", height=100)
+                if st.form_submit_button("➕ Dejar constancia en la bitácora", use_container_width=True):
+                    if nueva_obs: agregar_observacion(tag_sel, st.session_state.usuario_actual, nueva_obs); st.success("✅ Observación registrada."); st.rerun()
+            st.markdown("---"); df_obs = obtener_observaciones(tag_sel)
+            if not df_obs.empty:
+                for _, row in df_obs.iterrows():
+                    col_obs, col_del = st.columns([11, 1])
+                    with col_obs: st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #FF6600;'><small style='color: #aeb9cc;'><b>👤 Técnico: {row['usuario']}</b> &nbsp;|&nbsp; 📅 Fecha: {row['fecha']}</small><br><span style='color: white; font-size: 1.05em;'>{row['texto']}</span></div>", unsafe_allow_html=True)
+                    with col_del:
+                        if st.button("🗑️", key=f"del_obs_{row['id']}"): eliminar_observacion(row['id']); st.rerun()
+        with tab4:
+            st.markdown(f"### 👤 Información de Contactos y Seguridad del Área: {tag_sel}")
+            with st.expander("✏️ Editar o Agregar Contacto / Dato de Seguridad"):
+                with st.form(key=f"form_area_{tag_sel}"):
+                    c_a1, c_a2 = st.columns(2); opc_area = ["Dueño de Área (Turno 1-3)", "Dueño de Área (Turno 2-4)", "PEA", "Frecuencia Radial", "Supervisor a cargo", "Jefe de Turno", "Otro cargo..."]; clave_sel_area = c_a1.selectbox("¿Qué dato vas a ingresar?", opc_area); clave_final_area = c_a1.text_input("Escribe el nombre del cargo:") if clave_sel_area == "Otro cargo..." else clave_sel_area; valor_final_area = c_a2.text_input("Ingresa la información:")
+                    if st.form_submit_button("💾 Guardar Información", use_container_width=True):
+                        if clave_final_area and valor_final_area: guardar_dato_equipo(tag_sel, clave_final_area.strip(), valor_final_area.strip()); st.success("✅ Dato actualizado!"); st.rerun()
+            datos_equipo = obtener_datos_equipo(tag_sel); cols_area = st.columns(2)
+            for i, (k, v) in enumerate(datos_equipo.items()):
+                with cols_area[i % 2]: st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #FF6600;'><span style='color: #aeb9cc; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
+        st.markdown("<br><hr>", unsafe_allow_html=True); st.markdown("### 📋 Trazabilidad Histórica de Intervenciones"); df_hist = obtener_todo_el_historial(tag_sel)
+        if not df_hist.empty: st.dataframe(df_hist, use_container_width=True)
