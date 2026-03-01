@@ -17,6 +17,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 import json
 import uuid
+from streamlit_pdf_viewer import pdf_viewer
 
 # =============================================================================
 # 0.1 CONFIGURACIÓN DE NUBE Y CORREO
@@ -407,21 +408,15 @@ else:
         for i, inf in enumerate(st.session_state.informes_pendientes):
             with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
                 if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
-                    with open(inf['ruta_prev_pdf'], "rb") as f:
-                        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
                     
-                    # Solución robusta corporativa para visualización de PDFs
-                    pdf_display = f'''
-                    <object data="data:application/pdf;base64,{base64_pdf}" type="application/pdf" width="100%" height="600px">
-                        <div style="background-color: #2b303b; padding: 20px; border-radius: 8px; text-align: center; border: 1px solid #444;">
-                            <h4 style="color: #FF6600;">⚠️ Vista previa bloqueada por tu navegador</h4>
-                            <p style="color: white;">Las políticas de seguridad de tu navegador o red corporativa no permiten mostrar el documento aquí adentro.</p>
-                            <p style="color: #aeb9cc;"><b>No te preocupes:</b> El PDF está perfectamente generado. Usa el botón de abajo para descargarlo, revisarlo y luego firmar.</p>
-                        </div>
-                    </object>
-                    '''
-                    st.markdown(pdf_display, unsafe_allow_html=True)
+                    # --- NUEVA SOLUCIÓN DEFINITIVA ANTI-BLOQUEOS ---
+                    try:
+                        # Usamos la librería especial para dibujar el PDF sin usar el navegador
+                        pdf_viewer(inf['ruta_prev_pdf'], width=750, height=600)
+                    except Exception as e:
+                        st.warning("Cargando visor alternativo...")
                     
+                    st.markdown("<br>", unsafe_allow_html=True)
                     with open(inf['ruta_prev_pdf'], "rb") as f2:
                         st.download_button("📥 Descargar Borrador (PDF)", f2, file_name=f"Borrador_{inf['tag']}.pdf", mime="application/pdf", key=f"dl_prev_{i}")
                 else:
