@@ -121,7 +121,7 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. CONEXIÓN OPTIMIZADA A GOOGLE SHEETS (ANTI-ERROR 429)
+# 2. CONEXIÓN OPTIMIZADA A GOOGLE SHEETS
 # =============================================================================
 @st.cache_resource
 def get_gspread_client():
@@ -135,15 +135,13 @@ def get_sheet(sheet_name):
         client = get_gspread_client()
         doc = client.open("BaseDatos")
         try:
-            # OPTIMIZACIÓN: Va directo a la hoja sin leer todas (ahorra muchísima cuota)
             return doc.worksheet(sheet_name)
         except gspread.exceptions.WorksheetNotFound:
             return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e:
         return None
 
-# --- FUNCIONES DE LECTURA (CON CACHÉ PARA NO SATURAR A GOOGLE) ---
-
+# --- FUNCIONES DE LECTURA (CON CACHÉ) ---
 @st.cache_data(ttl=120)
 def obtener_datos_equipo(tag):
     datos = {}
@@ -228,8 +226,7 @@ def obtener_estados_actuales():
     except: pass
     return estados
 
-# --- FUNCIONES DE ESCRITURA (LIMPIAN EL CACHÉ PARA ACTUALIZAR DATOS) ---
-
+# --- FUNCIONES DE ESCRITURA (LIMPIAN EL CACHÉ) ---
 def guardar_dato_equipo(tag, clave, valor):
     try:
         sheet = get_sheet("datos_equipo")
@@ -286,14 +283,15 @@ def eliminar_contacto(nombre):
     except: pass
 
 def guardar_registro(data_tuple):
-    # SISTEMA ANTI-FALLOS: Intenta guardar 3 veces. Si la red falla, espera 5 seg.
+    # LA MAGIA ANTI-ESCALERA: insert_row asegura que siempre se pegue en la Columna A
     for intento in range(3):
         try:
             sheet = get_sheet("intervenciones")
             if sheet is not None:
                 row = [str(x) for x in data_tuple]
-                sheet.append_row(row)
-                st.cache_data.clear() # CRÍTICO: Le avisa al panel que hay datos nuevos
+                num_filas = len(sheet.get_all_values()) + 1
+                sheet.insert_row(row, index=num_filas) # <--- Solución al Bug de Google Sheets
+                st.cache_data.clear()
                 return True
         except Exception as e:
             time.sleep(5)
@@ -339,6 +337,7 @@ for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
 
 def seleccionar_equipo(tag):
+    time.sleep(1)
     st.session_state.equipo_seleccionado = tag
     st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
