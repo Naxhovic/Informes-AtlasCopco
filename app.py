@@ -131,7 +131,7 @@ def get_gspread_client():
 def get_sheet(sheet_name):
     try:
         client = get_gspread_client()
-        doc = client.open("BaseDatos")
+        doc = client.open("Base_Datos_InforGem")
         
         # Leemos todas las pestañas disponibles
         pestañas = [hoja.title for hoja in doc.worksheets()]
@@ -405,27 +405,19 @@ else:
         st.info("👀 **Para el Cliente:** Por favor, revise el documento oficial antes de firmar.")
 
         for i, inf in enumerate(st.session_state.informes_pendientes):
-            with st.expander(f"📄 Previsualizar: {inf['tag']}"):
+            with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
                 if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
+                    with open(inf['ruta_prev_pdf'], "rb") as f:
+                        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
                     
-                    # VISOR DE PDFS ROBUSTO (INYECTADO EN BYTES)
-                    # VISOR DE PDFS ROBUSTO (INYECTADO EN BYTES)
-                    try:
-                        with open(inf['ruta_prev_pdf'], "rb") as f_pdf:
-                            pdf_bytes = f_pdf.read()
-                        
-                        # Pasamos los bytes directo en la primera posición
-                        pdf_viewer(pdf_bytes, width=750, height=600)
-                        
-                    except Exception as e:
-                        # Si falla, mostrará el error real en rojo
-                        st.error(f"Error técnico al dibujar el PDF: {e}")
+                    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="500" type="application/pdf"></iframe>'
+                    st.markdown(pdf_display, unsafe_allow_html=True)
                     
-                    st.markdown("<br>", unsafe_allow_html=True)
                     with open(inf['ruta_prev_pdf'], "rb") as f2:
                         st.download_button("📥 Descargar Borrador (PDF)", f2, file_name=f"Borrador_{inf['tag']}.pdf", mime="application/pdf", key=f"dl_prev_{i}")
                 else:
                     st.warning("⚠️ La vista preliminar en PDF no está disponible. Verifique la conexión con LibreOffice.")
+
         st.markdown("---")
         st.info("💡 **Instrucciones:** Dibuja las firmas en los recuadros usando el mouse o el dedo.")
         
