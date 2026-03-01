@@ -485,10 +485,13 @@ else:
                             
                             nombre_codificado = f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"
                             
-                            # Guardamos en Google Sheets
+                            # Guardamos en Google Sheets con validación
                             tupla_lista = list(inf['tupla_db'])
                             tupla_lista[18] = ruta_final
-                            guardar_registro(tuple(tupla_lista))
+                            
+                            guardado_ok = guardar_registro(tuple(tupla_lista))
+                            if not guardado_ok:
+                                st.error(f"⚠️ El PDF se generó y envió, pero la base de datos de Google superó su límite. Verifica el catálogo en 1 minuto.")
                             
                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": nombre_codificado})
                             
