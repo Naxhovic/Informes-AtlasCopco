@@ -17,6 +17,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 import json
 import uuid
+from streamlit_pdf_viewer import pdf_viewer
 
 # =============================================================================
 # 0.1 CONFIGURACIÓN DE NUBE Y CORREO
@@ -407,16 +408,25 @@ else:
         for i, inf in enumerate(st.session_state.informes_pendientes):
             with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
                 if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
-                    with open(inf['ruta_prev_pdf'], "rb") as f:
-                        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
                     
-                    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="500" type="application/pdf"></iframe>'
-                    st.markdown(pdf_display, unsafe_allow_html=True)
+                    # --- NUEVA VISUALIZACIÓN CON STREAMLIT-PDF-VIEWER ---
+                    try:
+                        # Leemos el archivo en modo binario (bytes)
+                        with open(inf['ruta_prev_pdf'], "rb") as f_pdf:
+                            pdf_bytes = f_pdf.read()
+                        
+                        # Mostramos el PDF dibujado directamente (evita bloqueos de seguridad)
+                        pdf_viewer(pdf_bytes, width=700, height=600)
+                        
+                    except Exception as e:
+                        st.error(f"No se pudo desplegar el visor: {e}")
                     
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    # Mantenemos el botón de descarga por si el cliente quiere guardarlo
                     with open(inf['ruta_prev_pdf'], "rb") as f2:
                         st.download_button("📥 Descargar Borrador (PDF)", f2, file_name=f"Borrador_{inf['tag']}.pdf", mime="application/pdf", key=f"dl_prev_{i}")
                 else:
-                    st.warning("⚠️ La vista preliminar en PDF no está disponible. Verifique la conexión con LibreOffice.")
+                    st.warning("⚠️ La vista preliminar en PDF no está disponible.")
 
         st.markdown("---")
         st.info("💡 **Instrucciones:** Dibuja las firmas en los recuadros usando el mouse o el dedo.")
