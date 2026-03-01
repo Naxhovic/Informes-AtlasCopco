@@ -134,14 +134,24 @@ def get_sheet(sheet_name):
     try:
         client = get_gspread_client()
         doc = client.open("BaseDatos")
+        
+        # Leemos todas las pestañas disponibles
         pestañas = [hoja.title for hoja in doc.worksheets()]
-        if sheet_name in pestañas: return doc.worksheet(sheet_name)
-        else: return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
+        
+        if sheet_name in pestañas:
+            return doc.worksheet(sheet_name)
+        else:
+            # Si la pestaña no existe, el robot la crea solo
+            return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
+            
     except Exception as e:
-        if "200" in str(e): st.error("🚨 ERROR DE FORMATO: Archivo .xlsx detectado. Debe ser Google Sheet nativo.")
-        else: st.error(f"🚨 ERROR DE CONEXIÓN CON GOOGLE: {e}")
+        if "200" in str(e):
+            st.error("🚨 ERROR DE FORMATO: Tu archivo en Google Drive es un Excel tradicional (.xlsx). Debes crear una 'Hoja de cálculo de Google' nativa.")
+        else:
+            st.error(f"🚨 ERROR DE CONEXIÓN CON GOOGLE: {e}")
         return None
 
+# --- Funciones de Gestión de Área ---
 def guardar_dato_equipo(tag, clave, valor):
     try:
         sheet = get_sheet("datos_equipo")
@@ -154,15 +164,16 @@ def obtener_datos_equipo(tag):
         sheet = get_sheet("datos_equipo")
         data = sheet.get_all_values()
         for row in data:
-            if len(row) >= 3 and row[0] == tag: datos[row[1]] = row[2]
+            if len(row) >= 3 and row[0] == tag:
+                datos[row[1]] = row[2] # El más nuevo sobrescribe al viejo
     except: pass
     return datos
 
+# --- Funciones de Bitácora ---
 def agregar_observacion(tag, usuario, texto):
     if not texto.strip(): return
-    time.sleep(2)
     fecha_actual = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M")
-    id_obs = str(uuid.uuid4())[:8]
+    id_obs = str(uuid.uuid4())[:8] # ID único corto
     try:
         sheet = get_sheet("observaciones")
         sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"])
@@ -177,20 +188,19 @@ def obtener_observaciones(tag):
             if len(row) >= 6 and row[1] == tag and row[5] == "ACTIVO":
                 obs.append({"id": row[0], "fecha": row[2], "usuario": row[3], "texto": row[4]})
         df = pd.DataFrame(obs)
-        if not df.empty: return df.iloc[::-1]
+        if not df.empty: return df.iloc[::-1] # Invierte para mostrar los más nuevos arriba
         return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
     except: return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
 
 def eliminar_observacion(id_obs):
-    time.sleep(2)
     try:
         sheet = get_sheet("observaciones")
         cell = sheet.find(id_obs)
         if cell: sheet.update_cell(cell.row, 6, "ELIMINADO")
     except: pass
 
+# --- Funciones de Especificaciones ---
 def guardar_especificacion_db(modelo, clave, valor):
-    time.sleep(2)
     try:
         sheet = get_sheet("especificaciones")
         sheet.append_row([modelo, clave, valor])
@@ -209,6 +219,7 @@ def obtener_especificaciones(defaults):
     except: pass
     return specs
 
+# --- Funciones de Contactos ---
 def obtener_contactos():
     try:
         sheet = get_sheet("contactos")
@@ -220,24 +231,24 @@ def obtener_contactos():
 
 def agregar_contacto(nombre):
     if not nombre.strip(): return
-    time.sleep(2)
     try:
         sheet = get_sheet("contactos")
         sheet.append_row([nombre.strip().title(), "ACTIVO"])
     except: pass
 
 def eliminar_contacto(nombre):
-    time.sleep(2)
     try:
         sheet = get_sheet("contactos")
         cells = sheet.findall(nombre)
         for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO")
     except: pass
 
+# --- Funciones de Historial de Intervenciones ---
 def guardar_registro(data_tuple):
     try:
         sheet = get_sheet("intervenciones")
-        sheet.append_row([str(x) for x in data_tuple])
+        row = [str(x) for x in data_tuple]
+        sheet.append_row(row)
     except: pass
 
 def buscar_ultimo_registro(tag):
@@ -276,6 +287,7 @@ def obtener_estados_actuales():
             if len(row) >= 18: estados[row[0]] = row[17]
     except: pass
     return estados
+
 # =============================================================================
 # 3. CONVERSIÓN A PDF HÍBRIDA
 # =============================================================================
@@ -283,11 +295,13 @@ def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
     ruta_absoluta = os.path.abspath(ruta_docx)
     carpeta_salida = os.path.dirname(ruta_absoluta)
+    
     try:
         comando = ['libreoffice', '--headless', '--convert-to', 'pdf', ruta_absoluta, '--outdir', carpeta_salida]
         subprocess.run(comando, capture_output=True, text=True)
         if os.path.exists(ruta_pdf): return ruta_pdf
     except: pass
+
     try:
         import pythoncom
         from docx2pdf import convert
@@ -295,6 +309,7 @@ def convertir_a_pdf(ruta_docx):
         convert(ruta_absoluta, ruta_pdf)
         if os.path.exists(ruta_pdf): return ruta_pdf
     except: pass
+        
     return None
 
 # =============================================================================
@@ -302,19 +317,20 @@ def convertir_a_pdf(ruta_docx):
 # =============================================================================
 ESPECIFICACIONES = obtener_especificaciones(DEFAULT_SPECS)
 
-if 'logged_in' not in st.session_state:
-    st.session_state.update({
-        'logged_in': False, 'usuario_actual': "", 'equipo_seleccionado': None,
-        'input_cliente': "Lorena Rojas", 'input_tec1': "Ignacio Morales", 'input_tec2': "emian Sanchez",
-        'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
-        'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
-        'input_reco': "", 'input_estado_eq': "Operativo",
-        'informes_pendientes': [], 'vista_firmas': False
-    })
+default_states = {
+    'logged_in': False, 'usuario_actual': "", 'equipo_seleccionado': None,
+    'input_cliente': "Lorena Rojas", 'input_tec1': "Ignacio Morales", 'input_tec2': "emian Sanchez",
+    'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
+    'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
+    'input_reco': "", 'input_estado_eq': "Operativo",
+    'informes_pendientes': [], 'vista_firmas': False
+}
+for key, value in default_states.items():
+    if key not in st.session_state: st.session_state[key] = value
 
 def seleccionar_equipo(tag):
-    time.sleep(2)
     st.session_state.equipo_seleccionado = tag
+    time.sleep(2) 
     st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
     if reg:
@@ -339,110 +355,394 @@ def volver_catalogo():
     st.session_state.vista_firmas = False
 
 # =============================================================================
-# 5. LOGIN Y SIDEBAR
+# 5. PANTALLA 1: SISTEMA DE LOGIN PREMIUM
 # =============================================================================
 if not st.session_state.logged_in:
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
     _, col_centro, _ = st.columns([1, 1.5, 1])
-    with col_centro.container(border=True):
-        st.markdown("<h1 style='text-align: center;'>⚙️ Atlas Spence</h1>", unsafe_allow_html=True)
-        with st.form("form_login"):
-            u_in = st.text_input("Usuario Corporativo").lower()
-            p_in = st.text_input("Contraseña", type="password")
-            if st.form_submit_button("Acceder de forma segura", type="primary", use_container_width=True):
-                time.sleep(2)
-                if u_in in USUARIOS and USUARIOS[u_in] == p_in:
-                    st.session_state.update({'logged_in': True, 'usuario_actual': u_in})
-                    st.rerun()
-                else: st.error("❌ Credenciales inválidas.")
+    with col_centro:
+        with st.container(border=True):
+            st.markdown("<h1 style='text-align: center; border-bottom:none;'>⚙️ <span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h1>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: gray;'>Sistema de Gestión de Reportes Técnicos - Atlas Copco</p>", unsafe_allow_html=True)
+            st.markdown("---")
+            with st.form("form_login"):
+                u_in = st.text_input("Usuario Corporativo").lower()
+                p_in = st.text_input("Contraseña", type="password")
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.form_submit_button("Acceder de forma segura", type="primary", use_container_width=True):
+                    time.sleep(2)
+                    if u_in in USUARIOS and USUARIOS[u_in] == p_in:
+                        st.session_state.update({'logged_in': True, 'usuario_actual': u_in})
+                        st.rerun()
+                    else: st.error("❌ Credenciales inválidas.")
+                    # =============================================================================
+# 6. PANTALLA PRINCIPAL: APLICACIÓN AUTENTICADA
+# =============================================================================
 else:
     with st.sidebar:
-        st.markdown(f"**Usuario:** {st.session_state.usuario_actual.title()}")
+        st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
+        st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
+
         if len(st.session_state.informes_pendientes) > 0:
-            if st.button("✍️ Pizarra de Firmas", use_container_width=True, type="primary"):
+            st.markdown("---")
+            st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
+            if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary"):
                 time.sleep(2)
-                st.session_state.update({'vista_firmas': True, 'equipo_seleccionado': None})
+                st.session_state.vista_firmas = True
+                st.session_state.equipo_seleccionado = None
                 st.rerun()
+
+        st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True):
             st.session_state.logged_in = False
             st.rerun()
 
-    # --- 6.1 VISTA DE FIRMAS ---
+    # --- 6.1 VISTA DE FIRMAS Y ENVÍO MÚLTIPLE ---
     if st.session_state.vista_firmas:
-        if st.button("⬅️ Volver"): volver_catalogo(); st.rerun()
-        st.markdown("<h1>✍️ Pizarra de Firmas</h1>", unsafe_allow_html=True)
+        c_v1, c_v2 = st.columns([1,4])
+        with c_v1: 
+            if st.button("⬅️ Volver", use_container_width=True): volver_catalogo(); st.rerun()
+        with c_v2: 
+            st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas Digital</h1>", unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.markdown(f"### 📑 Revisión de Informes ({len(st.session_state.informes_pendientes)})")
+        st.info("👀 **Para el Cliente:** Por favor, revise el documento oficial antes de firmar.")
+
         for i, inf in enumerate(st.session_state.informes_pendientes):
-            with st.expander(f"📄 Pre-visualizar: {inf['tag']}"):
-                if inf.get('ruta_prev_pdf'):
-                    with open(inf['ruta_prev_pdf'], "rb") as f_p: pdf_viewer(f_p.read(), width=700)
+            with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
+                if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
+                    
+                    # --- NUEVA VISUALIZACIÓN CON STREAMLIT-PDF-VIEWER ---
+                    try:
+                        # Leemos el archivo en modo binario (bytes)
+                        with open(inf['ruta_prev_pdf'], "rb") as f_pdf:
+                            pdf_bytes = f_pdf.read()
+                        
+                        # Mostramos el PDF dibujado directamente (evita bloqueos de seguridad)
+                        pdf_viewer(pdf_bytes, width=700, height=600)
+                        
+                    except Exception as e:
+                        st.error(f"No se pudo desplegar el visor: {e}")
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    # Mantenemos el botón de descarga por si el cliente quiere guardarlo
+                    with open(inf['ruta_prev_pdf'], "rb") as f2:
+                        st.download_button("📥 Descargar Borrador (PDF)", f2, file_name=f"Borrador_{inf['tag']}.pdf", mime="application/pdf", key=f"dl_prev_{i}")
+                else:
+                    st.warning("⚠️ La vista preliminar en PDF no está disponible.")
+
+        st.markdown("---")
+        st.info("💡 **Instrucciones:** Dibuja las firmas en los recuadros usando el mouse o el dedo.")
         
         c_tec, c_cli = st.columns(2)
         with c_tec:
-            st.markdown("### 🧑‍🔧 Firma Técnico")
-            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, key="canvas_tecnico")
+            st.markdown("### 🧑‍🔧 Firma del Técnico")
+            st.caption(f"Técnico: {st.session_state.informes_pendientes[0]['tec1'] if st.session_state.informes_pendientes else 'N/A'}")
+            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
+            
         with c_cli:
-            st.markdown("### 👷 Firma Cliente")
-            canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, key="canvas_cliente")
+            st.markdown("### 👷 Firma del Cliente")
+            st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
+            canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
 
-        if st.button("🚀 Aprobar y Subir", type="primary", use_container_width=True):
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
             if canvas_tec.image_data is not None and canvas_cli.image_data is not None:
-                with st.spinner("Fabricando documentos oficiales..."):
-                    time.sleep(2)
-                    # Aquí va la lógica de inyección de firmas y envío final (context, doc.render, enviar_carrito)
-                    st.success("✅ Informes enviados correctamente.")
-                    st.session_state.informes_pendientes = []
-                    st.balloons()
+                def procesar_imagen_firma(img_data):
+                    img = Image.fromarray(img_data.astype('uint8'), 'RGBA')
+                    img_io = io.BytesIO()
+                    img.save(img_io, format='PNG')
+                    img_io.seek(0)
+                    return img_io
 
-    # --- 6.2 CATÁLOGO ---
+                io_tec = procesar_imagen_firma(canvas_tec.image_data)
+                io_cli = procesar_imagen_firma(canvas_cli.image_data)
+                
+                informes_finales = []
+                with st.spinner("Fabricando documentos oficiales, inyectando firmas y transformando a PDF..."):
+                    time.sleep(2)
+                    try:
+                        for inf in st.session_state.informes_pendientes:
+                            doc = DocxTemplate(inf['file_plantilla'])
+                            context = inf['context']
+                            
+                            context['firma_tecnico'] = InlineImage(doc, io_tec, width=Mm(40))
+                            context['firma_cliente'] = InlineImage(doc, io_cli, width=Mm(40))
+                            
+                            doc.render(context)
+                            doc.save(inf['ruta_docx'])
+                            
+                            ruta_pdf_gen = convertir_a_pdf(inf['ruta_docx'])
+                            
+                            if ruta_pdf_gen:
+                                ruta_final = ruta_pdf_gen
+                                nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
+                            else:
+                                ruta_final = inf['ruta_docx']
+                                nombre_final = inf['nombre_archivo_base']
+                            
+                            nombre_codificado = f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"
+                            
+                            # Guardamos en Google Sheets
+                            tupla_lista = list(inf['tupla_db'])
+                            tupla_lista[18] = ruta_final
+                            guardar_registro(tuple(tupla_lista))
+                            
+                            informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": nombre_codificado})
+                            
+                        exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
+                        
+                        if exito:
+                            st.success("✅ ¡PERFECTO! Los documentos oficiales se firmaron, convirtieron a PDF y ya están camino a tu OneDrive.")
+                            st.session_state.informes_pendientes = []  
+                            st.balloons()
+                        else:
+                            st.error(f"Error de red: {mensaje_correo}")
+                            
+                    except Exception as e:
+                        st.error(f"Error sistémico procesando las firmas: {e}")
+            else:
+                st.warning("⚠️ Asegúrate de dibujar en ambas pizarras antes de generar los PDFs finales.")
+
+    # --- 6.2 VISTA CATÁLOGO (Dashboard interactivo) ---
     elif st.session_state.equipo_seleccionado is None:
+        st.markdown("""
+            <div style="margin-top: 1.5rem; margin-bottom: 2rem; text-align: center;">
+                <div style="background-color: white; height: 2px; width: 100%;"></div>
+                <h1 style="color: #007CA6; font-size: 4.5em; font-weight: 900; margin: 20px 0; border-bottom: none; padding: 0;">Atlas Copco</h1>
+                <div style="background-color: white; height: 2px; width: 100%;"></div>
+            </div>
+        """, unsafe_allow_html=True)
+        
         st.title("🏭 Panel de Control de Equipos")
         estados_db = obtener_estados_actuales()
-        m1, m2, m3 = st.columns(3)
-        m1.metric("📦 Total Activos", len(inventario_equipos))
-        m2.metric("🟢 Operativos", sum(1 for t in inventario_equipos if estados_db.get(t, "Operativo") == "Operativo"))
-        m3.metric("🔴 Fuera de Servicio", len(inventario_equipos) - sum(1 for t in inventario_equipos if estados_db.get(t, "Operativo") == "Operativo"))
+        total_equipos = len(inventario_equipos)
+        operativos = sum(1 for tag in inventario_equipos.keys() if estados_db.get(tag, "Operativo") == "Operativo")
+        detenidos = total_equipos - operativos
         
-        busqueda = st.text_input("🔍 Buscar activo...").lower()
+        m1, m2, m3 = st.columns(3)
+        m1.metric("📦 Total Activos Mineros", total_equipos)
+        m2.metric("🟢 Equipos Operativos", operativos)
+        m3.metric("🔴 Fuera de Servicio", detenidos)
+        st.markdown("---")
+        
+        col_filtro, col_busqueda = st.columns([1.2, 2])
+        with col_filtro: filtro_tipo = st.radio("🗂️ Categoría de Equipo:", ["Todos", "Compresores", "Secadores"], horizontal=True)
+        with col_busqueda: busqueda = st.text_input("🔍 Buscar activo por TAG, Modelo o Área...", placeholder="Ejemplo: GA 250, 35-GC-006...").lower()
+            
+        st.markdown("<br>", unsafe_allow_html=True)
         columnas = st.columns(4)
         contador = 0
-        for tag, (modelo, serie, area, ubi) in inventario_equipos.items():
-            if busqueda in tag.lower() or busqueda in modelo.lower():
-                with columnas[contador % 4].container(border=True):
-                    st.markdown(f"### {tag}")
-                    st.caption(f"**{modelo}** | {area.title()}")
-                    st.button("📝 Ingresar", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
+        for tag, (modelo, serie, area, ubicacion) in inventario_equipos.items():
+            es_secador = "CD" in modelo.upper()
+            if filtro_tipo == "Compresores" and es_secador: continue
+            if filtro_tipo == "Secadores" and not es_secador: continue
+
+            if busqueda in tag.lower() or busqueda in area.lower() or busqueda in modelo.lower():
+                estado = estados_db.get(tag, "Operativo")
+                color_bg = "#eaffea" if estado == "Operativo" else "#ffeaea"
+                color_text = "#004d00" if estado == "Operativo" else "#800000"
+                icono = "🟢" if estado == "Operativo" else "🔴"
+                
+                with columnas[contador % 4]:
+                    with st.container(border=True):
+                        st.markdown(f"<span style='background-color:{color_bg}; color:{color_text}; padding: 4px 8px; border-radius:4px; font-size:0.85em; font-weight:bold; letter-spacing: 0.5px;'>{icono} {estado.upper()}</span>", unsafe_allow_html=True)
+                        st.markdown(f"<h3 style='margin-top:10px; margin-bottom:0;'>{tag}</h3>", unsafe_allow_html=True)
+                        st.caption(f"**{modelo}** | {area.title()}")
+                        st.button("📝 Ingresar", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
                 contador += 1
 
-    # --- 6.3 FORMULARIO ---
+    # --- 6.3 VISTA FORMULARIO Y GENERACIÓN ---
     else:
         tag_sel = st.session_state.equipo_seleccionado
         mod_d, ser_d, area_d, ubi_d = inventario_equipos[tag_sel]
-        st.button("⬅️ Volver", on_click=volver_catalogo)
-        st.title(f"⚙️ Ficha: {tag_sel}")
-        tab1, tab2, tab3, tab4 = st.tabs(["📋 Reporte", "📚 Ficha Técnica", "🔍 Bitácora", "👤 Área"])
+        
+        c_btn, c_tit = st.columns([1, 4])
+        with c_btn: st.button("⬅️ Volver", on_click=volver_catalogo, use_container_width=True)
+        with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Servicio: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        tab1, tab2, tab3, tab4 = st.tabs(["📋 1. Reporte y Diagnóstico", "📚 2. Ficha Técnica", "🔍 3. Bitácora de Observaciones", "👤 4. Gestión de Área"])
         
         with tab1:
-            st.markdown("### Diagnóstico")
-            tipo_plan = st.selectbox("🛠️ Orden:", ["Inspección", "P1", "P2", "P3", "PM03"])
-            c1, c2, c3, c4 = st.columns(4)
-            h_m = c1.number_input("Horas Marcha", value=int(st.session_state.input_h_marcha))
-            h_c = c2.number_input("Horas Carga", value=int(st.session_state.input_h_carga))
-            p_c = c3.text_input("P. Carga", value=st.session_state.input_p_carga)
-            t_s = c4.text_input("Temp Salida", value=st.session_state.input_temp)
-            est_ent = st.text_area("Condición Final:", key="input_estado")
-            reco = st.text_area("Acciones Pendientes:", key="input_reco")
+            st.markdown("### Datos de la Intervención")
+            tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"])
             
-            if st.button("📥 Guardar y Firmar", type="primary", use_container_width=True):
-                with st.spinner("Guardando..."):
-                    time.sleep(2)
-                    # Lógica de creación de borrador y PDF previo
-                    st.success("✅ Reporte guardado en la bandeja de firmas.")
-                    st.session_state.equipo_seleccionado = None
-                    st.rerun()
+            c1, c2, c3, c4 = st.columns(4)
+            modelo = c1.text_input("Modelo", mod_d, disabled=True)
+            numero_serie = c2.text_input("N° Serie", ser_d, disabled=True)
+            area = c3.text_input("Área", area_d, disabled=True)
+            ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True)
+
+            c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
+            fecha = c5.text_input("Fecha Ejecución", "25 de febrero de 2026")
+            tec1 = c6.text_input("Técnico 1", key="input_tec1")
+            tec2 = c7.text_input("Técnico 2", key="input_tec2")
+            
+            with c8:
+                contactos_db = obtener_contactos()
+                opciones = ["➕ Escribir nuevo..."] + contactos_db
+                
+                if st.session_state.input_cliente in opciones: cli_idx = opciones.index(st.session_state.input_cliente)
+                else: cli_idx = 1 if len(contactos_db) > 0 else 0
+                
+                sc1, sc2 = st.columns([4, 1])
+                with sc1: cli_sel = st.selectbox("Contacto Cliente", opciones, index=cli_idx)
+                with sc2:
+                    st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+                    if cli_sel != "➕ Escribir nuevo...":
+                        if st.button("❌", help="Eliminar permanentemente"):
+                            eliminar_contacto(cli_sel)
+                            st.session_state.input_cliente = obtener_contactos()[0] if obtener_contactos() else ""
+                            st.rerun()
+                
+                if cli_sel == "➕ Escribir nuevo...":
+                    nuevo_c = st.text_input("Nombre:", placeholder="Ej: Juan Pérez", label_visibility="collapsed")
+                    if st.button("💾 Guardar y Seleccionar", use_container_width=True):
+                        if nuevo_c.strip():
+                            agregar_contacto(nuevo_c)
+                            st.session_state.input_cliente = nuevo_c.strip().title()
+                            st.rerun()
+                    cli_cont = nuevo_c.strip().title()
+                else:
+                    cli_cont = cli_sel
+                    st.session_state.input_cliente = cli_sel
+
+            st.markdown("<hr>", unsafe_allow_html=True)
+            st.markdown("### Mediciones del Equipo")
+            c9, c10, c11, c12, c13, c14 = st.columns(6)
+            h_m = c9.number_input("Horas Marcha Totales", step=1, value=int(st.session_state.input_h_marcha), format="%d")
+            h_c = c10.number_input("Horas en Carga", step=1, value=int(st.session_state.input_h_carga), format="%d")
+            unidad_p = c11.selectbox("Unidad de Presión", ["Bar", "psi"])
+            p_c_str = c12.text_input("P. Carga", value=str(st.session_state.input_p_carga))
+            p_d_str = c13.text_input("P. Descarga", value=str(st.session_state.input_p_descarga))
+            t_salida_str = c14.text_input("Temp Salida (°C)", value=str(st.session_state.input_temp))
+            
+            p_c_clean = p_c_str.replace(',', '.')
+            p_d_clean = p_d_str.replace(',', '.')
+            t_salida_clean = t_salida_str.replace(',', '.')
+
+            st.markdown("<hr>", unsafe_allow_html=True)
+            st.markdown("### Evaluación y Diagnóstico Final")
+            est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True)
+            est_ent = st.text_area("Descripción Condición Final:", key="input_estado", height=100)
+            reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
+                if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
+                else:
+                    if est_eq == "Fuera de servicio": file_plantilla = "plantilla/fueradeservicio.docx"
+                    elif tipo_plan == "P1": file_plantilla = "plantilla/p1.docx"
+                    elif tipo_plan == "P2": file_plantilla = "plantilla/p2.docx"
+                    elif tipo_plan == "P3": file_plantilla = "plantilla/p3.docx"
+                    else: file_plantilla = "plantilla/inspeccion.docx"
+                    
+                context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}
+                
+                nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"
+                ruta = os.path.join(RUTA_ONEDRIVE, nombre_archivo)
+                
+                try: temp_db = float(t_salida_clean)
+                except: temp_db = 0.0
+                tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
+                
+                with st.spinner("Creando borrador del documento para vista preliminar..."):
+                    doc_prev = DocxTemplate(file_plantilla)
+                    ctx_prev = context.copy()
+                    ctx_prev['firma_tecnico'] = "" 
+                    ctx_prev['firma_cliente'] = ""
+                    doc_prev.render(ctx_prev)
+                    
+                    os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
+                    ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}")
+                    doc_prev.save(ruta_prev_docx)
+                    ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
+                
+                st.session_state.informes_pendientes.append({
+                    "tag": tag_sel, "area": area_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan,
+                    "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db,
+                    "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf
+                })
+                st.success("✅ Datos guardados. Agrega otro equipo o ve a la bandeja para firmar.")
+                st.session_state.equipo_seleccionado = None
+                st.rerun()
+
+        with tab2:
+            st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
+            with st.expander("✏️ Agregar o Corregir Datos Faltantes"):
+                with st.form(key=f"form_specs_{tag_sel}"):
+                    c_e1, c_e2 = st.columns(2)
+                    opc_claves = ["N° Parte Filtro Aceite", "N° Parte Filtro Aire", "N° Parte Kit", "N° Parte Separador", "Litros de Aceite", "Tipo de Aceite", "Cant. Filtros Aceite", "Cant. Filtros Aire", "Otro dato nuevo..."]
+                    clave_sel = c_e1.selectbox("¿Qué dato vas a ingresar?", opc_claves)
+                    if clave_sel == "Otro dato nuevo...": clave_final = c_e1.text_input("Escribe el nombre del dato:")
+                    else: clave_final = clave_sel
+                    valor_final = c_e2.text_input("Ingresa el valor:")
+                    
+                    if st.form_submit_button("💾 Guardar en Base de Datos", use_container_width=True):
+                        if clave_final and valor_final:
+                            guardar_especificacion_db(mod_d, clave_final.strip(), valor_final.strip())
+                            st.success("✅ ¡Dato guardado!")
+                            st.rerun()
+
+            if mod_d in ESPECIFICACIONES:
+                specs = {k: v for k, v in ESPECIFICACIONES[mod_d].items() if k != "Manual"}
+                if specs:
+                    cols = st.columns(3)
+                    for i, (k, v) in enumerate(specs.items()):
+                        with cols[i % 3]: st.markdown(f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
+                
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.markdown("### 📥 Documentación y Manuales")
+                if "Manual" in ESPECIFICACIONES[mod_d] and os.path.exists(ESPECIFICACIONES[mod_d]["Manual"]):
+                    with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f: st.download_button(label=f"📕 Descargar Manual de {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
 
         with tab3:
-            st.markdown("### Bitácora del Equipo")
-            nueva_obs = st.text_area("Nueva Observación:")
-            if st.button("➕ Agregar"):
-                agregar_observacion(tag_sel, st.session_state.usuario_actual, nueva_obs)
-                st.rerun()
-            st.dataframe(obtener_observaciones(tag_sel), use_container_width=True)
+            st.markdown(f"### 🔍 Bitácora Permanente del Equipo: {tag_sel}")
+            with st.form(key=f"form_obs_{tag_sel}"):
+                nueva_obs = st.text_area("Escribe una nueva observación:", height=100)
+                if st.form_submit_button("➕ Dejar constancia en la bitácora", use_container_width=True):
+                    if nueva_obs:
+                        agregar_observacion(tag_sel, st.session_state.usuario_actual, nueva_obs)
+                        st.success("✅ Observación registrada.")
+                        st.rerun()
+            
+            st.markdown("---")
+            df_obs = obtener_observaciones(tag_sel)
+            if not df_obs.empty:
+                for _, row in df_obs.iterrows():
+                    col_obs, col_del = st.columns([11, 1])
+                    with col_obs:
+                        st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #FF6600;'><small style='color: #aeb9cc;'><b>👤 Técnico: {row['usuario']}</b> &nbsp;|&nbsp; 📅 Fecha: {row['fecha']}</small><br><span style='color: white; font-size: 1.05em;'>{row['texto']}</span></div>", unsafe_allow_html=True)
+                    with col_del:
+                        if st.button("🗑️", key=f"del_obs_{row['id']}"):
+                            eliminar_observacion(row['id'])
+                            st.rerun()
+
+        with tab4:
+            st.markdown(f"### 👤 Información de Contactos y Seguridad del Área: {tag_sel}")
+            with st.expander("✏️ Editar o Agregar Contacto / Dato de Seguridad"):
+                with st.form(key=f"form_area_{tag_sel}"):
+                    c_a1, c_a2 = st.columns(2)
+                    opc_area = ["Dueño de Área (Turno 1-3)", "Dueño de Área (Turno 2-4)", "PEA", "Frecuencia Radial", "Supervisor a cargo", "Jefe de Turno", "Otro cargo..."]
+                    clave_sel_area = c_a1.selectbox("¿Qué dato vas a ingresar?", opc_area)
+                    if clave_sel_area == "Otro cargo...": clave_final_area = c_a1.text_input("Escribe el nombre del cargo:")
+                    else: clave_final_area = clave_sel_area
+                    valor_final_area = c_a2.text_input("Ingresa la información:")
+                    if st.form_submit_button("💾 Guardar Información", use_container_width=True):
+                        if clave_final_area and valor_final_area:
+                            guardar_dato_equipo(tag_sel, clave_final_area.strip(), valor_final_area.strip())
+                            st.success("✅ Dato actualizado!")
+                            st.rerun()
+
+            datos_equipo = obtener_datos_equipo(tag_sel)
+            cols_area = st.columns(2)
+            for i, (k, v) in enumerate(datos_equipo.items()):
+                with cols_area[i % 2]:
+                    st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #FF6600;'><span style='color: #aeb9cc; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
+
+        st.markdown("<br><hr>", unsafe_allow_html=True)
+        st.markdown("### 📋 Trazabilidad Histórica de Intervenciones")
+        df_hist = obtener_todo_el_historial(tag_sel)
+        if not df_hist.empty: st.dataframe(df_hist, use_container_width=True)
