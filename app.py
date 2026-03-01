@@ -405,15 +405,20 @@ else:
         st.info("👀 **Para el Cliente:** Por favor, revise el documento oficial antes de firmar.")
 
         for i, inf in enumerate(st.session_state.informes_pendientes):
-            with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
+            with st.expander(f"📄 Previsualizar: {inf['tag']}"):
                 if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
                     
-                    # --- NUEVA SOLUCIÓN DEFINITIVA ANTI-BLOQUEOS ---
+                    # VISOR DE PDFS ROBUSTO (INYECTADO EN BYTES)
                     try:
-                        # Usamos la librería especial para dibujar el PDF sin usar el navegador
-                        pdf_viewer(inf['ruta_prev_pdf'], width=750, height=600)
+                        with open(inf['ruta_prev_pdf'], "rb") as f_pdf:
+                            pdf_bytes = f_pdf.read()
+                        
+                        # Le pasamos los bytes crudos directamente con el parámetro 'input='
+                        pdf_viewer(input=pdf_bytes, width=750, height=600)
+                        
                     except Exception as e:
-                        st.warning("Cargando visor alternativo...")
+                        # Si falla, mostrará el error real en rojo
+                        st.error(f"Error técnico al dibujar el PDF: {e}")
                     
                     st.markdown("<br>", unsafe_allow_html=True)
                     with open(inf['ruta_prev_pdf'], "rb") as f2:
