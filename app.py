@@ -53,27 +53,57 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM
+# 0.2 ESTILOS PREMIUM (Diseño UI/UX)
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
+
 def aplicar_estilos_premium():
-    """Inyecta CSS personalizado para adaptar los colores a Atlas Copco / BHP."""
+    """Inyecta CSS Premium: Fuentes de Google, Efectos Neón, Sombras 3D y Degradados."""
     st.markdown("""
         <meta name="google" content="notranslate">
         <style>
-        :root { --ac-blue: #007CA6; --ac-dark: #005675; --ac-light: #e6f2f7; --bhp-orange: #FF6600; }
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap');
+        
+        :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; --bg-card: #151a22; }
+        
+        /* Tipografía global */
+        html, body, [class*="css"] { font-family: 'Montserrat', sans-serif !important; }
+        
+        /* Ocultar elementos de Streamlit */
         #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
+        
+        /* Botones estilo Moderno */
         div.stButton > button:first-child {
-            background-color: var(--ac-blue); color: white; border-radius: 6px; border: none;
-            font-weight: 600; padding: 0.5rem 1rem; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%);
+            color: white; border-radius: 8px; border: none; font-weight: 600; letter-spacing: 0.5px;
+            padding: 0.6rem 1.2rem; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4);
         }
-        div.stButton > button:first-child:hover { background-color: var(--ac-dark); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-        .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus { border-color: var(--ac-blue) !important; box-shadow: 0 0 0 1px var(--ac-blue) !important; }
-        h1, h2, h3 { font-family: 'Segoe UI', sans-serif; font-weight: 700; }
-        h1 { border-bottom: 3px solid var(--ac-blue); padding-bottom: 10px; }
-        .stTabs [data-baseweb="tab-list"] { gap: 24px; }
-        .stTabs [data-baseweb="tab"] { height: 50px; white-space: pre-wrap; border-radius: 4px 4px 0 0; padding-top: 10px; padding-bottom: 10px; }
-        .stTabs [aria-selected="true"] { background-color: var(--ac-light); border-bottom: 3px solid var(--ac-blue); color: var(--ac-dark); font-weight: 600; }
+        div.stButton > button:first-child:hover { 
+            transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 124, 166, 0.6); 
+        }
+        
+        /* Entradas de texto y selectores premium */
+        .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select { 
+            border-radius: 6px !important; border: 1px solid #2b3543 !important; 
+            background-color: #1e2530 !important; color: white !important; transition: all 0.3s ease;
+        }
+        .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus { 
+            border-color: var(--bhp-orange) !important; box-shadow: 0 0 10px rgba(255, 102, 0, 0.3) !important; 
+        }
+        
+        /* Pestañas (Tabs) elegantes */
+        .stTabs [data-baseweb="tab-list"] { gap: 10px; border-bottom: 2px solid #2b3543; padding-bottom: 5px; }
+        .stTabs [data-baseweb="tab"] { 
+            background-color: transparent; border: none; color: #8c9eb5; font-weight: 600; transition: color 0.3s ease;
+        }
+        .stTabs [aria-selected="true"] { 
+            color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; background: transparent !important;
+        }
+        
+        /* Animación suave al cargar */
+        .main { animation: fadeIn 0.8s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         </style>
     """, unsafe_allow_html=True)
 aplicar_estilos_premium()
@@ -332,8 +362,7 @@ if not st.session_state.logged_in:
 # =============================================================================
 else:
     with st.sidebar:
-        # --- CAMBIO DE DISEÑO 1: Sidebar Title ---
-        st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#007CA6;'>Copco</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas Copco</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
         if len(st.session_state.informes_pendientes) > 0:
             st.markdown("---")
@@ -395,18 +424,22 @@ else:
                     except Exception as e: st.error(f"Error sistémico procesando las firmas: {e}")
             else: st.warning("⚠️ Asegúrate de dibujar en ambas pizarras antes de generar los PDFs finales.")
 
-    # --- 6.2 VISTA CATÁLOGO (Dashboard interactivo) ---
+    # --- 6.2 VISTA CATÁLOGO (Dashboard Interactivo PREMIUM) ---
     elif st.session_state.equipo_seleccionado is None:
-        st.markdown("""<div style="margin-top: 1.5rem; margin-bottom: 2rem; text-align: center;"><div style="background-color: white; height: 2px; width: 100%;"></div><h1 style="color: #007CA6; font-size: 4.5em; font-weight: 900; margin: 20px 0; border-bottom: none; padding: 0;">Atlas Copco</h1><div style="background-color: white; height: 2px; width: 100%;"></div></div>""", unsafe_allow_html=True)
-        
-        # --- CAMBIO DE DISEÑO 3: Panel Title ---
+        st.markdown("""
+            <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(0,124,166,0) 0%, rgba(0,124,166,0.1) 50%, rgba(0,124,166,0) 100%); padding: 20px; border-radius: 15px;">
+                <h1 style="color: #007CA6; font-size: 4em; font-weight: 800; margin: 0; letter-spacing: -1px; text-transform: uppercase;">Atlas Copco <span style="color: #FF6600;">Spence</span></h1>
+                <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">Sistema Integrado de Control de Activos • Hidrometalurgia</p>
+            </div>
+        """, unsafe_allow_html=True)
         st.title("🏭 Panel de Control de Equipos Hidrometalurgia")
         estados_db = obtener_estados_actuales(); total_equipos = len(inventario_equipos); operativos = sum(1 for tag in inventario_equipos.keys() if estados_db.get(tag, "Operativo") == "Operativo"); detenidos = total_equipos - operativos
-        m1, m2, m3 = st.columns(3)
         
-        # --- CAMBIO DE DISEÑO 2: Métrica ---
-        m1.metric("📦 Total Activos", total_equipos)
-        m2.metric("🟢 Equipos Operativos", operativos); m3.metric("🔴 Fuera de Servicio", detenidos); st.markdown("---")
+        m1, m2, m3 = st.columns(3)
+        with m1: st.markdown(f"<div style='background: #1e2530; border-left: 5px solid #8c9eb5; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center;'><p style='color: #8c9eb5; margin:0; font-size:1rem; font-weight:600; text-transform:uppercase;'>📦 Total Activos</p><h2 style='color: white; margin:0; font-size:2.5rem; font-weight:800;'>{total_equipos}</h2></div>", unsafe_allow_html=True)
+        with m2: st.markdown(f"<div style='background: #1e2530; border-left: 5px solid #00e676; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,230,118,0.1); text-align: center;'><p style='color: #8c9eb5; margin:0; font-size:1rem; font-weight:600; text-transform:uppercase;'>🟢 Operativos</p><h2 style='color: #00e676; margin:0; font-size:2.5rem; font-weight:800;'>{operativos}</h2></div>", unsafe_allow_html=True)
+        with m3: st.markdown(f"<div style='background: #1e2530; border-left: 5px solid #ff1744; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(255,23,68,0.1); text-align: center;'><p style='color: #8c9eb5; margin:0; font-size:1rem; font-weight:600; text-transform:uppercase;'>🔴 Fuera de Servicio</p><h2 style='color: #ff1744; margin:0; font-size:2.5rem; font-weight:800;'>{detenidos}</h2></div>", unsafe_allow_html=True)
+        st.markdown("<br><hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
         col_filtro, col_busqueda = st.columns([1.2, 2])
         with col_filtro: filtro_tipo = st.radio("🗂️ Categoría de Equipo:", ["Todos", "Compresores", "Secadores"], horizontal=True)
         with col_busqueda: busqueda = st.text_input("🔍 Buscar activo por TAG, Modelo o Área...", placeholder="Ejemplo: GA 250, 35-GC-006...").lower()
@@ -417,12 +450,18 @@ else:
             if filtro_tipo == "Secadores" and not es_secador: continue
             if busqueda in tag.lower() or busqueda in area.lower() or busqueda in modelo.lower():
                 estado = estados_db.get(tag, "Operativo")
-                color_bg = "#eaffea" if estado == "Operativo" else "#ffeaea"
-                color_text = "#004d00" if estado == "Operativo" else "#800000"
-                icono = "🟢" if estado == "Operativo" else "🔴"
+                if estado == "Operativo":
+                    color_borde = "#00e676"; badge_html = "<span style='background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid #00e676; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 0 10px rgba(0,230,118,0.4); text-transform: uppercase;'>OPERATIVO</span>"
+                else:
+                    color_borde = "#ff1744"; badge_html = "<span style='background: rgba(255,23,68,0.15); color: #ff1744; border: 1px solid #ff1744; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 0 10px rgba(255,23,68,0.4); text-transform: uppercase;'>DETENIDO</span>"
                 with columnas[contador % 4]:
-                    with st.container(border=True):
-                        st.markdown(f"<span style='background-color:{color_bg}; color:{color_text}; padding: 4px 8px; border-radius:4px; font-size:0.85em; font-weight:bold; letter-spacing: 0.5px;'>{icono} {estado.upper()}</span>", unsafe_allow_html=True); st.markdown(f"<h3 style='margin-top:10px; margin-bottom:0;'>{tag}</h3>", unsafe_allow_html=True); st.caption(f"**{modelo}** | {area.title()}"); st.button("📝 Ingresar", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(145deg, #1a212b, #151a22); border: 1px solid #2b3543; border-top: 4px solid {color_borde}; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">{badge_html}</div>
+                        <h3 style="color: white; margin: 0 0 5px 0; font-size: 1.4rem; font-weight: 800;">{tag}</h3>
+                        <p style="color: #8c9eb5; margin: 0; font-size: 0.9rem; font-weight: 400;"><strong style="color:#007CA6;">{modelo}</strong> &bull; {area.title()}</p>
+                    </div>""", unsafe_allow_html=True)
+                    st.button("⚙️ Gestionar Activo", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
                 contador += 1
 
     # --- 6.3 VISTA FORMULARIO Y GENERACIÓN ---
