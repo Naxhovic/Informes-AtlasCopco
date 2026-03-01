@@ -22,10 +22,10 @@ from streamlit_pdf_viewer import pdf_viewer
 # =============================================================================
 # 0.1 CONFIGURACIÓN DE NUBE Y CORREO
 # =============================================================================
-RUTA_ONEDRIVE = "Reportes_Temporales" 
-MI_CORREO_CORPORATIVO = "ignacio.a.morales@atlascopco.com"  
-CORREO_REMITENTE = "informeatlas.spence@gmail.com"  
-PASSWORD_APLICACION = "jbumdljbdpyomnna"  
+RUTA_ONEDRIVE = "Reportes_Temporales"
+MI_CORREO_CORPORATIVO = "ignacio.a.morales@atlascopco.com"
+CORREO_REMITENTE = "informeatlas.spence@gmail.com"
+PASSWORD_APLICACION = "jbumdljbdpyomnna"
 
 def enviar_carrito_por_correo(destinatario, lista_informes):
     msg = MIMEMultipart()
