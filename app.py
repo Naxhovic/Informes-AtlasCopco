@@ -131,7 +131,7 @@ def get_gspread_client():
 def get_sheet(sheet_name):
     try:
         client = get_gspread_client()
-        doc = client.open("Base_Datos_InforGem")
+        doc = client.open("BaseDatos")
         
         # Leemos todas las pestañas disponibles
         pestañas = [hoja.title for hoja in doc.worksheets()]
