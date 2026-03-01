@@ -244,11 +244,18 @@ def eliminar_contacto(nombre):
 
 # --- Funciones de Historial de Intervenciones ---
 def guardar_registro(data_tuple):
-    try:
-        sheet = get_sheet("intervenciones")
-        row = [str(x) for x in data_tuple]
-        sheet.append_row(row)
-    except: pass
+    # Intentará guardar hasta 3 veces si hay fallos de red
+    for intento in range(3):
+        try:
+            sheet = get_sheet("intervenciones")
+            if sheet is not None:
+                row = [str(x) for x in data_tuple]
+                sheet.append_row(row)
+                return True # Guardado exitoso
+        except Exception as e:
+            time.sleep(2) # Espera 2 segundos y vuelve a intentar
+            
+    return False # Si falló las 3 veces
 
 def buscar_ultimo_registro(tag):
     try:
