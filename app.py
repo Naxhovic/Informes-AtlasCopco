@@ -290,7 +290,7 @@ def guardar_registro(data_tuple):
             if sheet is not None:
                 row = [str(x) for x in data_tuple]
                 num_filas = len(sheet.get_all_values()) + 1
-                sheet.insert_row(row, index=num_filas) # <--- Solución al Bug de Google Sheets
+                sheet.insert_row(row, index=num_filas)
                 st.cache_data.clear()
                 return True
         except Exception as e:
@@ -337,7 +337,6 @@ for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
 
 def seleccionar_equipo(tag):
-    time.sleep(1)
     st.session_state.equipo_seleccionado = tag
     st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
@@ -418,20 +417,32 @@ else:
         st.info("👀 **Para el Cliente:** Por favor, revise el documento oficial antes de firmar.")
 
         for i, inf in enumerate(st.session_state.informes_pendientes):
-            with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
-                if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
-                    try:
-                        with open(inf['ruta_prev_pdf'], "rb") as f_pdf:
-                            pdf_bytes = f_pdf.read()
-                        pdf_viewer(pdf_bytes, width=700, height=600)
-                    except Exception as e:
-                        st.error(f"No se pudo desplegar el visor: {e}")
-                    
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    with open(inf['ruta_prev_pdf'], "rb") as f2:
-                        st.download_button("📥 Descargar Borrador (PDF)", f2, file_name=f"Borrador_{inf['tag']}.pdf", mime="application/pdf", key=f"dl_prev_{i}")
-                else:
-                    st.warning("⚠️ La vista preliminar en PDF no está disponible.")
+            c_exp, c_del = st.columns([12, 1]) # Columna ancha para PDF, delgada para la X
+            
+            with c_exp:
+                with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
+                    if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
+                        try:
+                            with open(inf['ruta_prev_pdf'], "rb") as f_pdf:
+                                pdf_bytes = f_pdf.read()
+                            pdf_viewer(pdf_bytes, width=700, height=600)
+                        except Exception as e:
+                            st.error(f"No se pudo desplegar el visor: {e}")
+                        
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        with open(inf['ruta_prev_pdf'], "rb") as f2:
+                            st.download_button("📥 Descargar Borrador (PDF)", f2, file_name=f"Borrador_{inf['tag']}.pdf", mime="application/pdf", key=f"dl_prev_{i}")
+                    else:
+                        st.warning("⚠️ La vista preliminar en PDF no está disponible.")
+            
+            with c_del:
+                st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+                if st.button("❌", key=f"del_inf_{i}", help="Quitar este informe de la bandeja"):
+                    st.session_state.informes_pendientes.pop(i)
+                    if len(st.session_state.informes_pendientes) == 0:
+                        st.session_state.vista_firmas = False
+                        st.session_state.equipo_seleccionado = None
+                    st.rerun()
 
         st.markdown("---")
         st.info("💡 **Instrucciones:** Dibuja las firmas en los recuadros usando el mouse o el dedo.")
@@ -484,13 +495,12 @@ else:
                             
                             nombre_codificado = f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"
                             
-                            # Guardamos en Google Sheets (Con sistema anti-fallos)
                             tupla_lista = list(inf['tupla_db'])
                             tupla_lista[18] = ruta_final
                             
                             guardado_ok = guardar_registro(tuple(tupla_lista))
                             if not guardado_ok:
-                                st.error(f"⚠️ El PDF de {inf['tag']} se generó y envió, pero la base de datos de Google superó su límite. Verifica el catálogo en 1 minuto.")
+                                st.error(f"⚠️ El PDF de {inf['tag']} se generó y envió, pero Google Sheets está saturado. Revisa tu Excel.")
                             
                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": nombre_codificado})
                             
