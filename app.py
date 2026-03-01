@@ -247,15 +247,22 @@ def guardar_registro(data_tuple):
     # Intentará guardar hasta 3 veces si hay fallos de red
     for intento in range(3):
         try:
-            sheet = get_sheet("intervenciones")
-            if sheet is not None:
-                row = [str(x) for x in data_tuple]
-                sheet.append_row(row)
-                return True # Guardado exitoso
-        except Exception as e:
-            time.sleep(2) # Espera 2 segundos y vuelve a intentar
-            
-    return False # Si falló las 3 veces
+            def get_sheet(sheet_name):
+    try:
+        client = get_gspread_client()
+        doc = client.open("BaseDatos")
+        try:
+            # Intenta abrir la pestaña directamente (ahorra un 50% de cuota)
+            return doc.worksheet(sheet_name)
+        except gspread.exceptions.WorksheetNotFound:
+            # Si no existe, la crea
+            return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
+    except Exception as e:
+        if "200" in str(e):
+            st.error("🚨 ERROR DE FORMATO: Tu archivo en Drive es un Excel (.xlsx). Debe ser un Sheet nativo.")
+        else:
+            st.error(f"🚨 ERROR DE CONEXIÓN CON GOOGLE: {e}")
+        return None
 
 def buscar_ultimo_registro(tag):
     try:
