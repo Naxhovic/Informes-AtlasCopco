@@ -4,3 +4,4 @@ pandas
 streamlit-drawable-canvas
 gspread
 google-auth
+streamlit-pdf-viewer
