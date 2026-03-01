@@ -76,7 +76,7 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. GOOGLE SHEETS Y CACHÉ OPTIMIZADO (ANTI-BLOQUEOS 429)
+# 2. GOOGLE SHEETS Y CACHÉ OPTIMIZADO (A PRUEBA DE FALLOS)
 # =============================================================================
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
@@ -86,7 +86,7 @@ def get_gspread_client():
 
 def get_sheet(sheet_name):
     try:
-        doc = get_gspread_client().open("BaseDatos")
+        doc = get_gspread_client().open("Base_Datos_InforGem")
         if sheet_name in [hoja.title for hoja in doc.worksheets()]: return doc.worksheet(sheet_name)
         return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e:
@@ -99,7 +99,7 @@ def guardar_dato_equipo(tag, clave, valor):
         sheet = get_sheet("datos_equipo")
         if sheet:
             sheet.append_row([tag, clave, valor])
-            st.cache_data.clear() # Limpia la memoria al guardar
+            st.cache_data.clear() 
     except: pass
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -461,7 +461,9 @@ else:
             hc = m2.number_input("H. Carga", value=st.session_state.input_h_carga, step=1)
             up = m3.selectbox("Unidad", ["Bar", "psi"])
             pc = m4.text_input("P. Carga", st.session_state.input_p_carga)
-            pd = m5.text_input("P. Descarga", st.session_state.input_p_descarga)
+            
+            # EL BUG ESTÁ ARREGLADO AQUÍ: 'pd' -> 'p_desc'
+            p_desc = m5.text_input("P. Descarga", st.session_state.input_p_descarga)
             ts = m6.text_input("Temp Salida", st.session_state.input_temp)
 
             st.markdown("---")
@@ -473,7 +475,7 @@ else:
                 if "CD" in tag: tpl = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
                 else: tpl = f"plantilla/{plan.lower()}.docx" if est_eq == "Operativo" and plan in ["P1","P2","P3"] else ("plantilla/fueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccion.docx")
                 
-                ctx = {"tipo_intervencion": plan, "modelo": mod, "tag": tag, "area": area, "ubicacion": ubi, "cliente_contacto": cli_final, "p_carga": f"{pc} {up}", "p_descarga": f"{pd} {up}", "temp_salida": ts, "horas_marcha": hm, "horas_carga": hc, "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_txt, "recomendaciones": reco, "serie": ser, "fecha": fecha, "firma_tecnico": "", "firma_cliente": ""}
+                ctx = {"tipo_intervencion": plan, "modelo": mod, "tag": tag, "area": area, "ubicacion": ubi, "cliente_contacto": cli_final, "p_carga": f"{pc} {up}", "p_descarga": f"{p_desc} {up}", "temp_salida": ts, "horas_marcha": hm, "horas_carga": hc, "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_txt, "recomendaciones": reco, "serie": ser, "fecha": fecha, "firma_tecnico": "", "firma_cliente": ""}
                 
                 fname = f"Informe_{plan}_{tag}.docx"
                 ruta_doc = os.path.join(RUTA_ONEDRIVE, fname)
@@ -483,7 +485,7 @@ else:
                     d_prev = DocxTemplate(tpl); d_prev.render(ctx); d_prev.save(ruta_doc)
                     ruta_pdf = convertir_a_pdf(ruta_doc)
                 
-                t_db = (tag, mod, ser, area, ubi, fecha, cli_final, tec1, tec2, float(ts.replace(',','.')) if ts else 0.0, f"{pc} {up}", f"{pd} {up}", hm, hc, est_txt, plan, reco, est_eq, "", st.session_state.usuario_actual)
+                t_db = (tag, mod, ser, area, ubi, fecha, cli_final, tec1, tec2, float(ts.replace(',','.')) if ts else 0.0, f"{pc} {up}", f"{p_desc} {up}", hm, hc, est_txt, plan, reco, est_eq, "", st.session_state.usuario_actual)
                 
                 st.session_state.informes_pendientes.append({"tag": tag, "area": area, "tipo": plan, "tec1": tec1, "cli": cli_final, "plantilla": tpl, "contexto": ctx, "tupla_db": t_db, "ruta_docx": ruta_doc, "nombre": fname, "ruta_prev_pdf": ruta_pdf})
                 st.success("Guardado en bandeja."); navegar()
