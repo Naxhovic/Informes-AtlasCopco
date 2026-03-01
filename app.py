@@ -121,7 +121,7 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. CONEXIÓN OPTIMIZADA A GOOGLE SHEETS
+# 2. CONEXIÓN OPTIMIZADA A GOOGLE SHEETS (ANTI-ERROR 429)
 # =============================================================================
 @st.cache_resource
 def get_gspread_client():
@@ -135,24 +135,16 @@ def get_sheet(sheet_name):
         client = get_gspread_client()
         doc = client.open("BaseDatos")
         try:
-            # OPTIMIZACIÓN: Evita leer todas las hojas, va directo a la que necesita.
+            # OPTIMIZACIÓN: Va directo a la hoja sin leer todas (ahorra muchísima cuota)
             return doc.worksheet(sheet_name)
         except gspread.exceptions.WorksheetNotFound:
             return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e:
-        if "200" in str(e):
-            st.error("🚨 ERROR DE FORMATO: Tu archivo en Google Drive es un Excel tradicional (.xlsx). Debes crear una 'Hoja de cálculo de Google' nativa.")
-        else:
-            st.error(f"🚨 ERROR DE CONEXIÓN CON GOOGLE: {e}")
         return None
 
-# --- Funciones de Gestión de Área ---
-def guardar_dato_equipo(tag, clave, valor):
-    try:
-        sheet = get_sheet("datos_equipo")
-        if sheet: sheet.append_row([tag, clave, valor])
-    except: pass
+# --- FUNCIONES DE LECTURA (CON CACHÉ PARA NO SATURAR A GOOGLE) ---
 
+@st.cache_data(ttl=120)
 def obtener_datos_equipo(tag):
     datos = {}
     try:
@@ -160,50 +152,22 @@ def obtener_datos_equipo(tag):
         if sheet:
             data = sheet.get_all_values()
             for row in data:
-                if len(row) >= 3 and row[0] == tag:
-                    datos[row[1]] = row[2]
+                if len(row) >= 3 and row[0] == tag: datos[row[1]] = row[2]
     except: pass
     return datos
 
-# --- Funciones de Bitácora ---
-def agregar_observacion(tag, usuario, texto):
-    if not texto.strip(): return
-    fecha_actual = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M")
-    id_obs = str(uuid.uuid4())[:8]
-    try:
-        sheet = get_sheet("observaciones")
-        if sheet: sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"])
-    except: pass
-
+@st.cache_data(ttl=120)
 def obtener_observaciones(tag):
     try:
         sheet = get_sheet("observaciones")
         if sheet:
             data = sheet.get_all_values()
-            obs = []
-            for row in data:
-                if len(row) >= 6 and row[1] == tag and row[5] == "ACTIVO":
-                    obs.append({"id": row[0], "fecha": row[2], "usuario": row[3], "texto": row[4]})
-            df = pd.DataFrame(obs)
-            if not df.empty: return df.iloc[::-1]
+            obs = [{"id": r[0], "fecha": r[2], "usuario": r[3], "texto": r[4]} for r in data if len(r) >= 6 and r[1] == tag and r[5] == "ACTIVO"]
+            if obs: return pd.DataFrame(obs).iloc[::-1]
     except: pass
     return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
 
-def eliminar_observacion(id_obs):
-    try:
-        sheet = get_sheet("observaciones")
-        if sheet:
-            cell = sheet.find(id_obs)
-            if cell: sheet.update_cell(cell.row, 6, "ELIMINADO")
-    except: pass
-
-# --- Funciones de Especificaciones ---
-def guardar_especificacion_db(modelo, clave, valor):
-    try:
-        sheet = get_sheet("especificaciones")
-        if sheet: sheet.append_row([modelo, clave, valor])
-    except: pass
-
+@st.cache_data(ttl=120)
 def obtener_especificaciones(defaults):
     specs = {k: dict(v) for k, v in defaults.items()}
     try:
@@ -218,7 +182,7 @@ def obtener_especificaciones(defaults):
     except: pass
     return specs
 
-# --- Funciones de Contactos ---
+@st.cache_data(ttl=120)
 def obtener_contactos():
     try:
         sheet = get_sheet("contactos")
@@ -229,35 +193,7 @@ def obtener_contactos():
     except: pass
     return ["Lorena Rojas"]
 
-def agregar_contacto(nombre):
-    if not nombre.strip(): return
-    try:
-        sheet = get_sheet("contactos")
-        if sheet: sheet.append_row([nombre.strip().title(), "ACTIVO"])
-    except: pass
-
-def eliminar_contacto(nombre):
-    try:
-        sheet = get_sheet("contactos")
-        if sheet:
-            cells = sheet.findall(nombre)
-            for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO")
-    except: pass
-
-# --- Funciones de Historial de Intervenciones ---
-def guardar_registro(data_tuple):
-    # SOLUCIÓN FALLOS SILENCIOSOS: Intenta guardar hasta 3 veces. Si falla, espera 5 seg.
-    for intento in range(3):
-        try:
-            sheet = get_sheet("intervenciones")
-            if sheet is not None:
-                row = [str(x) for x in data_tuple]
-                sheet.append_row(row)
-                return True # Guardado exitoso
-        except Exception as e:
-            time.sleep(5)
-    return False # Falló las 3 veces
-
+@st.cache_data(ttl=120)
 def buscar_ultimo_registro(tag):
     try:
         sheet = get_sheet("intervenciones")
@@ -269,26 +205,18 @@ def buscar_ultimo_registro(tag):
     except: pass
     return None
 
+@st.cache_data(ttl=120)
 def obtener_todo_el_historial(tag):
     try:
         sheet = get_sheet("intervenciones")
         if sheet:
             data = sheet.get_all_values()
-            hist = []
-            for row in data:
-                if len(row) >= 20 and row[0] == tag:
-                    hist.append({
-                        "fecha": row[5], "tipo_intervencion": row[15], "estado_equipo": row[17],
-                        "Cuenta Usuario": row[19], "horas_marcha": row[12], "horas_carga": row[13],
-                        "p_carga": row[10], "p_descarga": row[11], "temp_salida": row[9]
-                    })
-            df = pd.DataFrame(hist)
-            if not df.empty: return df.iloc[::-1]
+            hist = [{"fecha": r[5], "tipo_intervencion": r[15], "estado_equipo": r[17], "Cuenta Usuario": r[19], "horas_marcha": r[12], "p_carga": r[10], "temp_salida": r[9]} for r in data if len(r) >= 20 and r[0] == tag]
+            if hist: return pd.DataFrame(hist).iloc[::-1]
     except: pass
     return pd.DataFrame()
 
-# SOLUCIÓN ERROR 429: Caché guarda los estados por 60 segundos para no saturar a Google.
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=120)
 def obtener_estados_actuales():
     estados = {}
     try:
@@ -299,6 +227,77 @@ def obtener_estados_actuales():
                 if len(row) >= 18: estados[row[0]] = row[17]
     except: pass
     return estados
+
+# --- FUNCIONES DE ESCRITURA (LIMPIAN EL CACHÉ PARA ACTUALIZAR DATOS) ---
+
+def guardar_dato_equipo(tag, clave, valor):
+    try:
+        sheet = get_sheet("datos_equipo")
+        if sheet: 
+            sheet.append_row([tag, clave, valor])
+            st.cache_data.clear()
+    except: pass
+
+def agregar_observacion(tag, usuario, texto):
+    if not texto.strip(): return
+    fecha_actual = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M")
+    id_obs = str(uuid.uuid4())[:8]
+    try:
+        sheet = get_sheet("observaciones")
+        if sheet: 
+            sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"])
+            st.cache_data.clear()
+    except: pass
+
+def eliminar_observacion(id_obs):
+    try:
+        sheet = get_sheet("observaciones")
+        if sheet:
+            cell = sheet.find(id_obs)
+            if cell: 
+                sheet.update_cell(cell.row, 6, "ELIMINADO")
+                st.cache_data.clear()
+    except: pass
+
+def guardar_especificacion_db(modelo, clave, valor):
+    try:
+        sheet = get_sheet("especificaciones")
+        if sheet: 
+            sheet.append_row([modelo, clave, valor])
+            st.cache_data.clear()
+    except: pass
+
+def agregar_contacto(nombre):
+    if not nombre.strip(): return
+    try:
+        sheet = get_sheet("contactos")
+        if sheet: 
+            sheet.append_row([nombre.strip().title(), "ACTIVO"])
+            st.cache_data.clear()
+    except: pass
+
+def eliminar_contacto(nombre):
+    try:
+        sheet = get_sheet("contactos")
+        if sheet:
+            cells = sheet.findall(nombre)
+            for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO")
+            st.cache_data.clear()
+    except: pass
+
+def guardar_registro(data_tuple):
+    # SISTEMA ANTI-FALLOS: Intenta guardar 3 veces. Si la red falla, espera 5 seg.
+    for intento in range(3):
+        try:
+            sheet = get_sheet("intervenciones")
+            if sheet is not None:
+                row = [str(x) for x in data_tuple]
+                sheet.append_row(row)
+                st.cache_data.clear() # CRÍTICO: Le avisa al panel que hay datos nuevos
+                return True
+        except Exception as e:
+            time.sleep(5)
+    return False
 # =============================================================================
 # 3. CONVERSIÓN A PDF HÍBRIDA
 # =============================================================================
@@ -340,7 +339,6 @@ for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
 
 def seleccionar_equipo(tag):
-    time.sleep(2)
     st.session_state.equipo_seleccionado = tag
     st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
@@ -381,7 +379,7 @@ if not st.session_state.logged_in:
                 p_in = st.text_input("Contraseña", type="password")
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.form_submit_button("Acceder de forma segura", type="primary", use_container_width=True):
-                    time.sleep(2)
+                    time.sleep(1)
                     if u_in in USUARIOS and USUARIOS[u_in] == p_in:
                         st.session_state.update({'logged_in': True, 'usuario_actual': u_in})
                         st.rerun()
@@ -399,7 +397,6 @@ else:
             st.markdown("---")
             st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
             if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary"):
-                time.sleep(2)
                 st.session_state.vista_firmas = True
                 st.session_state.equipo_seleccionado = None
                 st.rerun()
@@ -424,21 +421,14 @@ else:
         for i, inf in enumerate(st.session_state.informes_pendientes):
             with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
                 if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
-                    
-                    # --- NUEVA VISUALIZACIÓN CON STREAMLIT-PDF-VIEWER ---
                     try:
-                        # Leemos el archivo en modo binario (bytes)
                         with open(inf['ruta_prev_pdf'], "rb") as f_pdf:
                             pdf_bytes = f_pdf.read()
-                        
-                        # Mostramos el PDF dibujado directamente (evita bloqueos de seguridad)
                         pdf_viewer(pdf_bytes, width=700, height=600)
-                        
                     except Exception as e:
                         st.error(f"No se pudo desplegar el visor: {e}")
                     
                     st.markdown("<br>", unsafe_allow_html=True)
-                    # Mantenemos el botón de descarga por si el cliente quiere guardarlo
                     with open(inf['ruta_prev_pdf'], "rb") as f2:
                         st.download_button("📥 Descargar Borrador (PDF)", f2, file_name=f"Borrador_{inf['tag']}.pdf", mime="application/pdf", key=f"dl_prev_{i}")
                 else:
@@ -501,7 +491,7 @@ else:
                             
                             guardado_ok = guardar_registro(tuple(tupla_lista))
                             if not guardado_ok:
-                                st.error(f"⚠️ Error: El PDF de {inf['tag']} se generó y envió, pero la base de datos de Google superó su límite. Verifica el catálogo en 1 minuto.")
+                                st.error(f"⚠️ El PDF de {inf['tag']} se generó y envió, pero la base de datos de Google superó su límite. Verifica el catálogo en 1 minuto.")
                             
                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": nombre_codificado})
                             
