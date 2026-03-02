@@ -452,7 +452,7 @@ else:
                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"})
                         exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
                         if exito: 
-                            st.success("✅ ¡PERFECTO! Los documentos oficiales se firmaron, convirtieron a PDF y ya están camino a tu OneDrive.")
+                            st.success("✅ Los documentos oficiales se firmaron, convirtieron a PDF y ya están camino a OneDrive.")
                             st.session_state.informes_pendientes = []
                             guardar_pendientes(st.session_state.usuario_actual, []) # Vacía la memoria al enviar
                             st.balloons()
