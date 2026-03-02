@@ -425,47 +425,43 @@ else:
                     if len(st.session_state.informes_pendientes) == 0: st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None
                     st.rerun()
                     
-        st.markdown("---"); st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro usando el mouse o el dedo.")
+        st.markdown("---")
+        st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro. Usa el basurero nativo para borrarla o la flecha para descargarla.")
         
-        # LÓGICA DE FIRMA DE PERFIL GUARDADA
-        archivo_firma_tec = os.path.join(RUTA_ONEDRIVE, f"firma_{st.session_state.usuario_actual.replace(' ', '_')}.png")
-        firma_tec_existe = os.path.exists(archivo_firma_tec)
-        
+        # --- LÓGICA DE FIRMA NATIVA EDITABLE VIA JSON ---
+        archivo_firma_tec_json = os.path.join(RUTA_ONEDRIVE, f"firma_{st.session_state.usuario_actual.replace(' ', '_')}.json")
+        estado_firma_tec = None
+        if os.path.exists(archivo_firma_tec_json):
+            try:
+                with open(archivo_firma_tec_json, "r") as f: estado_firma_tec = json.load(f)
+            except: pass
+            
         c_tec, c_cli = st.columns(2)
         with c_tec:
-            st.markdown("### 🧑‍🔧 Firma del Técnico")
-            st.caption(f"Técnico: {st.session_state.usuario_actual.title()}")
-            
-            if firma_tec_existe:
-                st.success("✅ Tu firma está guardada en tu perfil y lista para usarse.")
-                st.image(archivo_firma_tec, width=350)
-                if st.button("🔄 Borrar y Cambiar mi firma", use_container_width=True):
-                    os.remove(archivo_firma_tec)
-                    st.rerun()
-                canvas_tec = None
-            else:
-                # SE QUITÓ EL CUADRO DE INFORMACIÓN (st.info) A PEDIDO DEL USUARIO
-                canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
-                
+            st.markdown("### 🧑‍🔧 Firma del Técnico"); st.caption(f"Técnico: {st.session_state.usuario_actual.title()}")
+            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", initial_drawing=estado_firma_tec, key="canvas_tecnico")
         with c_cli:
-            st.markdown("### 👷 Firma del Cliente")
-            st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
+            st.markdown("### 👷 Firma del Cliente"); st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
             canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
         
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
-            if canvas_cli.image_data is not None and (firma_tec_existe or (canvas_tec and canvas_tec.image_data is not None)):
+            
+            # Verificamos si realmente dibujaron algo o si la firma cargada tiene datos
+            tec_ok = canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
+            cli_ok = canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
+            
+            if tec_ok and cli_ok:
                 def procesar_imagen_firma(img_data):
                     img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
                 
+                io_tec = procesar_imagen_firma(canvas_tec.image_data)
                 io_cli = procesar_imagen_firma(canvas_cli.image_data)
                 
-                if firma_tec_existe:
-                    with open(archivo_firma_tec, "rb") as f: io_tec = io.BytesIO(f.read())
-                else:
-                    img_tec_nueva = Image.fromarray(canvas_tec.image_data.astype('uint8'), 'RGBA')
-                    img_tec_nueva.save(archivo_firma_tec, format='PNG') 
-                    io_tec = procesar_imagen_firma(canvas_tec.image_data)
+                # Actualiza el estado de la firma del técnico para el futuro
+                try:
+                    with open(archivo_firma_tec_json, "w") as f: json.dump(canvas_tec.json_data, f)
+                except: pass
                 
                 informes_finales = []
                 with st.spinner("Fabricando documentos oficiales, inyectando firmas y transformando a PDF..."):
@@ -486,7 +482,11 @@ else:
                             st.balloons()
                         else: st.error(f"Error de red: {mensaje_correo}")
                     except Exception as e: st.error(f"Error sistémico procesando las firmas: {e}")
-            else: st.warning("⚠️ Asegúrate de que el cliente haya dibujado en la pizarra antes de generar los PDFs finales.")
+            else: 
+                # Si el usuario borró la firma con el basurero y aprieta "Aprobar" vacía, eliminamos el archivo JSON
+                if not tec_ok and os.path.exists(archivo_firma_tec_json):
+                    os.remove(archivo_firma_tec_json)
+                st.warning("⚠️ Asegúrate de que ambas pizarras contengan una firma visible antes de generar los PDFs finales.")
 
     # --- 6.2 VISTA CATÁLOGO (DASHBOARD CINETICO Y PREMIUM) ---
     elif st.session_state.equipo_seleccionado is None:
