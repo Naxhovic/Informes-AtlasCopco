@@ -444,7 +444,7 @@ else:
                     st.rerun()
                 canvas_tec = None
             else:
-                st.info("")
+                st.info("✍️ Dibuja tu firma (se guardará para tus futuros informes).")
                 canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
                 
         with c_cli:
