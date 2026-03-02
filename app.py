@@ -444,7 +444,7 @@ else:
                     st.rerun()
                 canvas_tec = None
             else:
-                st.info("✍️ Dibuja tu firma (se guardará para tus futuros informes).")
+                # SE QUITÓ EL CUADRO DE INFORMACIÓN (st.info) A PEDIDO DEL USUARIO
                 canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
                 
         with c_cli:
@@ -460,12 +460,11 @@ else:
                 
                 io_cli = procesar_imagen_firma(canvas_cli.image_data)
                 
-                # Resuelve la firma del técnico: desde el archivo o del dibujo nuevo
                 if firma_tec_existe:
                     with open(archivo_firma_tec, "rb") as f: io_tec = io.BytesIO(f.read())
                 else:
                     img_tec_nueva = Image.fromarray(canvas_tec.image_data.astype('uint8'), 'RGBA')
-                    img_tec_nueva.save(archivo_firma_tec, format='PNG') # Se guarda en el servidor para siempre
+                    img_tec_nueva.save(archivo_firma_tec, format='PNG') 
                     io_tec = procesar_imagen_firma(canvas_tec.image_data)
                 
                 informes_finales = []
@@ -538,7 +537,6 @@ else:
         with tab1:
             st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área", area_d, disabled=True); ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
             
-            # --- FECHA EN ESPAÑOL AUTOMÁTICA ---
             fecha = c5.text_input("Fecha Ejecución", obtener_fecha_hoy_esp())
             
             tec1 = c6.text_input("Técnico 1", key="input_tec1"); tec2 = c7.text_input("Técnico 2", key="input_tec2")
@@ -560,7 +558,6 @@ else:
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Mediciones del Equipo"); c9, c10, c11, c12, c13, c14 = st.columns(6); h_m = c9.number_input("Horas Marcha Totales", step=1, value=int(st.session_state.input_h_marcha), format="%d"); h_c = c10.number_input("Horas en Carga", step=1, value=int(st.session_state.input_h_carga), format="%d"); unidad_p = c11.selectbox("Unidad de Presión", ["Bar", "psi"]); p_c_str = c12.text_input("P. Carga", value=str(st.session_state.input_p_carga)); p_d_str = c13.text_input("P. Descarga", value=str(st.session_state.input_p_descarga)); t_salida_str = c14.text_input("Temp Salida (°C)", value=str(st.session_state.input_temp)); p_c_clean = p_c_str.replace(',', '.'); p_d_clean = p_d_str.replace(',', '.'); t_salida_clean = t_salida_str.replace(',', '.')
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Evaluación y Diagnóstico Final"); est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True); est_ent = st.text_area("Descripción Condición Final:", key="input_estado", height=100); reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100); st.markdown("<br>", unsafe_allow_html=True)
             
-            # --- LÍMITE DE 2 BORRADORES ---
             if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
                 if len(st.session_state.informes_pendientes) >= 2:
                     st.error("⚠️ Tu bandeja está llena (Máximo 2 borradores). Por favor, ve a la Pizarra de Firmas para enviarlos o eliminar alguno antes de crear uno nuevo.")
@@ -571,7 +568,6 @@ else:
                     with st.spinner("Creando borrador del documento para vista preliminar..."):
                         doc_prev = DocxTemplate(file_plantilla); ctx_prev = context.copy(); ctx_prev['firma_tecnico'] = ""; ctx_prev['firma_cliente'] = ""; doc_prev.render(ctx_prev); os.makedirs(RUTA_ONEDRIVE, exist_ok=True); ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}"); doc_prev.save(ruta_prev_docx); ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
                     st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf})
-                    
                     guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
                     st.success("✅ Datos guardados. Agrega otro equipo o ve a la bandeja para firmar."); st.session_state.equipo_seleccionado = None; st.rerun()
                     
