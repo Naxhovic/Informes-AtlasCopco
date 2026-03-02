@@ -424,13 +424,12 @@ else:
                     st.rerun()
                     
         st.markdown("---")
-        st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro. Usa el basurero nativo debajo del cuadro para borrarla y volver a empezar.")
         
-        # --- LÓGICA DE FIRMA NATIVA EDITABLE VIA JSON ---
+        # --- LÓGICA MAGICA DE FIRMA NATIVA (Con basurero funcional) ---
         archivo_firma_tec_json = os.path.join(RUTA_ONEDRIVE, f"firma_{st.session_state.usuario_actual.replace(' ', '_')}.json")
         session_firma_key = f"firma_json_{st.session_state.usuario_actual}"
         
-        # Cargamos el dibujo guardado en la memoria de la app solo una vez para evitar reseteos
+        # 1. Cargamos el trazo en la memoria temporal (solo la primera vez)
         if session_firma_key not in st.session_state:
             if os.path.exists(archivo_firma_tec_json):
                 try:
@@ -442,7 +441,18 @@ else:
         c_tec, c_cli = st.columns(2)
         with c_tec:
             st.markdown("### 🧑‍🔧 Firma del Técnico"); st.caption(f"Técnico: {st.session_state.usuario_actual.title()}")
-            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", initial_drawing=st.session_state[session_firma_key], key="canvas_tecnico")
+            # 2. Mostramos el canvas con el dibujo guardado
+            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", initial_drawing=st.session_state.get(session_firma_key), key="canvas_tecnico")
+            
+            # 3. DETECTOR DEL BASURERO: Si el usuario borró la firma en el canvas, borramos la memoria interna.
+            if canvas_tec.json_data is not None:
+                if len(canvas_tec.json_data.get("objects", [])) == 0 and st.session_state.get(session_firma_key) is not None:
+                    st.session_state[session_firma_key] = None
+                    if os.path.exists(archivo_firma_tec_json):
+                        try: os.remove(archivo_firma_tec_json)
+                        except: pass
+                    st.rerun() # Recarga la pantalla para dejar el canvas en blanco total
+                    
         with c_cli:
             st.markdown("### 👷 Firma del Cliente"); st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
             canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
@@ -450,7 +460,6 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
             
-            # Comprobamos que el técnico y el cliente tengan firmas dibujadas en la pizarra
             tec_ok = canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
             cli_ok = canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
             
@@ -461,7 +470,7 @@ else:
                 io_tec = procesar_imagen_firma(canvas_tec.image_data)
                 io_cli = procesar_imagen_firma(canvas_cli.image_data)
                 
-                # Guarda o actualiza la firma del técnico para que la use mañana
+                # Guarda la firma para los próximos reportes de este usuario
                 try:
                     with open(archivo_firma_tec_json, "w") as f: json.dump(canvas_tec.json_data, f)
                     st.session_state[session_firma_key] = canvas_tec.json_data
@@ -486,12 +495,7 @@ else:
                             st.balloons()
                         else: st.error(f"Error de red: {mensaje_correo}")
                     except Exception as e: st.error(f"Error sistémico procesando las firmas: {e}")
-            else: 
-                # Si borró la firma con el basurero nativo y aprieta "Aprobar" vacía, limpiamos la memoria
-                if not tec_ok and os.path.exists(archivo_firma_tec_json):
-                    os.remove(archivo_firma_tec_json)
-                    st.session_state[session_firma_key] = None
-                st.warning("⚠️ Asegúrate de que ambas pizarras contengan una firma visible antes de generar los PDFs finales.")
+            else: st.warning("⚠️ Asegúrate de que ambas pizarras contengan una firma visible antes de generar los PDFs finales.")
 
     # --- 6.2 VISTA CATÁLOGO (DASHBOARD CINETICO Y PREMIUM) ---
     elif st.session_state.equipo_seleccionado is None:
