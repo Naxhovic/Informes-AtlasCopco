@@ -443,10 +443,7 @@ else:
                     os.remove(archivo_firma_tec)
                     st.rerun()
                 canvas_tec = None
-            else:
-                st.info("✍️ Dibuja tu firma (se guardará para tus futuros informes).")
-                canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
-                
+                        
         with c_cli:
             st.markdown("### 👷 Firma del Cliente")
             st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
