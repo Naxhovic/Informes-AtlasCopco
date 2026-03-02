@@ -426,28 +426,12 @@ else:
         st.markdown("---")
         st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro. Usa el basurero nativo debajo del cuadro para borrarla y volver a empezar.")
         
-        # --- LÓGICA DE FIRMA NATIVA EDITABLE VIA JSON ---
-        archivo_firma_tec_json = os.path.join(RUTA_ONEDRIVE, f"firma_{st.session_state.usuario_actual.replace(' ', '_')}.json")
-        session_firma_key = f"firma_json_{st.session_state.usuario_actual}"
-        
-        # 1. Cargamos el trazo guardado en la memoria una sola vez al entrar
-        if session_firma_key not in st.session_state:
-            if os.path.exists(archivo_firma_tec_json):
-                try:
-                    with open(archivo_firma_tec_json, "r") as f: 
-                        st.session_state[session_firma_key] = json.load(f)
-                except: st.session_state[session_firma_key] = None
-            else: st.session_state[session_firma_key] = None
-            
+        # --- LÓGICA DE FIRMA MANUAL (SIN GUARDADO AUTOMÁTICO) ---
         c_tec, c_cli = st.columns(2)
+        
         with c_tec:
             st.markdown("### 🧑‍🔧 Firma del Técnico"); st.caption(f"Técnico: {st.session_state.usuario_actual.title()}")
-            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", initial_drawing=st.session_state[session_firma_key], key="canvas_tecnico")
-            
-            # SINCRONIZACIÓN PERFECTA: Sincronizamos la memoria temporal con el canvas en tiempo real.
-            # Esto permite que cuando presiones el basurero nativo, el sistema "entienda" que quieres borrar la firma.
-            if canvas_tec.json_data is not None and "objects" in canvas_tec.json_data:
-                st.session_state[session_firma_key] = canvas_tec.json_data
+            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
                     
         with c_cli:
             st.markdown("### 👷 Firma del Cliente"); st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
@@ -457,8 +441,8 @@ else:
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
             
             # Verificamos que ambos canvas tengan al menos una línea dibujada
-            tec_ok = canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
-            cli_ok = canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
+            tec_ok = canvas_tec.image_data is not None and canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
+            cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
             
             if tec_ok and cli_ok:
                 def procesar_imagen_firma(img_data):
@@ -466,12 +450,6 @@ else:
                 
                 io_tec = procesar_imagen_firma(canvas_tec.image_data)
                 io_cli = procesar_imagen_firma(canvas_cli.image_data)
-                
-                # Guardamos la firma definitiva en el servidor para que la cargue la próxima vez
-                try:
-                    with open(archivo_firma_tec_json, "w") as f: json.dump(canvas_tec.json_data, f)
-                    st.session_state[session_firma_key] = canvas_tec.json_data
-                except: pass
                 
                 informes_finales = []
                 with st.spinner("Fabricando documentos oficiales, inyectando firmas y transformando a PDF..."):
@@ -493,7 +471,7 @@ else:
                         else: st.error(f"Error de red: {mensaje_correo}")
                     except Exception as e: st.error(f"Error sistémico procesando las firmas: {e}")
             else: 
-                st.warning("⚠️ Asegúrate de que ambas pizarras contengan una firma visible antes de generar los PDFs finales. Si usaste el basurero, vuelve a dibujar.")
+                st.warning("⚠️ Asegúrate de que ambas pizarras contengan una firma visible antes de generar los PDFs finales.")
 
     # --- 6.2 VISTA CATÁLOGO (DASHBOARD CINETICO Y PREMIUM) ---
     elif st.session_state.equipo_seleccionado is None:
