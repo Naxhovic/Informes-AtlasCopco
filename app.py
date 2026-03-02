@@ -64,7 +64,6 @@ def aplicar_estilos_premium():
         html, body, [class*="css"] { font-family: 'Montserrat', sans-serif !important; }
         #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
         
-        /* Botones estándar (Guardar, Login) */
         div.stButton > button:first-child {
             background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%);
             color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem;
@@ -72,7 +71,6 @@ def aplicar_estilos_premium():
         }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
         
-        /* Animación de Tarjetas Nativas (Hover 3D) */
         [data-testid="stVerticalBlockBorderWrapper"] {
             background: linear-gradient(145deg, #1a212b, #151a22) !important;
             border-radius: 12px !important; border: 1px solid #2b3543 !important;
@@ -84,7 +82,6 @@ def aplicar_estilos_premium():
             border-color: var(--ac-blue) !important;
         }
         
-        /* MAGIA: Diseño especial SÓLO para el botón del TAG en el catálogo */
         div[class^="st-key-btn_"] button {
             background: transparent !important; border: 1px solid rgba(255,255,255,0.05) !important;
             color: white !important; font-size: 1.6rem !important; font-weight: 800 !important;
@@ -95,7 +92,6 @@ def aplicar_estilos_premium():
             color: #fff !important; box-shadow: inset 0 0 15px rgba(0,124,166,0.3) !important;
         }
         
-        /* Entradas de texto */
         .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select { 
             border-radius: 6px !important; border: 1px solid #2b3543 !important; 
             background-color: #1e2530 !important; color: white !important;
@@ -107,6 +103,7 @@ def aplicar_estilos_premium():
         .stTabs [aria-selected="true"] { color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; }
         </style>
     """, unsafe_allow_html=True)
+aplicar_estilos_premium()
 
 # =============================================================================
 # 1. DATOS MAESTROS (INVENTARIO Y USUARIOS)
@@ -279,7 +276,7 @@ def guardar_registro(data_tuple):
         except Exception as e: time.sleep(5)
     return False
 # =============================================================================
-# 3. CONVERSIÓN A PDF HÍBRIDA
+# 3. CONVERSIÓN A PDF, FECHAS EN ESPAÑOL Y MEMORIA DE BORRADORES
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -298,6 +295,30 @@ def convertir_a_pdf(ruta_docx):
     except: pass
     return None
 
+def obtener_fecha_hoy_esp():
+    """Genera la fecha actual formateada en español."""
+    meses = {1: "enero", 2: "febrero", 3: "marzo", 4: "abril", 5: "mayo", 6: "junio", 7: "julio", 8: "agosto", 9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"}
+    ahora = pd.Timestamp.now()
+    return f"{ahora.day} de {meses[ahora.month]} de {ahora.year}"
+
+# --- SISTEMA DE GUARDADO PERSISTENTE ---
+ARCHIVO_PENDIENTES = os.path.join(RUTA_ONEDRIVE, "bandeja_pendientes.json")
+
+def cargar_pendientes():
+    if os.path.exists(ARCHIVO_PENDIENTES):
+        try:
+            with open(ARCHIVO_PENDIENTES, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except: return []
+    return []
+
+def guardar_pendientes(pendientes):
+    os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
+    try:
+        with open(ARCHIVO_PENDIENTES, "w", encoding="utf-8") as f:
+            json.dump(pendientes, f, ensure_ascii=False, indent=4)
+    except: pass
+
 # =============================================================================
 # 4. INICIALIZACIÓN DE VARIABLES DE SESIÓN
 # =============================================================================
@@ -308,10 +329,15 @@ default_states = {
     'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
     'input_reco': "", 'input_estado_eq': "Operativo",
-    'informes_pendientes': [], 'vista_firmas': False
+    'vista_firmas': False
 }
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
+
+# Cargamos la memoria persistente al iniciar
+if 'informes_pendientes' not in st.session_state:
+    st.session_state.informes_pendientes = cargar_pendientes()
+
 def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
@@ -346,7 +372,7 @@ if not st.session_state.logged_in:
                 u_in = st.text_input("Usuario Corporativo").lower()
                 p_in = st.text_input("Contraseña", type="password")
                 st.markdown("<br>", unsafe_allow_html=True)
-                if st.form_submit_button("Acceder a la plataforma", type="primary", use_container_width=True):
+                if st.form_submit_button("Acceder de forma segura", type="primary", use_container_width=True):
                     if u_in in USUARIOS and USUARIOS[u_in] == p_in: st.session_state.update({'logged_in': True, 'usuario_actual': u_in}); st.rerun()
                     else: st.error("❌ Credenciales inválidas.")
 
@@ -394,6 +420,7 @@ else:
                 st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
                 if st.button("❌", key=f"del_inf_{i}", help="Quitar este informe de la bandeja"):
                     st.session_state.informes_pendientes.pop(i)
+                    guardar_pendientes(st.session_state.informes_pendientes) # Actualiza memoria al borrar
                     if len(st.session_state.informes_pendientes) == 0: st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None
                     st.rerun()
                     
@@ -406,6 +433,7 @@ else:
             st.markdown("### 👷 Firma del Cliente"); st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
             canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
         st.markdown("<br>", unsafe_allow_html=True)
+        
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
             if canvas_tec.image_data is not None and canvas_cli.image_data is not None:
                 def procesar_imagen_firma(img_data):
@@ -422,7 +450,11 @@ else:
                             if not guardado_ok: st.error(f"⚠️ El PDF de {inf['tag']} se generó y envió, pero la base de datos de Google superó su límite. Verifica el catálogo en 1 minuto.")
                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"})
                         exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
-                        if exito: st.success("✅ ¡PERFECTO! Los documentos oficiales se firmaron, convirtieron a PDF y ya están camino a tu OneDrive."); st.session_state.informes_pendientes = []; st.balloons()
+                        if exito: 
+                            st.success("✅ ¡PERFECTO! Los documentos oficiales se firmaron, convirtieron a PDF y ya están camino a tu OneDrive.")
+                            st.session_state.informes_pendientes = []
+                            guardar_pendientes([]) # Vacía la memoria local tras enviar
+                            st.balloons()
                         else: st.error(f"Error de red: {mensaje_correo}")
                     except Exception as e: st.error(f"Error sistémico procesando las firmas: {e}")
             else: st.warning("⚠️ Asegúrate de dibujar en ambas pizarras antes de generar los PDFs finales.")
@@ -474,7 +506,12 @@ else:
         with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Servicio: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True); tab1, tab2, tab3, tab4 = st.tabs(["📋 1. Reporte y Diagnóstico", "📚 2. Ficha Técnica", "🔍 3. Bitácora de Observaciones", "👤 4. Gestión de Área"])
         with tab1:
-            st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área", area_d, disabled=True); ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3]); fecha = c5.text_input("Fecha Ejecución", pd.Timestamp.now().strftime("%d de %B de %Y")); tec1 = c6.text_input("Técnico 1", key="input_tec1"); tec2 = c7.text_input("Técnico 2", key="input_tec2")
+            st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área", area_d, disabled=True); ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
+            
+            # Se inyecta la fecha en español por defecto
+            fecha = c5.text_input("Fecha Ejecución", obtener_fecha_hoy_esp())
+            
+            tec1 = c6.text_input("Técnico 1", key="input_tec1"); tec2 = c7.text_input("Técnico 2", key="input_tec2")
             with c8:
                 contactos_db = obtener_contactos(); opciones = ["➕ Escribir nuevo..."] + contactos_db
                 cli_idx = opciones.index(st.session_state.input_cliente) if st.session_state.input_cliente in opciones else 1 if len(contactos_db) > 0 else 0
@@ -498,7 +535,11 @@ else:
                 context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}; nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"; ruta = os.path.join(RUTA_ONEDRIVE, nombre_archivo); temp_db = float(t_salida_clean) if t_salida_clean.replace('.', '', 1).isdigit() else 0.0; tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
                 with st.spinner("Creando borrador del documento para vista preliminar..."):
                     doc_prev = DocxTemplate(file_plantilla); ctx_prev = context.copy(); ctx_prev['firma_tecnico'] = ""; ctx_prev['firma_cliente'] = ""; doc_prev.render(ctx_prev); os.makedirs(RUTA_ONEDRIVE, exist_ok=True); ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}"); doc_prev.save(ruta_prev_docx); ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
-                st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf}); st.success("✅ Datos guardados. Agrega otro equipo o ve a la bandeja para firmar."); st.session_state.equipo_seleccionado = None; st.rerun()
+                st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf})
+                
+                guardar_pendientes(st.session_state.informes_pendientes) # Guarda en memoria local
+                
+                st.success("✅ Datos guardados. Agrega otro equipo o ve a la bandeja para firmar."); st.session_state.equipo_seleccionado = None; st.rerun()
         with tab2:
             st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
             with st.expander("✏️ Agregar o Corregir Datos Faltantes"):
