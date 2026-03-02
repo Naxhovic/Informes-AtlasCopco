@@ -346,7 +346,7 @@ if not st.session_state.logged_in:
                 u_in = st.text_input("Usuario Corporativo").lower()
                 p_in = st.text_input("Contraseña", type="password")
                 st.markdown("<br>", unsafe_allow_html=True)
-                if st.form_submit_button("Acceder de forma segura", type="primary", use_container_width=True):
+                if st.form_submit_button("Acceder a la plataforma", type="primary", use_container_width=True):
                     if u_in in USUARIOS and USUARIOS[u_in] == p_in: st.session_state.update({'logged_in': True, 'usuario_actual': u_in}); st.rerun()
                     else: st.error("❌ Credenciales inválidas.")
 
