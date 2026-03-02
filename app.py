@@ -276,7 +276,7 @@ def guardar_registro(data_tuple):
         except Exception as e: time.sleep(5)
     return False
 # =============================================================================
-# 3. CONVERSIÓN A PDF, FECHAS EN ESPAÑOL Y MEMORIA DE BORRADORES
+# 3. CONVERSIÓN A PDF, FECHAS EN ESPAÑOL Y BANDEJAS PRIVADAS
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -301,22 +301,21 @@ def obtener_fecha_hoy_esp():
     ahora = pd.Timestamp.now()
     return f"{ahora.day} de {meses[ahora.month]} de {ahora.year}"
 
-# --- SISTEMA DE GUARDADO PERSISTENTE ---
-ARCHIVO_PENDIENTES = os.path.join(RUTA_ONEDRIVE, "bandeja_pendientes.json")
-
-def cargar_pendientes():
-    if os.path.exists(ARCHIVO_PENDIENTES):
+def cargar_pendientes(usuario):
+    """Carga la bandeja privada del usuario actual."""
+    archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
+    if os.path.exists(archivo):
         try:
-            with open(ARCHIVO_PENDIENTES, "r", encoding="utf-8") as f:
-                return json.load(f)
+            with open(archivo, "r", encoding="utf-8") as f: return json.load(f)
         except: return []
     return []
 
-def guardar_pendientes(pendientes):
+def guardar_pendientes(usuario, pendientes):
+    """Guarda la bandeja privada del usuario actual."""
     os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
+    archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
     try:
-        with open(ARCHIVO_PENDIENTES, "w", encoding="utf-8") as f:
-            json.dump(pendientes, f, ensure_ascii=False, indent=4)
+        with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
 # =============================================================================
@@ -334,9 +333,8 @@ default_states = {
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
 
-# Cargamos la memoria persistente al iniciar
 if 'informes_pendientes' not in st.session_state:
-    st.session_state.informes_pendientes = cargar_pendientes()
+    st.session_state.informes_pendientes = []
 
 def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
@@ -373,7 +371,11 @@ if not st.session_state.logged_in:
                 p_in = st.text_input("Contraseña", type="password")
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.form_submit_button("Acceder de forma segura", type="primary", use_container_width=True):
-                    if u_in in USUARIOS and USUARIOS[u_in] == p_in: st.session_state.update({'logged_in': True, 'usuario_actual': u_in}); st.rerun()
+                    if u_in in USUARIOS and USUARIOS[u_in] == p_in: 
+                        st.session_state.update({'logged_in': True, 'usuario_actual': u_in})
+                        # Cargamos la bandeja de este usuario específico al entrar
+                        st.session_state.informes_pendientes = cargar_pendientes(u_in)
+                        st.rerun()
                     else: st.error("❌ Credenciales inválidas.")
 
 # =============================================================================
@@ -420,7 +422,7 @@ else:
                 st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
                 if st.button("❌", key=f"del_inf_{i}", help="Quitar este informe de la bandeja"):
                     st.session_state.informes_pendientes.pop(i)
-                    guardar_pendientes(st.session_state.informes_pendientes) # Actualiza memoria al borrar
+                    guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) # Actualiza guardado al borrar
                     if len(st.session_state.informes_pendientes) == 0: st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None
                     st.rerun()
                     
@@ -433,7 +435,6 @@ else:
             st.markdown("### 👷 Firma del Cliente"); st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
             canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
         st.markdown("<br>", unsafe_allow_html=True)
-        
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
             if canvas_tec.image_data is not None and canvas_cli.image_data is not None:
                 def procesar_imagen_firma(img_data):
@@ -453,7 +454,7 @@ else:
                         if exito: 
                             st.success("✅ ¡PERFECTO! Los documentos oficiales se firmaron, convirtieron a PDF y ya están camino a tu OneDrive.")
                             st.session_state.informes_pendientes = []
-                            guardar_pendientes([]) # Vacía la memoria local tras enviar
+                            guardar_pendientes(st.session_state.usuario_actual, []) # Vacía la memoria al enviar
                             st.balloons()
                         else: st.error(f"Error de red: {mensaje_correo}")
                     except Exception as e: st.error(f"Error sistémico procesando las firmas: {e}")
@@ -508,7 +509,7 @@ else:
         with tab1:
             st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área", area_d, disabled=True); ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
             
-            # Se inyecta la fecha en español por defecto
+            # Fecha en español automática
             fecha = c5.text_input("Fecha Ejecución", obtener_fecha_hoy_esp())
             
             tec1 = c6.text_input("Técnico 1", key="input_tec1"); tec2 = c7.text_input("Técnico 2", key="input_tec2")
@@ -529,17 +530,21 @@ else:
                 else: cli_cont = cli_sel; st.session_state.input_cliente = cli_sel
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Mediciones del Equipo"); c9, c10, c11, c12, c13, c14 = st.columns(6); h_m = c9.number_input("Horas Marcha Totales", step=1, value=int(st.session_state.input_h_marcha), format="%d"); h_c = c10.number_input("Horas en Carga", step=1, value=int(st.session_state.input_h_carga), format="%d"); unidad_p = c11.selectbox("Unidad de Presión", ["Bar", "psi"]); p_c_str = c12.text_input("P. Carga", value=str(st.session_state.input_p_carga)); p_d_str = c13.text_input("P. Descarga", value=str(st.session_state.input_p_descarga)); t_salida_str = c14.text_input("Temp Salida (°C)", value=str(st.session_state.input_temp)); p_c_clean = p_c_str.replace(',', '.'); p_d_clean = p_d_str.replace(',', '.'); t_salida_clean = t_salida_str.replace(',', '.')
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Evaluación y Diagnóstico Final"); est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True); est_ent = st.text_area("Descripción Condición Final:", key="input_estado", height=100); reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100); st.markdown("<br>", unsafe_allow_html=True)
+            
+            # --- LÓGICA DEL BOTÓN: TOPE DE 2 INFORMES ---
             if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
-                if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
-                else: file_plantilla = "plantilla/fueradeservicio.docx" if est_eq == "Fuera de servicio" else f"plantilla/{tipo_plan.lower()}.docx" if tipo_plan in ["P1", "P2", "P3"] else "plantilla/inspeccion.docx"
-                context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}; nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"; ruta = os.path.join(RUTA_ONEDRIVE, nombre_archivo); temp_db = float(t_salida_clean) if t_salida_clean.replace('.', '', 1).isdigit() else 0.0; tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
-                with st.spinner("Creando borrador del documento para vista preliminar..."):
-                    doc_prev = DocxTemplate(file_plantilla); ctx_prev = context.copy(); ctx_prev['firma_tecnico'] = ""; ctx_prev['firma_cliente'] = ""; doc_prev.render(ctx_prev); os.makedirs(RUTA_ONEDRIVE, exist_ok=True); ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}"); doc_prev.save(ruta_prev_docx); ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
-                st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf})
-                
-                guardar_pendientes(st.session_state.informes_pendientes) # Guarda en memoria local
-                
-                st.success("✅ Datos guardados. Agrega otro equipo o ve a la bandeja para firmar."); st.session_state.equipo_seleccionado = None; st.rerun()
+                if len(st.session_state.informes_pendientes) >= 2:
+                    st.error("⚠️ Tu bandeja está llena (Máximo 2 borradores). Por favor, firma y sube los actuales o elimina alguno antes de crear uno nuevo.")
+                else:
+                    if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
+                    else: file_plantilla = "plantilla/fueradeservicio.docx" if est_eq == "Fuera de servicio" else f"plantilla/{tipo_plan.lower()}.docx" if tipo_plan in ["P1", "P2", "P3"] else "plantilla/inspeccion.docx"
+                    context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}; nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"; ruta = os.path.join(RUTA_ONEDRIVE, nombre_archivo); temp_db = float(t_salida_clean) if t_salida_clean.replace('.', '', 1).isdigit() else 0.0; tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
+                    with st.spinner("Creando borrador del documento para vista preliminar..."):
+                        doc_prev = DocxTemplate(file_plantilla); ctx_prev = context.copy(); ctx_prev['firma_tecnico'] = ""; ctx_prev['firma_cliente'] = ""; doc_prev.render(ctx_prev); os.makedirs(RUTA_ONEDRIVE, exist_ok=True); ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}"); doc_prev.save(ruta_prev_docx); ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
+                    st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf})
+                    guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) # Guarda borrador en la nube del usuario
+                    st.success("✅ Datos guardados. Agrega otro equipo o ve a la bandeja para firmar."); st.session_state.equipo_seleccionado = None; st.rerun()
+                    
         with tab2:
             st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
             with st.expander("✏️ Agregar o Corregir Datos Faltantes"):
