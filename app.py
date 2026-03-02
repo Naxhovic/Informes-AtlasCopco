@@ -128,8 +128,8 @@ inventario_equipos = {
     "50-GC-001": ["GA 45", "API542705", "planta SX", "área húmeda"], "50-GC-002": ["GA 45", "API542706", "planta SX", "área húmeda"], "50-GC-003": ["ZT 37", "API791692", "planta SX", "área húmeda"], "50-GC-004": ["ZT 37", "API791693", "planta SX", "área húmeda"], "50-CD-001": ["CD 80+", "API095825", "planta SX", "área húmeda"], "50-CD-002": ["CD 80+", "API095826", "planta SX", "área húmeda"],
     "55-GC-015": ["GA 30", "API501440", "planta borra", "área húmeda"],
     "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "área húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "área húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "área húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "área húmeda"],
-    "70-GC-013": ["GA 132", "AIF095296", "descarga de ácido", "área húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de ácido", "área húmeda"],
-    "Taller": ["GA 18", "API335343", "Laboratorio", "Taller"]
+    "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "área húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "área húmeda"],
+    "Taller": ["GA 18", "API335343", "Taller", "Taller"]
 }
 
 # =============================================================================
@@ -373,7 +373,6 @@ if not st.session_state.logged_in:
                 if st.form_submit_button("Acceder de forma segura", type="primary", use_container_width=True):
                     if u_in in USUARIOS and USUARIOS[u_in] == p_in: 
                         st.session_state.update({'logged_in': True, 'usuario_actual': u_in})
-                        # Cargamos la bandeja de este usuario específico al entrar
                         st.session_state.informes_pendientes = cargar_pendientes(u_in)
                         st.rerun()
                     else: st.error("❌ Credenciales inválidas.")
@@ -422,24 +421,54 @@ else:
                 st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
                 if st.button("❌", key=f"del_inf_{i}", help="Quitar este informe de la bandeja"):
                     st.session_state.informes_pendientes.pop(i)
-                    guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) # Actualiza guardado al borrar
+                    guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
                     if len(st.session_state.informes_pendientes) == 0: st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None
                     st.rerun()
                     
-        st.markdown("---"); st.info("💡 **Instrucciones:** Dibuja las firmas en los recuadros usando el mouse o el dedo.")
+        st.markdown("---"); st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro usando el mouse o el dedo.")
+        
+        # LÓGICA DE FIRMA DE PERFIL GUARDADA
+        archivo_firma_tec = os.path.join(RUTA_ONEDRIVE, f"firma_{st.session_state.usuario_actual.replace(' ', '_')}.png")
+        firma_tec_existe = os.path.exists(archivo_firma_tec)
+        
         c_tec, c_cli = st.columns(2)
         with c_tec:
-            st.markdown("### 🧑‍🔧 Firma del Técnico"); st.caption(f"Técnico: {st.session_state.informes_pendientes[0]['tec1'] if st.session_state.informes_pendientes else 'N/A'}")
-            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
+            st.markdown("### 🧑‍🔧 Firma del Técnico")
+            st.caption(f"Técnico: {st.session_state.usuario_actual.title()}")
+            
+            if firma_tec_existe:
+                st.success("✅ Tu firma está guardada en tu perfil y lista para usarse.")
+                st.image(archivo_firma_tec, width=350)
+                if st.button("🔄 Borrar y Cambiar mi firma", use_container_width=True):
+                    os.remove(archivo_firma_tec)
+                    st.rerun()
+                canvas_tec = None
+            else:
+                st.info("✍️ Dibuja tu firma (se guardará para tus futuros informes).")
+                canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
+                
         with c_cli:
-            st.markdown("### 👷 Firma del Cliente"); st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
+            st.markdown("### 👷 Firma del Cliente")
+            st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
             canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
+        
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
-            if canvas_tec.image_data is not None and canvas_cli.image_data is not None:
+            if canvas_cli.image_data is not None and (firma_tec_existe or (canvas_tec and canvas_tec.image_data is not None)):
                 def procesar_imagen_firma(img_data):
                     img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
-                io_tec = procesar_imagen_firma(canvas_tec.image_data); io_cli = procesar_imagen_firma(canvas_cli.image_data); informes_finales = []
+                
+                io_cli = procesar_imagen_firma(canvas_cli.image_data)
+                
+                # Resuelve la firma del técnico: desde el archivo o del dibujo nuevo
+                if firma_tec_existe:
+                    with open(archivo_firma_tec, "rb") as f: io_tec = io.BytesIO(f.read())
+                else:
+                    img_tec_nueva = Image.fromarray(canvas_tec.image_data.astype('uint8'), 'RGBA')
+                    img_tec_nueva.save(archivo_firma_tec, format='PNG') # Se guarda en el servidor para siempre
+                    io_tec = procesar_imagen_firma(canvas_tec.image_data)
+                
+                informes_finales = []
                 with st.spinner("Fabricando documentos oficiales, inyectando firmas y transformando a PDF..."):
                     try:
                         for inf in st.session_state.informes_pendientes:
@@ -452,13 +481,13 @@ else:
                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"})
                         exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
                         if exito: 
-                            st.success("✅ Los documentos oficiales se firmaron, convirtieron a PDF y ya están camino a OneDrive.")
+                            st.success("✅ ¡PERFECTO! Los documentos oficiales se firmaron, convirtieron a PDF y ya están camino a tu OneDrive.")
                             st.session_state.informes_pendientes = []
-                            guardar_pendientes(st.session_state.usuario_actual, []) # Vacía la memoria al enviar
+                            guardar_pendientes(st.session_state.usuario_actual, []) 
                             st.balloons()
                         else: st.error(f"Error de red: {mensaje_correo}")
                     except Exception as e: st.error(f"Error sistémico procesando las firmas: {e}")
-            else: st.warning("⚠️ Asegúrate de dibujar en ambas pizarras antes de generar los PDFs finales.")
+            else: st.warning("⚠️ Asegúrate de que el cliente haya dibujado en la pizarra antes de generar los PDFs finales.")
 
     # --- 6.2 VISTA CATÁLOGO (DASHBOARD CINETICO Y PREMIUM) ---
     elif st.session_state.equipo_seleccionado is None:
@@ -509,7 +538,7 @@ else:
         with tab1:
             st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área", area_d, disabled=True); ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
             
-            # Fecha en español automática
+            # --- FECHA EN ESPAÑOL AUTOMÁTICA ---
             fecha = c5.text_input("Fecha Ejecución", obtener_fecha_hoy_esp())
             
             tec1 = c6.text_input("Técnico 1", key="input_tec1"); tec2 = c7.text_input("Técnico 2", key="input_tec2")
@@ -531,10 +560,10 @@ else:
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Mediciones del Equipo"); c9, c10, c11, c12, c13, c14 = st.columns(6); h_m = c9.number_input("Horas Marcha Totales", step=1, value=int(st.session_state.input_h_marcha), format="%d"); h_c = c10.number_input("Horas en Carga", step=1, value=int(st.session_state.input_h_carga), format="%d"); unidad_p = c11.selectbox("Unidad de Presión", ["Bar", "psi"]); p_c_str = c12.text_input("P. Carga", value=str(st.session_state.input_p_carga)); p_d_str = c13.text_input("P. Descarga", value=str(st.session_state.input_p_descarga)); t_salida_str = c14.text_input("Temp Salida (°C)", value=str(st.session_state.input_temp)); p_c_clean = p_c_str.replace(',', '.'); p_d_clean = p_d_str.replace(',', '.'); t_salida_clean = t_salida_str.replace(',', '.')
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Evaluación y Diagnóstico Final"); est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True); est_ent = st.text_area("Descripción Condición Final:", key="input_estado", height=100); reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100); st.markdown("<br>", unsafe_allow_html=True)
             
-            # --- LÓGICA DEL BOTÓN: TOPE DE 2 INFORMES ---
+            # --- LÍMITE DE 2 BORRADORES ---
             if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
                 if len(st.session_state.informes_pendientes) >= 2:
-                    st.error("⚠️ Tu bandeja está llena (Máximo 2 borradores). Por favor, firma y sube los actuales o elimina alguno antes de crear uno nuevo.")
+                    st.error("⚠️ Tu bandeja está llena (Máximo 2 borradores). Por favor, ve a la Pizarra de Firmas para enviarlos o eliminar alguno antes de crear uno nuevo.")
                 else:
                     if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
                     else: file_plantilla = "plantilla/fueradeservicio.docx" if est_eq == "Fuera de servicio" else f"plantilla/{tipo_plan.lower()}.docx" if tipo_plan in ["P1", "P2", "P3"] else "plantilla/inspeccion.docx"
@@ -542,7 +571,8 @@ else:
                     with st.spinner("Creando borrador del documento para vista preliminar..."):
                         doc_prev = DocxTemplate(file_plantilla); ctx_prev = context.copy(); ctx_prev['firma_tecnico'] = ""; ctx_prev['firma_cliente'] = ""; doc_prev.render(ctx_prev); os.makedirs(RUTA_ONEDRIVE, exist_ok=True); ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}"); doc_prev.save(ruta_prev_docx); ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
                     st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf})
-                    guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) # Guarda borrador en la nube del usuario
+                    
+                    guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
                     st.success("✅ Datos guardados. Agrega otro equipo o ve a la bandeja para firmar."); st.session_state.equipo_seleccionado = None; st.rerun()
                     
         with tab2:
