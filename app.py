@@ -302,7 +302,6 @@ def obtener_fecha_hoy_esp():
     return f"{ahora.day} de {meses[ahora.month]} de {ahora.year}"
 
 def cargar_pendientes(usuario):
-    """Carga la bandeja privada del usuario actual."""
     archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
     if os.path.exists(archivo):
         try:
@@ -311,7 +310,6 @@ def cargar_pendientes(usuario):
     return []
 
 def guardar_pendientes(usuario, pendientes):
-    """Guarda la bandeja privada del usuario actual."""
     os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
     archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
     try:
@@ -426,20 +424,25 @@ else:
                     st.rerun()
                     
         st.markdown("---")
-        st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro. Usa el basurero nativo para borrarla o la flecha para descargarla.")
+        st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro. Usa el basurero nativo debajo del cuadro para borrarla y volver a empezar.")
         
         # --- LÓGICA DE FIRMA NATIVA EDITABLE VIA JSON ---
         archivo_firma_tec_json = os.path.join(RUTA_ONEDRIVE, f"firma_{st.session_state.usuario_actual.replace(' ', '_')}.json")
-        estado_firma_tec = None
-        if os.path.exists(archivo_firma_tec_json):
-            try:
-                with open(archivo_firma_tec_json, "r") as f: estado_firma_tec = json.load(f)
-            except: pass
+        session_firma_key = f"firma_json_{st.session_state.usuario_actual}"
+        
+        # Cargamos el dibujo guardado en la memoria de la app solo una vez para evitar reseteos
+        if session_firma_key not in st.session_state:
+            if os.path.exists(archivo_firma_tec_json):
+                try:
+                    with open(archivo_firma_tec_json, "r") as f: 
+                        st.session_state[session_firma_key] = json.load(f)
+                except: st.session_state[session_firma_key] = None
+            else: st.session_state[session_firma_key] = None
             
         c_tec, c_cli = st.columns(2)
         with c_tec:
             st.markdown("### 🧑‍🔧 Firma del Técnico"); st.caption(f"Técnico: {st.session_state.usuario_actual.title()}")
-            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", initial_drawing=estado_firma_tec, key="canvas_tecnico")
+            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", initial_drawing=st.session_state[session_firma_key], key="canvas_tecnico")
         with c_cli:
             st.markdown("### 👷 Firma del Cliente"); st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
             canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
@@ -447,7 +450,7 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
             
-            # Verificamos si realmente dibujaron algo o si la firma cargada tiene datos
+            # Comprobamos que el técnico y el cliente tengan firmas dibujadas en la pizarra
             tec_ok = canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
             cli_ok = canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
             
@@ -458,9 +461,10 @@ else:
                 io_tec = procesar_imagen_firma(canvas_tec.image_data)
                 io_cli = procesar_imagen_firma(canvas_cli.image_data)
                 
-                # Actualiza el estado de la firma del técnico para el futuro
+                # Guarda o actualiza la firma del técnico para que la use mañana
                 try:
                     with open(archivo_firma_tec_json, "w") as f: json.dump(canvas_tec.json_data, f)
+                    st.session_state[session_firma_key] = canvas_tec.json_data
                 except: pass
                 
                 informes_finales = []
@@ -483,9 +487,10 @@ else:
                         else: st.error(f"Error de red: {mensaje_correo}")
                     except Exception as e: st.error(f"Error sistémico procesando las firmas: {e}")
             else: 
-                # Si el usuario borró la firma con el basurero y aprieta "Aprobar" vacía, eliminamos el archivo JSON
+                # Si borró la firma con el basurero nativo y aprieta "Aprobar" vacía, limpiamos la memoria
                 if not tec_ok and os.path.exists(archivo_firma_tec_json):
                     os.remove(archivo_firma_tec_json)
+                    st.session_state[session_firma_key] = None
                 st.warning("⚠️ Asegúrate de que ambas pizarras contengan una firma visible antes de generar los PDFs finales.")
 
     # --- 6.2 VISTA CATÁLOGO (DASHBOARD CINETICO Y PREMIUM) ---
