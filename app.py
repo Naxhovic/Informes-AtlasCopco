@@ -424,13 +424,13 @@ else:
                     st.rerun()
                     
         st.markdown("---")
-        st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro. Usa el basurero nativo para borrarla y empezar de nuevo, o la flecha para descargarla.")
+        st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro. Usa el basurero nativo debajo del cuadro para borrarla y volver a empezar.")
         
         # --- LÓGICA DE FIRMA NATIVA EDITABLE VIA JSON ---
         archivo_firma_tec_json = os.path.join(RUTA_ONEDRIVE, f"firma_{st.session_state.usuario_actual.replace(' ', '_')}.json")
         session_firma_key = f"firma_json_{st.session_state.usuario_actual}"
         
-        # 1. Cargamos el trazo guardado en la memoria
+        # 1. Cargamos el trazo guardado en la memoria una sola vez al entrar
         if session_firma_key not in st.session_state:
             if os.path.exists(archivo_firma_tec_json):
                 try:
@@ -442,8 +442,12 @@ else:
         c_tec, c_cli = st.columns(2)
         with c_tec:
             st.markdown("### 🧑‍🔧 Firma del Técnico"); st.caption(f"Técnico: {st.session_state.usuario_actual.title()}")
-            # 2. Mostramos el canvas con la firma. Ya no se borra sola al cargar.
-            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", initial_drawing=st.session_state.get(session_firma_key), key="canvas_tecnico")
+            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", initial_drawing=st.session_state[session_firma_key], key="canvas_tecnico")
+            
+            # SINCRONIZACIÓN PERFECTA: Sincronizamos la memoria temporal con el canvas en tiempo real.
+            # Esto permite que cuando presiones el basurero nativo, el sistema "entienda" que quieres borrar la firma.
+            if canvas_tec.json_data is not None and "objects" in canvas_tec.json_data:
+                st.session_state[session_firma_key] = canvas_tec.json_data
                     
         with c_cli:
             st.markdown("### 👷 Firma del Cliente"); st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
@@ -463,7 +467,7 @@ else:
                 io_tec = procesar_imagen_firma(canvas_tec.image_data)
                 io_cli = procesar_imagen_firma(canvas_cli.image_data)
                 
-                # Guardamos la nueva firma (o la misma si no la editó) para la próxima vez
+                # Guardamos la firma definitiva en el servidor para que la cargue la próxima vez
                 try:
                     with open(archivo_firma_tec_json, "w") as f: json.dump(canvas_tec.json_data, f)
                     st.session_state[session_firma_key] = canvas_tec.json_data
