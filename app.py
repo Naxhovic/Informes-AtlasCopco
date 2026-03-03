@@ -350,32 +350,11 @@ def guardar_pendientes(usuario, pendientes):
     except: pass
 
 # =============================================================================
-# 3.1 BASE DE DATOS: MATRIZ DE 4 COLUMNAS POR MES (ESTILO EXCEL)
+# 3.1 BASE DE DATOS: MATRIZ DE 4 COLUMNAS (ESTRUCTURA EXCEL CONFIABILIDAD)
 # =============================================================================
 def generar_planificacion_base():
-    tags = [
-        ("70-GC-013", "GA 132", "Descarga Acido"), ("70-GC-014", "GA 132", "Descarga Acido"),
-        ("50-GC-001", "GA 45", "Planta SX"), ("50-GC-002", "GA 45", "Planta SX"),
-        ("50-GC-003", "ZT 37", "Planta SX"), ("50-GC-004", "ZT 37", "Planta SX"),
-        ("50-CD-001", "CD 80+", "Planta SX"), ("50-CD-002", "CD 80+", "Planta SX"),
-        ("55-GC-015", "GA 30", "Planta Borra"),
-        ("65-GC-011", "GA 250", "Patio Estanques"), ("65-GC-009", "GA 250", "Patio Estanques"),
-        ("65-CD-011", "CD 630", "Patio Estanques"), ("65-CD-012", "CD 630", "Patio Estanques"),
-        ("35-GC-006", "GA 250", "Chancado Sec."), ("35-GC-007", "GA 250", "Chancado Sec."), ("35-GC-008", "GA 250", "Chancado Sec."),
-        ("20-GC-004", "GA 37", "Truck Shop"), ("20-GC-001", "GA 75", "Truck Shop"),
-        ("20-GC-002", "GA 75", "Truck Shop"), ("20-GC-003", "GA 90", "Truck Shop"),
-        ("Taller", "GA 18", "Taller")
-    ]
-    meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-    datos = []
-    for t, eq, ar in tags:
-        row = {"TAG": t, "Equipo": eq, "Área": ar}
-        for m in meses:
-            row[f"{m}_Pauta"] = "INSP" # Plan
-            row[f"{m}_W_Plan"] = ""    # Semana Planeada
-            row[f"{m}_Est"] = "I"      # Estado Actual (El que se pinta)
-            row[f"{m}_W_Real"] = ""    # Semana Realizada
-        datos.append(row)
+    # Base de datos rescatada de tus Excel para la nueva arquitectura
+    datos = [{"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "Ene_Pauta": "INSP", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "P1", "Feb_W_Plan": "", "Feb_Est": "Hecho", "Feb_W_Real": "WK7", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "W10", "Abr_Pauta": "P4", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "INSP", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "P1", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "INSP", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P2", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "P1", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "INSP", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "P3", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "70-GC-014", "Equipo": "GA 132", "Área": "Descarga Acido", "Ene_Pauta": "P2", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "INSP", "Feb_W_Plan": "", "Feb_Est": "No Hecho", "Feb_W_Real": "", "Mar_Pauta": "P1", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "W10", "Abr_Pauta": "INSP", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "P3", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "INSP", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "P1", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "INSP", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "P2", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "INSP", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "P1", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "INSP", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "Ene_Pauta": "INSP", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "P1", "Feb_W_Plan": "", "Feb_Est": "Hecho", "Feb_W_Real": "WK4", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "W10", "Abr_Pauta": "P3", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "INSP", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "P1", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "INSP", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P2", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "P1", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "INSP", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "P3", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "Ene_Pauta": "P2", "Ene_W_Plan": "", "Ene_Est": "No Hecho", "Ene_W_Real": "", "Feb_Pauta": "INSP", "Feb_W_Plan": "", "Feb_Est": "Hecho", "Feb_W_Real": "WK4", "Mar_Pauta": "P1", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "W10", "Abr_Pauta": "INSP", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "P3", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "INSP", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "P1", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "INSP", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "P2", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "INSP", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "P1", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "INSP", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "50-GC-003", "Equipo": "ZT 37", "Área": "Planta SX", "Ene_Pauta": "INSP", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "P1", "Feb_W_Plan": "", "Feb_Est": "F/S", "Feb_W_Real": "WK7", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "F/S", "Mar_W_Real": "WK9", "Abr_Pauta": "P4", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "INSP", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "P1", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "INSP", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P2", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "P1", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "INSP", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "P3", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "50-GC-004", "Equipo": "ZT 37", "Área": "Planta SX", "Ene_Pauta": "P2", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "INSP", "Feb_W_Plan": "", "Feb_Est": "Pendiente", "Feb_W_Real": "", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "F/S", "Mar_W_Real": "WK8", "Abr_Pauta": "INSP", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "P4", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "INSP", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "P1", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "INSP", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "P2", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "INSP", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "P1", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "INSP", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "50-CD-001", "Equipo": "CD 80+", "Área": "Planta SX", "Ene_Pauta": "P4", "Ene_W_Plan": "", "Ene_Est": "No Hecho", "Ene_W_Real": "", "Feb_Pauta": "INSP", "Feb_W_Plan": "", "Feb_Est": "Pendiente", "Feb_W_Real": "", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK8", "Abr_Pauta": "INSP", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "INSP", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "INSP", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "P2", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "INSP", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "INSP", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "INSP", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "INSP", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "50-CD-002", "Equipo": "CD 80+", "Área": "Planta SX", "Ene_Pauta": "P4", "Ene_W_Plan": "", "Ene_Est": "No Hecho", "Ene_W_Real": "", "Feb_Pauta": "INSP", "Feb_W_Plan": "", "Feb_Est": "Pendiente", "Feb_W_Real": "", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK8", "Abr_Pauta": "INSP", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "INSP", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "INSP", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "P2", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "INSP", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "INSP", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "INSP", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "INSP", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "Ene_Pauta": "INSP", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "P1", "Feb_W_Plan": "", "Feb_Est": "Hecho", "Feb_W_Real": "WK6", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK11", "Abr_Pauta": "P4", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "INSP", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "P1", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "INSP", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P2", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "P1", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "INSP", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "P3", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Estanques", "Ene_Pauta": "INSP", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "P1", "Feb_W_Plan": "", "Feb_Est": "Hecho", "Feb_W_Real": "WK5", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK11", "Abr_Pauta": "P1", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "INSP", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "P2", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "INSP", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P1", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "P1", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "INSP", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "P4", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "65-GC-009", "Equipo": "GA 250", "Área": "Patio Estanques", "Ene_Pauta": "P1", "Ene_W_Plan": "", "Ene_Est": "No Hecho", "Ene_W_Real": "", "Feb_Pauta": "INSP", "Feb_W_Plan": "", "Feb_Est": "Pendiente", "Feb_W_Real": "", "Mar_Pauta": "P4", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK8", "Abr_Pauta": "INSP", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "P1", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "INSP", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "P1", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "INSP", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "P2", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "INSP", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "P1", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "INSP", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "65-CD-011", "Equipo": "CD 630", "Área": "Patio Estanques", "Ene_Pauta": "INSP", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "P2", "Feb_W_Plan": "", "Feb_Est": "No Hecho", "Feb_W_Real": "", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK8", "Abr_Pauta": "INSP", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "P2", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "INSP", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "INSP", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P2", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "INSP", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "P2", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "INSP", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "65-CD-012", "Equipo": "CD 630", "Área": "Patio Estanques", "Ene_Pauta": "INSP", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "P2", "Feb_W_Plan": "", "Feb_Est": "No Hecho", "Feb_W_Real": "", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK8", "Abr_Pauta": "INSP", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "P2", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "INSP", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "INSP", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P2", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "INSP", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "P2", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "INSP", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "35-GC-006", "Equipo": "GA 250", "Área": "Chancado Sec.", "Ene_Pauta": "P1", "Ene_W_Plan": "", "Ene_Est": "No Hecho", "Ene_W_Real": "", "Feb_Pauta": "P1", "Feb_W_Plan": "", "Feb_Est": "F/S", "Feb_W_Real": "", "Mar_Pauta": "P2", "Mar_W_Plan": "", "Mar_Est": "F/S", "Mar_W_Real": "WK11", "Abr_Pauta": "P1", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "P1", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "P2", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "P1", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P1", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "P4", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "P1", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "P1", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "P2", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "35-GC-007", "Equipo": "GA 250", "Área": "Chancado Sec.", "Ene_Pauta": "P3", "Ene_W_Plan": "", "Ene_Est": "Hecho", "Ene_W_Real": "", "Feb_Pauta": "P1", "Feb_W_Plan": "", "Feb_Est": "Hecho", "Feb_W_Real": "W6", "Mar_Pauta": "P1", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK11", "Abr_Pauta": "P2", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "P1", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "P1", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "P2", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P1", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "P1", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "P4", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "P1", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "P1", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "35-GC-008", "Equipo": "GA 250", "Área": "Chancado Sec.", "Ene_Pauta": "P1", "Ene_W_Plan": "", "Ene_Est": "No Hecho", "Ene_W_Real": "", "Feb_Pauta": "P2", "Feb_W_Plan": "", "Feb_Est": "Hecho", "Feb_W_Real": "W6", "Mar_Pauta": "P1", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK11", "Abr_Pauta": "P1", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "P2", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "P1", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "P1", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P4", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "P1", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "P1", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "P2", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "P1", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "20-GC-004", "Equipo": "GA 37", "Área": "Truck Shop", "Ene_Pauta": "INSP", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "P1", "Feb_W_Plan": "", "Feb_Est": "No Hecho", "Feb_W_Real": "WK5", "Mar_Pauta": "P1", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK10", "Abr_Pauta": "INSP", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "P4", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "INSP", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "INSP", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P1", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "INSP", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "P2", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "INSP", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "Ene_Pauta": "INSP", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "P1", "Feb_W_Plan": "", "Feb_Est": "Hecho", "Feb_W_Real": "WK4", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK10", "Abr_Pauta": "P4", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "INSP", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "P1", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "INSP", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P2", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "P1", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "INSP", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "P3", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "20-GC-002", "Equipo": "GA 75", "Área": "Truck Shop", "Ene_Pauta": "INSP", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "P1", "Feb_W_Plan": "", "Feb_Est": "No Hecho", "Feb_W_Real": "WK4", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK10", "Abr_Pauta": "P4", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "INSP", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "P1", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "INSP", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P2", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "P1", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "INSP", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "P3", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "20-GC-003", "Equipo": "GA 90", "Área": "Truck Shop", "Ene_Pauta": "INSP", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "P1", "Feb_W_Plan": "", "Feb_Est": "Hecho", "Feb_W_Real": "W7", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "Hecho", "Mar_W_Real": "WK10", "Abr_Pauta": "P4", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "INSP", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "P1", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "INSP", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "P2", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "P1", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "INSP", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "P3", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}, {"TAG": "Taller", "Equipo": "GA 18", "Área": "Taller", "Ene_Pauta": "INSP", "Ene_W_Plan": "", "Ene_Est": "Pendiente", "Ene_W_Real": "", "Feb_Pauta": "P2", "Feb_W_Plan": "", "Feb_Est": "Hecho", "Feb_W_Real": "WK5", "Mar_Pauta": "INSP", "Mar_W_Plan": "", "Mar_Est": "Pendiente", "Mar_W_Real": "", "Abr_Pauta": "INSP", "Abr_W_Plan": "", "Abr_Est": "Pendiente", "Abr_W_Real": "", "May_Pauta": "INSP", "May_W_Plan": "", "May_Est": "Pendiente", "May_W_Real": "", "Jun_Pauta": "INSP", "Jun_W_Plan": "", "Jun_Est": "Pendiente", "Jun_W_Real": "", "Jul_Pauta": "INSP", "Jul_W_Plan": "", "Jul_Est": "Pendiente", "Jul_W_Real": "", "Ago_Pauta": "INSP", "Ago_W_Plan": "", "Ago_Est": "Pendiente", "Ago_W_Real": "", "Sep_Pauta": "INSP", "Sep_W_Plan": "", "Sep_Est": "Pendiente", "Sep_W_Real": "", "Oct_Pauta": "INSP", "Oct_W_Plan": "", "Oct_Est": "Pendiente", "Oct_W_Real": "", "Nov_Pauta": "INSP", "Nov_W_Plan": "", "Nov_Est": "Pendiente", "Nov_W_Real": "", "Dic_Pauta": "INSP", "Dic_W_Plan": "", "Dic_Est": "Pendiente", "Dic_W_Real": ""}]
     return pd.DataFrame(datos)
 
 @st.cache_data(ttl=60)
@@ -386,7 +365,7 @@ def cargar_planificacion():
             data = sheet.get_all_values()
             if len(data) > 1: 
                 df = pd.DataFrame(data[1:], columns=data[0])
-                if "Mar_W_Real" in df.columns: return df
+                if "Mar_Est" in df.columns: return df
     except Exception as e: pass
     return generar_planificacion_base()
 
@@ -402,16 +381,16 @@ def guardar_planificacion(df):
         st.error(f"Error al conectar con la Nube: {e}")
 
 # =============================================================================
-# ESTILOS INTELIGENTES (COLORES BASADOS EN DATOS CRUZADOS)
+# ESTRATEGIA VISUAL: MATRIZ DE 4 COLUMNAS (DARK UI)
 # =============================================================================
 def aplicar_estilos_matriz(df):
-    """Aplica colores fila por fila leyendo W_Real para saber si está listo o pendiente."""
+    """Estilos dinámicos para el Dataframe basados en la nueva estructura de 4 columnas."""
     def style_row(row):
         styles = [''] * len(row)
         for i, col in enumerate(row.index):
             val = str(row[col]).upper()
             
-            # 1. Colores para la Pauta (Celeste, Naranja, Morado, Rojo)
+            # Pauta: Colores sólidos base
             if col.endswith('_Pauta'):
                 if 'P1' in val: styles[i] = 'background-color: #0c2d48; color: #66c2ff; font-weight: bold; text-align: center;'
                 elif 'P2' in val: styles[i] = 'background-color: #4a2c00; color: #ffb04c; font-weight: bold; text-align: center;'
@@ -419,24 +398,17 @@ def aplicar_estilos_matriz(df):
                 elif 'P4' in val: styles[i] = 'background-color: #471015; color: #ff8a93; font-weight: bold; text-align: center;'
                 else: styles[i] = 'color: #8c9eb5; text-align: center;'
                 
-            # 2. Colores Inteligentes para el Estado (Se pinta solo mirando si W_Real está vacío o no)
+            # Estado (Lista Desplegable): Colores automáticos
             elif col.endswith('_Est'):
-                mes = col.split('_')[0]
-                wk_real = str(row[f'{mes}_W_Real']).strip()
-                
-                if 'F/S' in val: 
-                    styles[i] = 'background-color: #471015; color: #ff8a93; font-weight: bold; text-align: center;'
-                elif wk_real != '': # Si la columna de al lado tiene una semana, ¡Está LISTO! Verde.
-                    styles[i] = 'background-color: #063f22; color: #6ee7b7; font-weight: bold; text-align: center;'
-                else: # Si no tiene semana y no es F/S, está PENDIENTE. Amarillo.
-                    styles[i] = 'background-color: #423205; color: #fde047; font-weight: bold; text-align: center;'
+                if val == 'HECHO': styles[i] = 'background-color: #063f22; color: #6ee7b7; font-weight: bold; text-align: center;'
+                elif val == 'NO HECHO' or 'F/S' in val: styles[i] = 'background-color: #471015; color: #ff8a93; font-weight: bold; text-align: center;'
+                else: styles[i] = 'background-color: #423205; color: #fde047; font-weight: bold; text-align: center;'
                     
-            # 3. Columnas de Semanas (Texto Gris Sutil)
+            # Columnas de Semanas: Discretas
             elif col.endswith('_W_Plan') or col.endswith('_W_Real'):
                 styles[i] = 'color: #aeb9cc; text-align: center;'
                 
         return styles
-
     return df.style.apply(style_row, axis=1)
 
 def estilo_pautas_puras(val):
@@ -533,35 +505,36 @@ else:
     # --- 6.0 VISTA MATRIZ Y GESTIÓN DUAL (ANTI-ERRORES) ---
     if st.session_state.vista_actual == "planificacion":
         df_plan = cargar_planificacion()
+        if "Área" not in df_plan.columns or "TAG" not in df_plan.columns: df_plan = generar_planificacion_base()
         df_plan = df_plan.fillna("")
+        
+        mes_plan, rango_fechas = obtener_quincena_actual()
         mes_actual = obtener_mes_actual_abrev()
         
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
                 <h2 style="color: white; margin: 0;">📅 Control Operativo de Mantenimiento</h2>
-                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Mes Activo: {mes_actual}</p>
+                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Mes Activo: {mes_actual} | {rango_fechas}</p>
             </div>
         """, unsafe_allow_html=True)
         
-        tab_faltantes, tab_calendario, tab_matriz = st.tabs(["⚠️ Faltantes (Tickets Ágiles)", "📆 Historial en Calendario", "📊 Matriz Anual (Vista Excel)"])
+        tab_faltantes, tab_calendario, tab_matriz = st.tabs(["⚠️ Lista Faltantes (Tickets)", "📆 Historial en Calendario", "📊 Matriz Anual (Vista Excel)"])
 
         # ==========================================
         # PESTAÑA 1: FALTANTES Y ASIGNACIÓN (AUTOMATIZADO WKs)
         # ==========================================
         with tab_faltantes:
             st.markdown("### ⚠️ Equipos Pendientes del Mes")
-            st.info("Elige el día en que realizaste el equipo y dale al Ticket ✔️. El sistema calculará la semana (WK) sola, la guardará, y la celda se pondrá Verde en la Matriz.")
+            st.info("Elige el día en que realizaste el equipo y marca el Ticket ✔️. El sistema calculará la semana (WK) sola y actualizará la Matriz.")
             
             c_fec1, c_fec2 = st.columns([1, 4])
             with c_fec1:
-                fecha_rapida = st.date_input("Fecha en que se realizó:", datetime.date.today(), key="fecha_faltantes")
+                fecha_rapida = st.date_input("Fecha de ejecución real:", datetime.date.today(), key="fecha_faltantes")
             
             col_p, col_wp, col_e, col_wr = f"{mes_actual}_Pauta", f"{mes_actual}_W_Plan", f"{mes_actual}_Est", f"{mes_actual}_W_Real"
             
             if col_p in df_plan.columns:
-                # Mostrar los que tienen Pauta asignada, pero la Semana Real está vacía
-                df_mes = df_plan[df_plan[col_p].str.strip() != ""]
-                df_faltantes = df_mes[df_mes[col_wr].str.strip() == ""].copy()
+                df_faltantes = df_plan[df_plan[col_e] == "Pendiente"].copy()
                 
                 if not df_faltantes.empty:
                     df_faltantes.insert(0, "✔️ Terminado", False)
@@ -585,19 +558,16 @@ else:
                     if st.button("💾 Guardar y Calcular Semana Automática", type="primary"):
                         terminados = edited_faltantes[edited_faltantes["✔️ Terminado"] == True]
                         if len(terminados) > 0:
-                            # Calcula la semana automáticamente WXX
-                            semana_iso = f"W{fecha_rapida.isocalendar()[1]}"
+                            semana_iso = f"WK{fecha_rapida.isocalendar()[1]}"
                             for _, row in terminados.iterrows():
                                 tag_completado = row["TAG"]
-                                pauta = row["Intervención"]
                                 idx = df_plan.index[df_plan['TAG'] == tag_completado].tolist()[0]
                                 
-                                # Actualiza solo las columnas correctas (dejando Verde implícito)
-                                df_plan.at[idx, col_e] = pauta if pauta != "INSP" else "I"
+                                df_plan.at[idx, col_e] = "Hecho"
                                 df_plan.at[idx, col_wr] = semana_iso
 
                             guardar_planificacion(df_plan)
-                            st.success(f"✅ ¡Excelente! {len(terminados)} equipos actualizados exitosamente a {semana_iso}.")
+                            st.success(f"✅ ¡Excelente! {len(terminados)} equipos pasados a 'Hecho' en la {semana_iso}.")
                             st.rerun()
                         else:
                             st.warning("Marca algún equipo con un ticket primero.")
@@ -609,17 +579,14 @@ else:
         # ==========================================
         with tab_calendario:
             st.markdown("### 📆 Mapa Histórico del Mes")
-            st.info("Este calendario lee los registros históricos reales de los reportes para pintar qué equipos se mantuvieron cada día.")
+            st.info("Este calendario lee los registros de reportes ingresados y dibuja automáticamente qué se ejecutó cada día.")
             
             import calendar
             hoy = datetime.date.today()
             cal = calendar.Calendar(calendar.MONDAY)
             semanas_mes = cal.monthdatescalendar(hoy.year, hoy.month)
             
-            df_hist = obtener_todo_el_historial("Todos") if 'obtener_todo_el_historial' in globals() else pd.DataFrame()
             tareas_por_fecha = {}
-            
-            # Simulamos o leemos los datos reales para el calendario
             try:
                 sheet_int = get_sheet("intervenciones")
                 if sheet_int:
@@ -664,7 +631,7 @@ else:
             st.markdown(html_cal, unsafe_allow_html=True)
 
         # ==========================================
-        # PESTAÑA 3: LA MATRIZ ANUAL (FORMATO 4 COLUMNAS TIPO EXCEL)
+        # PESTAÑA 3: MATRIZ DE 4 COLUMNAS (LISTAS DESPLEGABLES)
         # ==========================================
         with tab_matriz:
             col_fil1, col_fil2, col_fil3 = st.columns([1, 1, 1.5])
@@ -672,17 +639,28 @@ else:
                 areas_disp = ["Todas"] + sorted(list(df_plan["Área"].unique()))
                 filtro_area = st.selectbox("🏢 Filtrar por Área:", areas_disp, key="filtro_area_matriz")
             with col_fil2:
-                modo_edicion_matriz = st.toggle("✏️ Edición Libre de Matriz")
+                modo_edicion_matriz = st.toggle("✏️ Habilitar Edición de Listas Desplegables")
             with col_fil3:
                 st.markdown("<div style='margin-top:30px;'></div>", unsafe_allow_html=True)
-                st.info("Pauta | WK Planeada | Estado (El Color) | WK Realizada")
+                st.info("Formato: Pauta | W_Plan | Estado | W_Real")
                 
             df_mostrar = df_plan.copy()
             if filtro_area != "Todas": df_mostrar = df_mostrar[df_mostrar["Área"] == filtro_area]
             
-            # Anchos reducidos para ver el Excel compacto
-            config_cols = {col: st.column_config.TextColumn(width="small") for col in df_plan.columns if "_" in col}
+            # Configurar las Listas Desplegables en el editor
+            config_cols = {
+                "TAG": st.column_config.TextColumn(disabled=True, width="small"),
+                "Equipo": st.column_config.TextColumn(disabled=True, width="small"),
+                "Área": st.column_config.TextColumn(disabled=True, width="small")
+            }
             
+            meses_list = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+            for m in meses_list:
+                config_cols[f"{m}_Pauta"] = st.column_config.SelectboxColumn("Pauta", options=["INSP", "P1", "P2", "P3", "P4"], width="small")
+                config_cols[f"{m}_W_Plan"] = st.column_config.TextColumn("W_Plan", width="small")
+                config_cols[f"{m}_Est"] = st.column_config.SelectboxColumn("Estado", options=["Pendiente", "Hecho", "No Hecho", "F/S"], width="small")
+                config_cols[f"{m}_W_Real"] = st.column_config.TextColumn("W_Real", width="small")
+
             if modo_edicion_matriz:
                 df_editado = st.data_editor(df_mostrar, use_container_width=True, hide_index=True, height=700, column_config=config_cols)
                 if st.button("💾 Guardar Matriz en Nube", type="primary", use_container_width=True):
@@ -693,7 +671,6 @@ else:
                     st.success("✅ ¡Base de Datos actualizada con éxito!")
                     st.rerun()
             else:
-                # Estilos Inteligentes Fila por Fila
                 df_estilizado_view = aplicar_estilos_matriz(df_mostrar)
                 st.dataframe(df_estilizado_view, use_container_width=True, hide_index=True, height=700, column_config=config_cols)
 
