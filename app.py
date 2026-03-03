@@ -334,7 +334,7 @@ def convertir_a_pdf(ruta_docx):
     return None
 
 def obtener_fecha_hoy_esp():
-    meses = {1: "enero", 2: "febrero", 3: "marzo", 4: "abril", 5: "mayo", 6: "junio", 7: "julio", 8: "agosto", 9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"}
+    meses = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
     ahora = pd.Timestamp.now()
     return f"{ahora.day} de {meses[ahora.month]} de {ahora.year}"
 
@@ -363,17 +363,17 @@ def generar_planificacion_base():
         {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK7", "15c Mar": "INSP\nHecho W10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "70-GC-014", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "P2\nLista", "15c Feb": "INSP\nFalta", "15c Mar": "P1\nHecho W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
 
-        {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1\nOK WK4", "15c Mar": "INSP\nPdte W10", "15c Abr": "P3", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "P2\nFalta kit", "15c Feb": "INSP\nOK WK4", "15c Mar": "P1\nPdte W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK4", "15c Mar": "INSP\nPdte W10", "15c Abr": "P3", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
+        {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "P2\nFalta kit", "15c Feb": "INSP\nHecho WK4", "15c Mar": "P1\nPdte W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
         {"TAG": "50-GC-003", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1\nF/S WK7", "15c Mar": "INSP\nF/S WK9", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "50-GC-004", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "P2\nLista", "15c Feb": "INSP", "15c Mar": "INSP\nF/S WK8", "15c Abr": "INSP", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
         
         {"TAG": "50-CD-001", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4\nFalta", "15c Feb": "INSP", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
         {"TAG": "50-CD-002", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4\nFalta", "15c Feb": "INSP", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
 
-        {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "15c Ene": "INSP", "15c Feb": "P1\nOK WK6", "15c Mar": "INSP\nWK11", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
+        {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK6", "15c Mar": "INSP\nWK11", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
 
-        {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P1\nOK WK5", "15c Mar": "INSP\nWK11", "15c Abr": "P1", "15c May": "INSP", "15c Jun": "P2", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P4"},
+        {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK5", "15c Mar": "INSP\nWK11", "15c Abr": "P1", "15c May": "INSP", "15c Jun": "P2", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P4"},
         {"TAG": "65-GC-009", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "P1\nFalta Kit", "15c Feb": "INSP", "15c Mar": "P4\nWK8", "15c Abr": "INSP", "15c May": "P1", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
         
         {"TAG": "65-CD-011", "Equipo": "CD 630", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P2\nFalta Kit", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "P2", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
@@ -390,6 +390,9 @@ def generar_planificacion_base():
         
         {"TAG": "Taller", "Equipo": "GA 18", "Área": "Taller", "15c Ene": "INSP", "15c Feb": "P2\nHecho WK5", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"}
     ]
+    for d in datos:
+        for m in meses:
+            if m not in d: d[m] = ""
     return pd.DataFrame(datos)
 
 @st.cache_data(ttl=60)
@@ -415,39 +418,33 @@ def guardar_planificacion(df):
     except Exception as e:
         st.error(f"Error al conectar con la Nube: {e}")
 
-# DOS ESTILOS DIFERENTES PARA EVITAR EL BLOQUEO DEL EDITOR DE STREAMLIT
+# =============================================================================
+# ESTRATEGIA VISUAL: COLORES NEÓN TRANSLÚCIDOS
+# (Funcionan perfecto tanto en vista como en el Editor de Streamlit)
+# =============================================================================
 def estilo_dinamico_celdas(val):
-    """Estilo VISUAL BONITO (Tarjetas, bordes, fondos semi-transparentes)"""
-    if pd.isna(val) or val == "": return ''
-    v = str(val).upper()
-    base_css = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
-    
-    if 'F/S' in v or 'FUERA DE SERVICIO' in v: return base_css + 'background-color: #ff1744; color: white; font-weight: bold; border: 1px solid #d50000;'
-    if 'HECHO' in v: return base_css + 'background-color: #00e676; color: #1e2530; font-weight: bold; border: 1px solid #00c853;'
-    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND']): return base_css + 'background-color: #FFC107; color: #1e2530; font-weight: bold; border: 1px solid #ffb300;'
-    
-    if 'P1' in v: return base_css + 'background-color: rgba(0, 191, 255, 0.1); color: #00BFFF; border: 1px solid rgba(0, 191, 255, 0.4);'
-    if 'P2' in v: return base_css + 'background-color: rgba(255, 152, 0, 0.1); color: #FF9800; border: 1px solid rgba(255, 152, 0, 0.4);'
-    if 'P3' in v: return base_css + 'background-color: rgba(156, 39, 176, 0.1); color: #9C27B0; border: 1px solid rgba(156, 39, 176, 0.4);'
-    if 'P4' in v: return base_css + 'background-color: rgba(244, 67, 54, 0.1); color: #F44336; border: 1px solid rgba(244, 67, 54, 0.4);'
-    if 'INSP' in v or v == 'I': return base_css + 'color: #8c9eb5; font-style: italic; border: 1px dashed #455065;'
-    return base_css
-
-def estilo_simple_editor(val):
-    """Estilo simplificado 100% COMPATIBLE con el Modo Edición (Sin bordes ni padding)"""
     if pd.isna(val) or val == "": return ''
     v = str(val).upper()
     
-    if 'F/S' in v or 'FUERA DE SERVICIO' in v: return 'background-color: #ff1744; color: white;'
-    if 'HECHO' in v: return 'background-color: #00e676; color: black;'
-    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND']): return 'background-color: #FFC107; color: black;'
+    # 1. ALERTA ROJA (F/S)
+    if 'F/S' in v or 'FUERA' in v:
+        return 'background-color: rgba(255, 23, 68, 0.25); color: #ff1744; font-weight: bold; border-left: 4px solid #ff1744;'
     
-    # En edición usamos fondos sólidos pero oscuros para que se lea mejor el texto
-    if 'P1' in v: return 'background-color: #003b5c; color: #00BFFF;' 
-    if 'P2' in v: return 'background-color: #5c3700; color: #FF9800;'
-    if 'P3' in v: return 'background-color: #430c4d; color: #e166ff;'
-    if 'P4' in v: return 'background-color: #5c0e0e; color: #ff6e6e;'
-    if 'INSP' in v or v == 'I': return 'color: #8c9eb5;'
+    # 2. VERDE ESTRICTO (Hecho, OK, Listo)
+    if any(x in v for x in ['HECHO', 'OK', 'LISTO']): 
+        return 'background-color: rgba(0, 230, 118, 0.25); color: #00e676; font-weight: bold; border-left: 4px solid #00e676;'
+        
+    # 3. AMARILLO PENDIENTE (Falta, WK, Pendiente)
+    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND']): 
+        return 'background-color: rgba(255, 193, 7, 0.25); color: #FFC107; font-weight: bold; border-left: 4px solid #FFC107;'
+    
+    # 4. COLORES BASE DE PAUTAS (Sutiles Neón)
+    if 'P1' in v: return 'background-color: rgba(0, 191, 255, 0.15); color: #00BFFF; font-weight: bold;'
+    if 'P2' in v: return 'background-color: rgba(255, 152, 0, 0.15); color: #FF9800; font-weight: bold;'
+    if 'P3' in v: return 'background-color: rgba(156, 39, 176, 0.15); color: #9C27B0; font-weight: bold;'
+    if 'P4' in v: return 'background-color: rgba(244, 67, 54, 0.15); color: #F44336; font-weight: bold;'
+    if 'INSP' in v or v == 'I': return 'color: #8c9eb5; font-style: italic;'
+    
     return ''
 
 # =============================================================================
@@ -521,7 +518,7 @@ else:
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
             
-        if st.button("📅 Matriz de Planificación", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
+        if st.button("📅 Planificación Dinámica", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
             
         if len(st.session_state.informes_pendientes) > 0:
@@ -532,53 +529,67 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 6.0 VISTA MATRIZ DE PLANIFICACIÓN MEJORADA ---
+    # --- 6.0 VISTA MATRIZ DE PLANIFICACIÓN INTERACTIVA ---
     if st.session_state.vista_actual == "planificacion":
-        st.markdown(f"""
-            <div style="margin-top: 1rem; margin-bottom: 2rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
-                <h2 style="color: white; margin: 0;">📅 Matriz Anual de Mantenimiento</h2>
-                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Planificación interactiva conectada a Google Sheets.</p>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; font-size: 0.85rem;">
-                <span style="background: #00e676; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟢 Hecho (Verde)</span>
-                <span style="background: #ff1744; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🚨 F/S (Fuera de Servicio)</span>
-                <span style="background: #FFC107; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟡 Falta / Pendiente / WK</span>
-                <span style="border: 1px solid #00BFFF; color: #00BFFF; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🧊 P1</span>
-                <span style="border: 1px solid #FF9800; color: #FF9800; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟠 P2</span>
-                <span style="border: 1px solid #9C27B0; color: #9C27B0; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟣 P3</span>
-                <span style="border: 1px dashed #8c9eb5; color: #8c9eb5; padding: 4px 10px; border-radius: 4px;">⚪ INSP (Inspección)</span>
-            </div>
-        """, unsafe_allow_html=True)
-
-        modo_edicion = st.toggle("✏️ Habilitar Edición Visual")
-        
         df_plan = cargar_planificacion()
+        mes_plan, rango_fechas = obtener_quincena_actual()
+        mes_col_actual = f"15c {mes_plan[:3]}"
+        
+        st.markdown(f"""
+            <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
+                <h2 style="color: white; margin: 0;">📅 Panel de Planificación Interactiva</h2>
+                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Ciclo en curso: {rango_fechas}</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # --- 1. ESTRATEGIA DE INTERACTIVIDAD: FILTROS RÁPIDOS ---
+        col_fil1, col_fil2, col_fil3 = st.columns([1, 1, 1.5])
+        with col_fil1:
+            areas_disp = ["Todas"] + sorted(list(df_plan["Área"].unique()))
+            filtro_area = st.selectbox("🏢 Filtrar por Área:", areas_disp)
+        with col_fil2:
+            modo_edicion = st.toggle("✏️ Habilitar Edición de Tabla", help="Actívalo para modificar la tabla. Guarda al terminar.")
+        with col_fil3:
+            st.markdown("<div style='margin-top:30px;'></div>", unsafe_allow_html=True)
+            if modo_edicion: st.info("Escribe, presiona Shift+Enter y dale clic afuera para aplicar el color.")
+            
+        # Filtrar Dataframe
+        df_mostrar = df_plan.copy()
+        if filtro_area != "Todas":
+            df_mostrar = df_mostrar[df_mostrar["Área"] == filtro_area]
+            
+        # --- 2. ESTRATEGIA DE INTERACTIVIDAD: KPIs AUTOMÁTICOS ---
+        if mes_col_actual in df_mostrar.columns:
+            datos_mes = df_mostrar[mes_col_actual].astype(str).str.upper()
+            c_fs = sum(datos_mes.str.contains('F/S') | datos_mes.str.contains('FUERA'))
+            c_ok = sum(datos_mes.str.contains('HECHO') | datos_mes.str.contains('OK') | datos_mes.str.contains('LISTO'))
+            c_pend = sum(datos_mes.str.contains('FALTA') | datos_mes.str.contains('PEND') | datos_mes.str.contains('WK')) - c_fs # Ajuste logico
+            
+            st.markdown(f"<p style='color: white; margin-bottom:5px; font-weight:bold;'>📊 Resumen Quincena Actual ({mes_col_actual}):</p>", unsafe_allow_html=True)
+            k1, k2, k3, k4 = st.columns(4)
+            k1.markdown(f"<div style='background:rgba(0,230,118,0.1); border:1px solid #00e676; padding:10px; border-radius:8px; text-align:center;'><h3 style='color:#00e676; margin:0;'>{c_ok}</h3><small>🟢 Ejecutados</small></div>", unsafe_allow_html=True)
+            k2.markdown(f"<div style='background:rgba(255,193,7,0.1); border:1px solid #FFC107; padding:10px; border-radius:8px; text-align:center;'><h3 style='color:#FFC107; margin:0;'>{c_pend}</h3><small>🟡 Pendientes</small></div>", unsafe_allow_html=True)
+            k3.markdown(f"<div style='background:rgba(255,23,68,0.1); border:1px solid #ff1744; padding:10px; border-radius:8px; text-align:center;'><h3 style='color:#ff1744; margin:0;'>{c_fs}</h3><small>🚨 Fuera de Servicio</small></div>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+
+        # --- 3. TABLA MATRIZ CON COLORES NEÓN ---
         columnas_15cenas = [col for col in df_plan.columns if "15c" in col]
+        try: df_estilizado = df_mostrar.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
+        except AttributeError: df_estilizado = df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
 
         if modo_edicion:
-            st.info("💡 **TIP:** Haz doble clic en la celda. Escribe tu texto, presiona **`Shift + Enter`** para bajar línea, y luego **`Enter`** (o clic afuera) para aplicar el color. ¡Al final dale a Guardar!")
+            config_cols = {col: st.column_config.TextColumn(width="medium") for col in columnas_15cenas}
+            df_editado = st.data_editor(df_estilizado, use_container_width=True, hide_index=True, height=700, column_config=config_cols)
             
-            # Aplicamos el estilo "Simple" que el Editor sí permite leer
-            try: df_estilizado_edit = df_plan.style.map(estilo_simple_editor, subset=columnas_15cenas)
-            except AttributeError: df_estilizado_edit = df_plan.style.applymap(estilo_simple_editor, subset=columnas_15cenas)
-            
-            configuracion_columnas = {col: st.column_config.TextColumn(width="medium") for col in columnas_15cenas}
-            
-            df_editado = st.data_editor(df_estilizado_edit, use_container_width=True, hide_index=True, height=750, column_config=configuracion_columnas)
-            
-            if st.button("💾 Guardar y Actualizar Nube", type="primary"):
-                guardar_planificacion(df_editado)
-                st.success("✅ ¡Matriz actualizada en Google Sheets correctamente!")
+            if st.button("💾 Guardar Cambios en Google Sheets", type="primary", use_container_width=True):
+                # Como filtramos, tenemos que actualizar solo las filas correspondientes en el dataframe maestro
+                df_final_guardar = df_plan.copy()
+                df_final_guardar.update(df_editado)
+                guardar_planificacion(df_final_guardar)
+                st.success("✅ ¡Base de Datos actualizada con éxito!")
                 st.rerun()
         else:
-            # En modo vista aplicamos el estilo "Premium" de tarjetas
-            try: df_estilizado_view = df_plan.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
-            except AttributeError: df_estilizado_view = df_plan.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
-            
-            st.dataframe(df_estilizado_view, use_container_width=True, hide_index=True, height=750)
+            st.dataframe(df_estilizado, use_container_width=True, hide_index=True, height=700)
 
     # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL LIMPIA) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
@@ -607,6 +618,7 @@ else:
                     
         st.markdown("---")
         
+        # FIRMA MANUAL LIMPIA Y SIN BUGS
         c_tec, c_cli = st.columns(2)
         with c_tec:
             st.markdown("### 🧑‍🔧 Firma del Técnico")
@@ -694,7 +706,7 @@ else:
         tag_sel = st.session_state.equipo_seleccionado; mod_d, ser_d, area_d, ubi_d = inventario_equipos[tag_sel]
         c_btn, c_tit = st.columns([1, 4])
         with c_btn: st.button("⬅️ Volver", on_click=volver_catalogo, use_container_width=True)
-        with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Servicio: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
+        with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Serviço: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True); tab1, tab2, tab3, tab4 = st.tabs(["📋 1. Reporte y Diagnóstico", "📚 2. Ficha Técnica", "🔍 3. Bitácora de Observaciones", "👤 4. Gestión de Área"])
         with tab1:
             st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área", area_d, disabled=True); ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
