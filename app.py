@@ -518,7 +518,7 @@ else:
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
             
-        if st.button("📅 Planificación Dinámica", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
+        if st.button("📅 Planificación Hidrometalurgía", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
             
         if len(st.session_state.informes_pendientes) > 0:
