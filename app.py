@@ -354,31 +354,42 @@ def guardar_pendientes(usuario, pendientes):
     except: pass
 
 # =============================================================================
-# 3.1 BASE DE DATOS: PLANIFICACIÓN EN MATRIZ (CONECTADA A GOOGLE SHEETS)
+# 3.1 BASE DE DATOS: PLANIFICACIÓN ANUAL EN MATRIZ (CONECTADA A GOOGLE SHEETS)
 # =============================================================================
 def generar_planificacion_base():
-    """Plantilla de rescate en caso de que el Google Sheets esté vacío la primera vez."""
-    meses = ["15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov", "15c Dic"]
+    """Plantilla de rescate con todos los datos reales del Excel 'Planificación Húmeda'."""
     datos = [
-        {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "P1 Hecho", "15c Feb": "INSP Hecho WK10", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
-        {"TAG": "70-GC-014", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "INSP Falta", "15c Feb": "P1 Hecho WK10", "15c Mar": "INSP", "15c Abr": "P3", "15c May": "INSP"},
-        {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "P1 OK", "15c Feb": "INSP Pendiente W10", "15c Mar": "P3", "15c Abr": "INSP", "15c May": "P1"},
-        {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "INSP Falta", "15c Feb": "P1 Pendiente", "15c Mar": "INSP", "15c Abr": "P3", "15c May": "INSP"},
-        {"TAG": "50-GC-003", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "P1 F/S", "15c Feb": "INSP F/S", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
-        {"TAG": "50-GC-004", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "INSP Listo", "15c Feb": "P1 F/S WK8", "15c Mar": "INSP", "15c Abr": "P4", "15c May": "INSP"},
-        {"TAG": "50-CD-001", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4 Falta", "15c Feb": "INSP WK8", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "P2"},
-        {"TAG": "35-GC-006", "Equipo": "GA 250", "Área": "Chancado", "15c Ene": "P1 Falta", "15c Feb": "P2 F/S", "15c Mar": "P1", "15c Abr": "P1", "15c May": "P2"},
-        {"TAG": "35-GC-007", "Equipo": "GA 250", "Área": "Chancado", "15c Ene": "P3 Listo", "15c Feb": "P1 Hecho", "15c Mar": "P2", "15c Abr": "P1", "15c May": "P1"},
-        {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "15c Ene": "P1 OK", "15c Feb": "INSP Falta", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
-        {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "P1 OK", "15c Feb": "INSP Falta", "15c Mar": "P1", "15c Abr": "INSP", "15c May": "P2"},
-        {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "P1 OK", "15c Feb": "INSP WK10", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
+        {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1 OK WK4", "15c Mar": "INSP", "15c Abr": "INSP WK10", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        {"TAG": "20-GC-002", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1 Falta WK4", "15c Mar": "INSP", "15c Abr": "INSP WK10", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        {"TAG": "20-GC-003", "Equipo": "GA 90", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1 Hecho W7", "15c Mar": "INSP", "15c Abr": "INSP WK10", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        {"TAG": "20-GC-004", "Equipo": "GA 37", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1 Falta WK5", "15c Mar": "P1", "15c Abr": "P1 WK10", "15c May": "INSP", "15c Jun": "P4", "15c Jul": "INSP", "15c Ago": "INSP", "15c Sep": "P1", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "P2"},
+
+        {"TAG": "35-GC-006", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1 Falta kit", "15c Feb": "P1 F/S", "15c Mar": "P2", "15c Abr": "P2 F/S WK11", "15c May": "P1", "15c Jun": "P1", "15c Jul": "P2", "15c Ago": "P1", "15c Sep": "P1", "15c Oct": "P4", "15c Nov": "P1", "15c Dic": "P1"},
+        {"TAG": "35-GC-007", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P3 Listo", "15c Feb": "P1 Hecho W6", "15c Mar": "P1", "15c Abr": "P1 WK11", "15c May": "P2", "15c Jun": "P1", "15c Jul": "P1", "15c Ago": "P2", "15c Sep": "P1", "15c Oct": "P1", "15c Nov": "P4", "15c Dic": "P1"},
+        {"TAG": "35-GC-008", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1 Falta kit", "15c Feb": "P2 Hecho W6", "15c Mar": "P1", "15c Abr": "P1 WK11", "15c May": "P1", "15c Jun": "P2", "15c Jul": "P1", "15c Ago": "P1", "15c Sep": "P4", "15c Oct": "P1", "15c Nov": "P1", "15c Dic": "P2"},
+
+        {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1 OK WK4", "15c Mar": "INSP", "15c Abr": "INSP Pendiente W10", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "P2 Falta kit", "15c Feb": "INSP OK WK4", "15c Mar": "P1", "15c Abr": "P1 Pendiente W10", "15c May": "INSP", "15c Jun": "P3", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "P2", "15c Nov": "INSP", "15c Dic": "P1"},
+        {"TAG": "50-GC-003", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1 F/S WK7", "15c Mar": "INSP", "15c Abr": "INSP F/S WK9", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        {"TAG": "50-GC-004", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "P2 Listo", "15c Feb": "INSP", "15c Mar": "INSP", "15c Abr": "P1 F/S WK8", "15c May": "INSP", "15c Jun": "P4", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "P2", "15c Nov": "INSP", "15c Dic": "P1"},
+        {"TAG": "50-CD-001", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4 Falta", "15c Feb": "INSP", "15c Mar": "INSP", "15c Abr": "INSP WK8", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
+        {"TAG": "50-CD-002", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4 Falta", "15c Feb": "INSP", "15c Mar": "INSP", "15c Abr": "INSP WK8", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
+
+        {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "15c Ene": "INSP", "15c Feb": "P1 OK WK6", "15c Mar": "INSP", "15c Abr": "INSP WK11", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+
+        {"TAG": "65-GC-009", "Equipo": "GA 250", "Área": "Patio Est.", "15c Ene": "P1 Falta kit", "15c Feb": "INSP", "15c Mar": "P4", "15c Abr": "P4 WK8", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "P2", "15c Nov": "INSP", "15c Dic": "P1"},
+        {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Est.", "15c Ene": "INSP", "15c Feb": "P1 OK WK5", "15c Mar": "INSP", "15c Abr": "INSP WK11", "15c May": "P1", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "P1", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        {"TAG": "65-CD-011", "Equipo": "CD 630", "Área": "Patio Est.", "15c Ene": "INSP", "15c Feb": "P2 Falta kit", "15c Mar": "INSP", "15c Abr": "INSP WK8", "15c May": "INSP", "15c Jun": "P2", "15c Jul": "INSP", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "P2"},
+        {"TAG": "65-CD-012", "Equipo": "CD 630", "Área": "Patio Est.", "15c Ene": "INSP", "15c Feb": "P2 Falta kit", "15c Mar": "INSP", "15c Abr": "INSP WK8", "15c May": "INSP", "15c Jun": "P2", "15c Jul": "INSP", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "P4"},
+
+        {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "INSP", "15c Feb": "P1 Hecho WK7", "15c Mar": "INSP", "15c Abr": "INSP Hecho W10", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        {"TAG": "70-GC-014", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "P2 Listo", "15c Feb": "INSP Falta", "15c Mar": "P1", "15c Abr": "P1 Hecho W10", "15c May": "INSP", "15c Jun": "P3", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "P2", "15c Nov": "INSP", "15c Dic": "P1"},
+
+        {"TAG": "Taller", "Equipo": "GA 18", "Área": "Taller", "15c Ene": "INSP", "15c Feb": "P2 OK WK5", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"}
     ]
-    for d in datos:
-        for m in meses:
-            if m not in d: d[m] = ""
     return pd.DataFrame(datos)
 
-@st.cache_data(ttl=60) # Revisa Google Sheets cada 60 segundos
+@st.cache_data(ttl=60) # Revisa la base de datos de Google Sheets cada 60 segundos
 def cargar_planificacion():
     """Lee la pestaña 'planificacion' directamente desde Google Sheets."""
     try:
@@ -389,11 +400,11 @@ def cargar_planificacion():
                 df = pd.DataFrame(data[1:], columns=data[0])
                 return df
     except Exception as e: pass
-    # Si la hoja está vacía (primera vez), retorna la base predeterminada
+    # Si la hoja está vacía (primera vez), retorna la base de datos transcrita
     return generar_planificacion_base()
 
 def guardar_planificacion(df):
-    """Guarda los cambios de la Matriz hacia Google Sheets."""
+    """Guarda los cambios de la Matriz interactiva hacia Google Sheets."""
     try:
         sheet = get_sheet("planificacion")
         if sheet:
@@ -405,16 +416,25 @@ def guardar_planificacion(df):
         st.error(f"Error al conectar con la Nube: {e}")
 
 def estilo_dinamico_celdas(val):
-    """Lógica de colores automática basada en el texto de la celda."""
+    """Lógica inteligente de colores según el texto ingresado en la celda."""
     if pd.isna(val) or val == "": return ''
     v = str(val).upper()
-    if any(x in v for x in ['HECHO', 'OK', 'LISTO', 'REALIZADO']): return 'background-color: #00e676; color: #1e2530; font-weight: bold;'
-    if any(x in v for x in ['FALTA', 'PENDIENTE', 'F/S', 'WK', 'PEND']): return 'background-color: #FFC107; color: #1e2530; font-weight: bold;'
-    if 'P1' in v: return 'background-color: #00BFFF; color: white; font-weight: bold;'
-    if 'P2' in v: return 'background-color: #FF9800; color: white; font-weight: bold;'
-    if 'P3' in v: return 'background-color: #9C27B0; color: white; font-weight: bold;'
-    if 'P4' in v: return 'background-color: #F44336; color: white; font-weight: bold;'
-    if 'INSP' in v or v == 'I': return 'color: #8c9eb5; font-style: italic;'
+    
+    # 1. Si la celda dice "Falta", "Pendiente", "WK" o "F/S" -> Pinta AMARILLO 🟡
+    if any(x in v for x in ['FALTA', 'PENDIENTE', 'F/S', 'WK', 'PEND']): 
+        return 'background-color: #FFC107; color: #1e2530; font-weight: bold;'
+        
+    # 2. Si la celda dice "OK", "Hecho", "Listo" -> Pinta VERDE 🟢
+    if any(x in v for x in ['HECHO', 'OK', 'LISTO', 'REALIZADO']): 
+        return 'background-color: #00e676; color: #1e2530; font-weight: bold;'
+        
+    # 3. Si solo tiene la Pauta (SIN ESTADO AÚN) -> Pinta los colores bases de la Pauta
+    if 'P1' in v: return 'background-color: #00BFFF; color: white; font-weight: bold;' # Celeste
+    if 'P2' in v: return 'background-color: #FF9800; color: white; font-weight: bold;' # Naranja
+    if 'P3' in v: return 'background-color: #9C27B0; color: white; font-weight: bold;' # Morado
+    if 'P4' in v: return 'background-color: #F44336; color: white; font-weight: bold;' # Rojo
+    if 'INSP' in v or v == 'I': return 'color: #8c9eb5; font-style: italic;' # Inspección (sin fondo)
+    
     return ''
 
 # =============================================================================
@@ -504,13 +524,13 @@ else:
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 2rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
                 <h2 style="color: white; margin: 0;">📅 Matriz Anual de Mantenimiento</h2>
-                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Planificación sincronizada con la base de datos Google Sheets.</p>
+                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Planificación sincronizada con la base de datos Google Sheets (15cenas).</p>
             </div>
         """, unsafe_allow_html=True)
         
         st.markdown("""
             <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; font-size: 0.85rem;">
-                <span style="background: #00e676; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟢 OK / Hecho (Realizado)</span>
+                <span style="background: #00e676; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟢 OK / Hecho / Listo</span>
                 <span style="background: #FFC107; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟡 Pendiente / Falta / WK</span>
                 <span style="border: 1px solid #8c9eb5; color: #8c9eb5; padding: 4px 10px; border-radius: 4px;">⚪ INSP (Inspección)</span>
                 <span style="background: #00BFFF; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🧊 P1</span>
@@ -522,12 +542,12 @@ else:
 
         modo_edicion = st.toggle("✏️ Habilitar Edición de Estados")
         
-        # Carga la info fresca desde Google Sheets
+        # Carga la información de la matriz desde Google Sheets
         df_plan = cargar_planificacion()
 
         if modo_edicion:
-            st.info("💡 Haz doble clic en una celda para editarla. Al darle a Guardar, los datos irán directamente a tu Google Sheets.")
-            df_editado = st.data_editor(df_plan, use_container_width=True, hide_index=True, height=500)
+            st.info("💡 Haz doble clic en una celda para editarla. Los colores se actualizarán automáticamente después de Guardar.")
+            df_editado = st.data_editor(df_plan, use_container_width=True, hide_index=True, height=750)
             if st.button("💾 Guardar y Actualizar Nube", type="primary"):
                 guardar_planificacion(df_editado)
                 st.success("✅ ¡Matriz actualizada en Google Sheets correctamente!")
@@ -536,9 +556,9 @@ else:
             columnas_15cenas = [col for col in df_plan.columns if "15c" in col]
             try: df_estilizado = df_plan.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
             except AttributeError: df_estilizado = df_plan.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
-            st.dataframe(df_estilizado, use_container_width=True, hide_index=True, height=500)
+            st.dataframe(df_estilizado, use_container_width=True, hide_index=True, height=750)
 
-    # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL, SIN GUARDADO) ---
+    # --- 6.1 VISTA DE FIRMAS (100% MANUAL PARA EVITAR BUGS DE BORRADO) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -573,9 +593,9 @@ else:
                     st.rerun()
                     
         st.markdown("---")
-        st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro. Usa el basurero nativo debajo del cuadro para borrarla y volver a empezar.")
+        st.info("💡 **Instrucciones:** Dibuja la firma. Usa el basurero para borrar de inmediato, o la flecha roja para descargar la firma.")
         
-        # --- LÓGICA DE FIRMA MANUAL LIMPIA ---
+        # FIRMA MANUAL LIMPIA Y SIN BUGS
         c_tec, c_cli = st.columns(2)
         with c_tec:
             st.markdown("### 🧑‍🔧 Firma del Técnico"); st.caption(f"Técnico: {st.session_state.usuario_actual.title()}")
@@ -586,6 +606,8 @@ else:
         
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
+            
+            # Verificación de trazos dibujados
             tec_ok = canvas_tec.image_data is not None and canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
             cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
             
