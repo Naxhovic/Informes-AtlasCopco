@@ -53,7 +53,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (Diseño UI/UX NATIVO)
+# 0.2 ESTILOS PREMIUM (Diseño UI/UX NATIVO) - CORREGIDO PARA EL MENÚ
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
 
@@ -63,7 +63,10 @@ def aplicar_estilos_premium():
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap');
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, [class*="css"] { font-family: 'Montserrat', sans-serif !important; }
-        #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
+        
+        /* Solución del Bug: Se quitó el ocultamiento del Header para que la flecha del menú lateral funcione */
+        #MainMenu {visibility: hidden;} footer {visibility: hidden;} 
+        header [data-testid="stToolbar"] {visibility: hidden;} /* Oculta solo las opciones extra, mantiene el menú */
         
         div.stButton > button:first-child {
             background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%);
@@ -105,43 +108,6 @@ def aplicar_estilos_premium():
         </style>
     """, unsafe_allow_html=True)
 aplicar_estilos_premium()
-
-# =============================================================================
-# 0.3 LÓGICA DE PLANIFICACIÓN (15CENAS Y COLORES)
-# =============================================================================
-def obtener_quincena_actual():
-    hoy = datetime.date.today()
-    meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-    if hoy.day < 15:
-        mes_plan = meses[hoy.month - 1]
-        inicio = f"15 de {meses[hoy.month - 2 if hoy.month > 1 else 11]}"
-        fin = f"15 de {mes_plan}"
-    else:
-        mes_plan = meses[hoy.month] if hoy.month < 12 else "Enero"
-        inicio = f"15 de {meses[hoy.month - 1]}"
-        fin = f"15 de {mes_plan}"
-    return mes_plan, f"{inicio} al {fin}"
-
-def obtener_color_pauta(pauta):
-    """Devuelve los colores solicitados según el tipo de intervención."""
-    p = pauta.upper().strip()
-    if p in ["INSP", "INSPECCIÓN"]: return "background: transparent; color: #8c9eb5; border: 1px solid #8c9eb5;" # Sin color (gris/transparente)
-    elif p == "P1": return "background: #00BFFF; color: white; border: 1px solid #00BFFF;" # Celeste
-    elif p == "P2": return "background: #FF9800; color: white; border: 1px solid #FF9800;" # Naranja
-    elif p == "P3": return "background: #9C27B0; color: white; border: 1px solid #9C27B0;" # Morado
-    elif p == "P4": return "background: #F44336; color: white; border: 1px solid #F44336;" # Rojo
-    return "background: #2b3543; color: white; border: 1px solid #2b3543;"
-
-# Base de datos simulada de planificación (Editable a futuro)
-datos_planificacion = [
-    {"tag": "70-GC-013", "equipo": "GA 132", "area": "Descarga Acido", "pauta": "INSP", "wk": "WK09", "estado": "Realizado", "obs": "Hecho W10"},
-    {"tag": "70-GC-014", "equipo": "GA 132", "area": "Descarga Acido", "pauta": "P1", "wk": "WK09", "estado": "Realizado", "obs": "Hecho W10"},
-    {"tag": "50-GC-001", "equipo": "GA 45", "area": "Planta SX", "pauta": "INSP", "wk": "WK09", "estado": "Pendiente", "obs": "Pendiente W10"},
-    {"tag": "50-GC-002", "equipo": "GA 45", "area": "Planta SX", "pauta": "P1", "wk": "WK11", "estado": "Pendiente", "obs": "Pendiente W10"},
-    {"tag": "50-GC-003", "equipo": "ZT 37", "area": "Planta SX", "pauta": "INSP", "wk": "WK09", "estado": "Pendiente", "obs": "F/S WK9"},
-    {"tag": "35-GC-006", "equipo": "GA 250", "area": "Chancado Secundario", "pauta": "P2", "wk": "WK11", "estado": "Pendiente", "obs": "F/S"},
-    {"tag": "55-GC-015", "equipo": "GA 30", "area": "Planta Borra", "pauta": "INSP", "wk": "WK11", "estado": "Pendiente", "obs": "Falta"}
-]
 
 # =============================================================================
 # 1. DATOS MAESTROS (INVENTARIO Y USUARIOS)
@@ -313,7 +279,7 @@ def guardar_registro(data_tuple):
                 st.cache_data.clear(); return True
         except Exception as e: time.sleep(5)
     return False
-    # =============================================================================
+# =============================================================================
 # 3. CONVERSIÓN A PDF, FECHAS EN ESPAÑOL Y BANDEJAS PRIVADAS
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
@@ -447,6 +413,19 @@ def estilo_dinamico_celdas(val):
     
     return ''
 
+def estilo_simple_editor(val):
+    if pd.isna(val) or val == "": return ''
+    v = str(val).upper()
+    if 'F/S' in v or 'FUERA' in v: return 'background-color: #ff1744; color: white;'
+    if 'HECHO' in v: return 'background-color: #00e676; color: black;'
+    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND']): return 'background-color: #FFC107; color: black;'
+    if 'P1' in v: return 'background-color: #003b5c; color: #00BFFF;' 
+    if 'P2' in v: return 'background-color: #5c3700; color: #FF9800;'
+    if 'P3' in v: return 'background-color: #430c4d; color: #e166ff;'
+    if 'P4' in v: return 'background-color: #5c0e0e; color: #ff6e6e;'
+    if 'INSP' in v or v == 'I': return 'color: #8c9eb5;'
+    return ''
+
 # =============================================================================
 # 4. INICIALIZACIÓN DE VARIABLES DE SESIÓN
 # =============================================================================
@@ -518,7 +497,8 @@ else:
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
             
-        if st.button("📅 Planificación Hidrometalurgía", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
+        # --- NUEVO NOMBRE DEL BOTÓN DEL MENÚ ---
+        if st.button("📅 Planificación Hidrometalurgia", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
             
         if len(st.session_state.informes_pendientes) > 0:
@@ -535,14 +515,14 @@ else:
         mes_plan, rango_fechas = obtener_quincena_actual()
         mes_col_actual = f"15c {mes_plan[:3]}"
         
+        # --- NUEVO TÍTULO DE LA SECCIÓN ---
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
-                <h2 style="color: white; margin: 0;">📅 Panel de Planificación Interactiva</h2>
+                <h2 style="color: white; margin: 0;">📅 Planificación</h2>
                 <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Ciclo en curso: {rango_fechas}</p>
             </div>
         """, unsafe_allow_html=True)
         
-        # --- 1. ESTRATEGIA DE INTERACTIVIDAD: FILTROS RÁPIDOS ---
         col_fil1, col_fil2, col_fil3 = st.columns([1, 1, 1.5])
         with col_fil1:
             areas_disp = ["Todas"] + sorted(list(df_plan["Área"].unique()))
@@ -553,17 +533,15 @@ else:
             st.markdown("<div style='margin-top:30px;'></div>", unsafe_allow_html=True)
             if modo_edicion: st.info("Escribe, presiona Shift+Enter y dale clic afuera para aplicar el color.")
             
-        # Filtrar Dataframe
         df_mostrar = df_plan.copy()
         if filtro_area != "Todas":
             df_mostrar = df_mostrar[df_mostrar["Área"] == filtro_area]
             
-        # --- 2. ESTRATEGIA DE INTERACTIVIDAD: KPIs AUTOMÁTICOS ---
         if mes_col_actual in df_mostrar.columns:
             datos_mes = df_mostrar[mes_col_actual].astype(str).str.upper()
             c_fs = sum(datos_mes.str.contains('F/S') | datos_mes.str.contains('FUERA'))
             c_ok = sum(datos_mes.str.contains('HECHO') | datos_mes.str.contains('OK') | datos_mes.str.contains('LISTO'))
-            c_pend = sum(datos_mes.str.contains('FALTA') | datos_mes.str.contains('PEND') | datos_mes.str.contains('WK')) - c_fs # Ajuste logico
+            c_pend = sum(datos_mes.str.contains('FALTA') | datos_mes.str.contains('PEND') | datos_mes.str.contains('WK')) - c_fs 
             
             st.markdown(f"<p style='color: white; margin-bottom:5px; font-weight:bold;'>📊 Resumen Quincena Actual ({mes_col_actual}):</p>", unsafe_allow_html=True)
             k1, k2, k3, k4 = st.columns(4)
@@ -572,24 +550,25 @@ else:
             k3.markdown(f"<div style='background:rgba(255,23,68,0.1); border:1px solid #ff1744; padding:10px; border-radius:8px; text-align:center;'><h3 style='color:#ff1744; margin:0;'>{c_fs}</h3><small>🚨 Fuera de Servicio</small></div>", unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
 
-        # --- 3. TABLA MATRIZ CON COLORES NEÓN ---
         columnas_15cenas = [col for col in df_plan.columns if "15c" in col]
-        try: df_estilizado = df_mostrar.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
-        except AttributeError: df_estilizado = df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
 
         if modo_edicion:
+            try: df_estilizado_edit = df_mostrar.style.map(estilo_simple_editor, subset=columnas_15cenas)
+            except AttributeError: df_estilizado_edit = df_mostrar.style.applymap(estilo_simple_editor, subset=columnas_15cenas)
+            
             config_cols = {col: st.column_config.TextColumn(width="medium") for col in columnas_15cenas}
-            df_editado = st.data_editor(df_estilizado, use_container_width=True, hide_index=True, height=700, column_config=config_cols)
+            df_editado = st.data_editor(df_estilizado_edit, use_container_width=True, hide_index=True, height=700, column_config=config_cols)
             
             if st.button("💾 Guardar Cambios en Google Sheets", type="primary", use_container_width=True):
-                # Como filtramos, tenemos que actualizar solo las filas correspondientes en el dataframe maestro
                 df_final_guardar = df_plan.copy()
                 df_final_guardar.update(df_editado)
                 guardar_planificacion(df_final_guardar)
                 st.success("✅ ¡Base de Datos actualizada con éxito!")
                 st.rerun()
         else:
-            st.dataframe(df_estilizado, use_container_width=True, hide_index=True, height=700)
+            try: df_estilizado_view = df_mostrar.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
+            except AttributeError: df_estilizado_view = df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
+            st.dataframe(df_estilizado_view, use_container_width=True, hide_index=True, height=700)
 
     # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL LIMPIA) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
@@ -618,7 +597,6 @@ else:
                     
         st.markdown("---")
         
-        # FIRMA MANUAL LIMPIA Y SIN BUGS
         c_tec, c_cli = st.columns(2)
         with c_tec:
             st.markdown("### 🧑‍🔧 Firma del Técnico")
@@ -706,7 +684,7 @@ else:
         tag_sel = st.session_state.equipo_seleccionado; mod_d, ser_d, area_d, ubi_d = inventario_equipos[tag_sel]
         c_btn, c_tit = st.columns([1, 4])
         with c_btn: st.button("⬅️ Volver", on_click=volver_catalogo, use_container_width=True)
-        with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Serviço: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
+        with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Servicio: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True); tab1, tab2, tab3, tab4 = st.tabs(["📋 1. Reporte y Diagnóstico", "📚 2. Ficha Técnica", "🔍 3. Bitácora de Observaciones", "👤 4. Gestión de Área"])
         with tab1:
             st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área", area_d, disabled=True); ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
