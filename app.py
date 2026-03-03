@@ -357,38 +357,38 @@ def guardar_pendientes(usuario, pendientes):
 # 3.1 BASE DE DATOS: PLANIFICACIÓN EN MATRIZ (CONECTADA A GOOGLE SHEETS)
 # =============================================================================
 def generar_planificacion_base():
-    """Plantilla inicial con saltos de línea (\n) para que se vea ordenado desde el día 1."""
+    """Plantilla inicial con datos de tu Excel."""
     meses = ["15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov", "15c Dic"]
     datos = [
         {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK7", "15c Mar": "INSP\nHecho W10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        {"TAG": "70-GC-014", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "P2\nLista", "15c Feb": "INSP\nFalta", "15c Mar": "P1\nHecho W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        {"TAG": "70-GC-014", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "P2", "15c Feb": "INSP\nFalta", "15c Mar": "P1\nHecho W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
 
-        {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1\nOK WK4", "15c Mar": "INSP\nPdte W10", "15c Abr": "P3", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "P2\nFalta kit", "15c Feb": "INSP\nOK WK4", "15c Mar": "P1\nPdte W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK4", "15c Mar": "INSP\nPdte W10", "15c Abr": "P3", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
+        {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "P2\nFalta kit", "15c Feb": "INSP\nHecho WK4", "15c Mar": "P1\nPdte W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
         {"TAG": "50-GC-003", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1\nF/S WK7", "15c Mar": "INSP\nF/S WK9", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        {"TAG": "50-GC-004", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "P2\nLista", "15c Feb": "INSP", "15c Mar": "INSP\nF/S WK8", "15c Abr": "INSP", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        {"TAG": "50-GC-004", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "P2", "15c Feb": "INSP", "15c Mar": "INSP\nF/S WK8", "15c Abr": "INSP", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
         
         {"TAG": "50-CD-001", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4\nFalta", "15c Feb": "INSP", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
         {"TAG": "50-CD-002", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4\nFalta", "15c Feb": "INSP", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
 
-        {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "15c Ene": "INSP", "15c Feb": "P1\nOK WK6", "15c Mar": "INSP\nWK11", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
+        {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK6", "15c Mar": "INSP\nWK11", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
 
-        {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P1\nOK WK5", "15c Mar": "INSP\nWK11", "15c Abr": "P1", "15c May": "INSP", "15c Jun": "P2", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P4"},
+        {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK5", "15c Mar": "INSP\nWK11", "15c Abr": "P1", "15c May": "INSP", "15c Jun": "P2", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P4"},
         {"TAG": "65-GC-009", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "P1\nFalta Kit", "15c Feb": "INSP", "15c Mar": "P4\nWK8", "15c Abr": "INSP", "15c May": "P1", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
         
         {"TAG": "65-CD-011", "Equipo": "CD 630", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P2\nFalta Kit", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "P2", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
         {"TAG": "65-CD-012", "Equipo": "CD 630", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P2\nFalta Kit", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "P2", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
 
         {"TAG": "35-GC-006", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1\nFalta kit", "15c Feb": "P1\nF/S", "15c Mar": "P2\nF/S WK11", "15c Abr": "P1", "15c May": "P1", "15c Jun": "P2", "15c Jul": "P1", "15c Ago": "P1", "15c Sep": "P4", "15c Oct": "P1", "15c Nov": "P1", "15c Dic": "P2"},
-        {"TAG": "35-GC-007", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P3\nListo", "15c Feb": "P1\nHecho W6", "15c Mar": "P1\nWK11", "15c Abr": "P2", "15c May": "P1", "15c Jun": "P1", "15c Jul": "P2", "15c Ago": "P1", "15c Sep": "P1", "15c Oct": "P4", "15c Nov": "P1", "15c Dic": "P1"},
+        {"TAG": "35-GC-007", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P3\nHecho", "15c Feb": "P1\nHecho W6", "15c Mar": "P1\nWK11", "15c Abr": "P2", "15c May": "P1", "15c Jun": "P1", "15c Jul": "P2", "15c Ago": "P1", "15c Sep": "P1", "15c Oct": "P4", "15c Nov": "P1", "15c Dic": "P1"},
         {"TAG": "35-GC-008", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1\nFalta kit", "15c Feb": "P2\nHecho W6", "15c Mar": "P1\nWK11", "15c Abr": "P1", "15c May": "P2", "15c Jun": "P1", "15c Jul": "P1", "15c Ago": "P4", "15c Sep": "P1", "15c Oct": "P1", "15c Nov": "P2", "15c Dic": "P1"},
 
         {"TAG": "20-GC-004", "Equipo": "GA 37", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nFalta WK5", "15c Mar": "P1\nWK10", "15c Abr": "INSP", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
-        {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nOK WK4", "15c Mar": "INSP\nWK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
+        {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK4", "15c Mar": "INSP\nWK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "20-GC-002", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nFalta WK4", "15c Mar": "INSP\nWK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "20-GC-003", "Equipo": "GA 90", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nHecho W7", "15c Mar": "INSP\nWK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         
-        {"TAG": "Taller", "Equipo": "GA 18", "Área": "Taller", "15c Ene": "INSP", "15c Feb": "P2\nOK WK5", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"}
+        {"TAG": "Taller", "Equipo": "GA 18", "Área": "Taller", "15c Ene": "INSP", "15c Feb": "P2\nHecho WK5", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"}
     ]
     for d in datos:
         for m in meses:
@@ -419,18 +419,25 @@ def guardar_planificacion(df):
         st.error(f"Error al conectar con la Nube: {e}")
 
 def estilo_dinamico_celdas(val):
-    """Estilo Multilínea y Tarjetas. SOLO Verde para OK, resto colores sutiles base."""
+    """Estilos mejorados: Solo 'Hecho' es Verde. 'F/S' es Rojo. Resto usa colores sutiles o Amarillo."""
     if pd.isna(val) or val == "": return ''
     v = str(val).upper()
     
-    # Base CSS para que permita saltos de línea (\n) y se vea como tarjeta
     base_css = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
     
-    # 1. ESTADO COMPLETADO -> Pinta toda la celda de VERDE SOLIDO
-    if any(x in v for x in ['HECHO', 'OK', 'LISTO', 'REALIZADO']): 
-        return base_css + 'background-color: #00e676; color: #1e2530; font-weight: bold; border: 1px solid #00c853;'
+    # 1. FUERA DE SERVICIO (ALERTA ROJA PRIORITARIA)
+    if 'F/S' in v or 'FUERA DE SERVICIO' in v:
+        return base_css + 'background-color: #ff1744; color: white; font-weight: bold; border: 1px solid #d50000;'
     
-    # 2. ESTADOS PENDIENTES -> Colores sutiles de la Pauta (Fondo semi-transparente, letras de color)
+    # 2. ESTADO COMPLETADO -> SOLO SI DICE "HECHO" PINTA VERDE SOLIDO
+    if 'HECHO' in v: 
+        return base_css + 'background-color: #00e676; color: #1e2530; font-weight: bold; border: 1px solid #00c853;'
+        
+    # 3. PENDIENTE / FALTA -> PINTA DE AMARILLO
+    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND']): 
+        return base_css + 'background-color: #FFC107; color: #1e2530; font-weight: bold; border: 1px solid #ffb300;'
+    
+    # 4. ESTADOS BASE (Sin estado aún) -> Colores sutiles de la Pauta
     if 'P1' in v: return base_css + 'background-color: rgba(0, 191, 255, 0.1); color: #00BFFF; border: 1px solid rgba(0, 191, 255, 0.4);'
     if 'P2' in v: return base_css + 'background-color: rgba(255, 152, 0, 0.1); color: #FF9800; border: 1px solid rgba(255, 152, 0, 0.4);'
     if 'P3' in v: return base_css + 'background-color: rgba(156, 39, 176, 0.1); color: #9C27B0; border: 1px solid rgba(156, 39, 176, 0.4);'
@@ -532,11 +539,12 @@ else:
         
         st.markdown("""
             <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; font-size: 0.85rem;">
-                <span style="background: #00e676; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟢 OK / Hecho / Listo (Verde)</span>
+                <span style="background: #00e676; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟢 Hecho (Verde)</span>
+                <span style="background: #ff1744; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🚨 F/S (Fuera de Servicio)</span>
+                <span style="background: #FFC107; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟡 Falta / Pendiente / WK</span>
                 <span style="border: 1px solid #00BFFF; color: #00BFFF; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🧊 P1 Pendiente</span>
                 <span style="border: 1px solid #FF9800; color: #FF9800; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟠 P2 Pendiente</span>
                 <span style="border: 1px solid #9C27B0; color: #9C27B0; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟣 P3 Pendiente</span>
-                <span style="border: 1px solid #F44336; color: #F44336; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🔴 P4 Pendiente</span>
                 <span style="border: 1px dashed #8c9eb5; color: #8c9eb5; padding: 4px 10px; border-radius: 4px;">⚪ INSP (Inspección)</span>
             </div>
         """, unsafe_allow_html=True)
@@ -546,20 +554,23 @@ else:
         df_plan = cargar_planificacion()
         columnas_15cenas = [col for col in df_plan.columns if "15c" in col]
 
+        # Aplicamos los estilos al dataframe para que se mantengan visibles AL EDITAR
+        try: df_estilizado = df_plan.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
+        except AttributeError: df_estilizado = df_plan.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
+
         if modo_edicion:
-            st.info("💡 **TIP PRO:** Haz doble clic en una celda. Escribe la pauta (Ej: P1), presiona **`Shift + Enter`** para bajar una línea y escribe tu comentario (Ej: Falta WK8). ¡Al guardar se verá genial!")
+            st.info("💡 **TIP PRO:** Haz doble clic en una celda. Escribe la pauta (Ej: P1), presiona **`Shift + Enter`** para bajar una línea y escribe tu comentario (Ej: Hecho). ¡Al guardar se verá el color genial!")
             
-            # Configurar las columnas para que el editor de Streamlit soporte bien las tarjetas anchas
+            # Configurar las columnas para darles más ancho en el editor
             configuracion_columnas = {col: st.column_config.TextColumn(width="medium") for col in columnas_15cenas}
             
-            df_editado = st.data_editor(df_plan, use_container_width=True, hide_index=True, height=750, column_config=configuracion_columnas)
+            # Pasamos el dataframe ESTILIZADO al editor para que veas los colores mientras editas
+            df_editado = st.data_editor(df_estilizado, use_container_width=True, hide_index=True, height=750, column_config=configuracion_columnas)
             if st.button("💾 Guardar y Actualizar Nube", type="primary"):
                 guardar_planificacion(df_editado)
                 st.success("✅ ¡Matriz actualizada en Google Sheets correctamente!")
                 st.rerun()
         else:
-            try: df_estilizado = df_plan.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
-            except AttributeError: df_estilizado = df_plan.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
             st.dataframe(df_estilizado, use_container_width=True, hide_index=True, height=750)
 
     # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL LIMPIA) ---
@@ -677,7 +688,7 @@ else:
         tag_sel = st.session_state.equipo_seleccionado; mod_d, ser_d, area_d, ubi_d = inventario_equipos[tag_sel]
         c_btn, c_tit = st.columns([1, 4])
         with c_btn: st.button("⬅️ Volver", on_click=volver_catalogo, use_container_width=True)
-        with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Servicio: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
+        with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Serviço: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True); tab1, tab2, tab3, tab4 = st.tabs(["📋 1. Reporte y Diagnóstico", "📚 2. Ficha Técnica", "🔍 3. Bitácora de Observaciones", "👤 4. Gestión de Área"])
         with tab1:
             st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área", area_d, disabled=True); ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
