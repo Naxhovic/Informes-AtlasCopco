@@ -53,9 +53,10 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (Diseño UI/UX NATIVO) - CORREGIDO PARA EL MENÚ
+# 0.2 ESTILOS PREMIUM (SOLUCIÓN DEFINITIVA PARA EL MENÚ)
 # =============================================================================
-st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️")
+# initial_sidebar_state="expanded" asegura que el menú empiece abierto
+st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
 def aplicar_estilos_premium():
     st.markdown("""
@@ -64,9 +65,12 @@ def aplicar_estilos_premium():
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, [class*="css"] { font-family: 'Montserrat', sans-serif !important; }
         
-        /* Solución del Bug: Se quitó el ocultamiento del Header para que la flecha del menú lateral funcione */
-        #MainMenu {visibility: hidden;} footer {visibility: hidden;} 
-        header [data-testid="stToolbar"] {visibility: hidden;} /* Oculta solo las opciones extra, mantiene el menú */
+        /* SOLUCIÓN INFALIBLE DEL MENÚ: 
+        Jamás tocamos el "header" para no romper la flecha nativa de Streamlit.
+        Solo ocultamos el botón de los 3 puntitos (#MainMenu) y la marca de agua (footer). 
+        */
+        #MainMenu {visibility: hidden;} 
+        footer {visibility: hidden;} 
         
         div.stButton > button:first-child {
             background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%);
@@ -323,7 +327,6 @@ def guardar_pendientes(usuario, pendientes):
 # 3.1 BASE DE DATOS: PLANIFICACIÓN EN MATRIZ (CONECTADA A GOOGLE SHEETS)
 # =============================================================================
 def generar_planificacion_base():
-    """Plantilla de rescate en caso de que el Google Sheets esté vacío la primera vez."""
     meses = ["15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov", "15c Dic"]
     datos = [
         {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK7", "15c Mar": "INSP\nHecho W10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
@@ -386,25 +389,20 @@ def guardar_planificacion(df):
 
 # =============================================================================
 # ESTRATEGIA VISUAL: COLORES NEÓN TRANSLÚCIDOS
-# (Funcionan perfecto tanto en vista como en el Editor de Streamlit)
 # =============================================================================
 def estilo_dinamico_celdas(val):
     if pd.isna(val) or val == "": return ''
     v = str(val).upper()
     
-    # 1. ALERTA ROJA (F/S)
     if 'F/S' in v or 'FUERA' in v:
         return 'background-color: rgba(255, 23, 68, 0.25); color: #ff1744; font-weight: bold; border-left: 4px solid #ff1744;'
     
-    # 2. VERDE ESTRICTO (Hecho, OK, Listo)
-    if any(x in v for x in ['HECHO', 'OK', 'LISTO']): 
+    if 'HECHO' in v: 
         return 'background-color: rgba(0, 230, 118, 0.25); color: #00e676; font-weight: bold; border-left: 4px solid #00e676;'
         
-    # 3. AMARILLO PENDIENTE (Falta, WK, Pendiente)
     if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND']): 
         return 'background-color: rgba(255, 193, 7, 0.25); color: #FFC107; font-weight: bold; border-left: 4px solid #FFC107;'
     
-    # 4. COLORES BASE DE PAUTAS (Sutiles Neón)
     if 'P1' in v: return 'background-color: rgba(0, 191, 255, 0.15); color: #00BFFF; font-weight: bold;'
     if 'P2' in v: return 'background-color: rgba(255, 152, 0, 0.15); color: #FF9800; font-weight: bold;'
     if 'P3' in v: return 'background-color: rgba(156, 39, 176, 0.15); color: #9C27B0; font-weight: bold;'
@@ -497,7 +495,6 @@ else:
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
             
-        # --- NUEVO NOMBRE DEL BOTÓN DEL MENÚ ---
         if st.button("📅 Planificación Hidrometalurgia", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
             
@@ -515,7 +512,6 @@ else:
         mes_plan, rango_fechas = obtener_quincena_actual()
         mes_col_actual = f"15c {mes_plan[:3]}"
         
-        # --- NUEVO TÍTULO DE LA SECCIÓN ---
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
                 <h2 style="color: white; margin: 0;">📅 Planificación</h2>
@@ -541,7 +537,7 @@ else:
             datos_mes = df_mostrar[mes_col_actual].astype(str).str.upper()
             c_fs = sum(datos_mes.str.contains('F/S') | datos_mes.str.contains('FUERA'))
             c_ok = sum(datos_mes.str.contains('HECHO') | datos_mes.str.contains('OK') | datos_mes.str.contains('LISTO'))
-            c_pend = sum(datos_mes.str.contains('FALTA') | datos_mes.str.contains('PEND') | datos_mes.str.contains('WK')) - c_fs 
+            c_pend = sum(datos_mes.str.contains('FALTA') | datos_mes.str.contains('PEND') | datos_mes.str.contains('WK')) - c_fs
             
             st.markdown(f"<p style='color: white; margin-bottom:5px; font-weight:bold;'>📊 Resumen Quincena Actual ({mes_col_actual}):</p>", unsafe_allow_html=True)
             k1, k2, k3, k4 = st.columns(4)
@@ -566,9 +562,9 @@ else:
                 st.success("✅ ¡Base de Datos actualizada con éxito!")
                 st.rerun()
         else:
-            try: df_estilizado_view = df_mostrar.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
-            except AttributeError: df_estilizado_view = df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
-            st.dataframe(df_estilizado_view, use_container_width=True, hide_index=True, height=700)
+            try: df_estilizado = df_mostrar.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
+            except AttributeError: df_estilizado = df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
+            st.dataframe(df_estilizado, use_container_width=True, hide_index=True, height=700)
 
     # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL LIMPIA) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
