@@ -11,6 +11,7 @@ from streamlit_drawable_canvas import st_canvas
 from PIL import Image
 import io
 import gspread
+import datetime
 from google.oauth2.service_account import Credentials
 from streamlit_pdf_viewer import pdf_viewer
 
@@ -104,6 +105,43 @@ def aplicar_estilos_premium():
         </style>
     """, unsafe_allow_html=True)
 aplicar_estilos_premium()
+
+# =============================================================================
+# 0.3 LÓGICA DE PLANIFICACIÓN (15CENAS Y COLORES)
+# =============================================================================
+def obtener_quincena_actual():
+    hoy = datetime.date.today()
+    meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    if hoy.day < 15:
+        mes_plan = meses[hoy.month - 1]
+        inicio = f"15 de {meses[hoy.month - 2 if hoy.month > 1 else 11]}"
+        fin = f"15 de {mes_plan}"
+    else:
+        mes_plan = meses[hoy.month] if hoy.month < 12 else "Enero"
+        inicio = f"15 de {meses[hoy.month - 1]}"
+        fin = f"15 de {mes_plan}"
+    return mes_plan, f"{inicio} al {fin}"
+
+def obtener_color_pauta(pauta):
+    """Devuelve los colores solicitados según el tipo de intervención."""
+    p = pauta.upper().strip()
+    if p in ["INSP", "INSPECCIÓN"]: return "background: transparent; color: #8c9eb5; border: 1px solid #8c9eb5;" # Sin color (gris/transparente)
+    elif p == "P1": return "background: #00BFFF; color: white; border: 1px solid #00BFFF;" # Celeste
+    elif p == "P2": return "background: #FF9800; color: white; border: 1px solid #FF9800;" # Naranja
+    elif p == "P3": return "background: #9C27B0; color: white; border: 1px solid #9C27B0;" # Morado
+    elif p == "P4": return "background: #F44336; color: white; border: 1px solid #F44336;" # Rojo
+    return "background: #2b3543; color: white; border: 1px solid #2b3543;"
+
+# Base de datos simulada de planificación (Editable a futuro)
+datos_planificacion = [
+    {"tag": "70-GC-013", "equipo": "GA 132", "area": "Descarga Acido", "pauta": "INSP", "wk": "WK09", "estado": "Realizado", "obs": "Hecho W10"},
+    {"tag": "70-GC-014", "equipo": "GA 132", "area": "Descarga Acido", "pauta": "P1", "wk": "WK09", "estado": "Realizado", "obs": "Hecho W10"},
+    {"tag": "50-GC-001", "equipo": "GA 45", "area": "Planta SX", "pauta": "INSP", "wk": "WK09", "estado": "Pendiente", "obs": "Pendiente W10"},
+    {"tag": "50-GC-002", "equipo": "GA 45", "area": "Planta SX", "pauta": "P1", "wk": "WK11", "estado": "Pendiente", "obs": "Pendiente W10"},
+    {"tag": "50-GC-003", "equipo": "ZT 37", "area": "Planta SX", "pauta": "INSP", "wk": "WK09", "estado": "Pendiente", "obs": "F/S WK9"},
+    {"tag": "35-GC-006", "equipo": "GA 250", "area": "Chancado Secundario", "pauta": "P2", "wk": "WK11", "estado": "Pendiente", "obs": "F/S"},
+    {"tag": "55-GC-015", "equipo": "GA 30", "area": "Planta Borra", "pauta": "INSP", "wk": "WK11", "estado": "Pendiente", "obs": "Falta"}
+]
 
 # =============================================================================
 # 1. DATOS MAESTROS (INVENTARIO Y USUARIOS)
@@ -296,7 +334,6 @@ def convertir_a_pdf(ruta_docx):
     return None
 
 def obtener_fecha_hoy_esp():
-    """Genera la fecha actual formateada en español."""
     meses = {1: "enero", 2: "febrero", 3: "marzo", 4: "abril", 5: "mayo", 6: "junio", 7: "julio", 8: "agosto", 9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"}
     ahora = pd.Timestamp.now()
     return f"{ahora.day} de {meses[ahora.month]} de {ahora.year}"
@@ -321,7 +358,7 @@ def guardar_pendientes(usuario, pendientes):
 # =============================================================================
 ESPECIFICACIONES = obtener_especificaciones(DEFAULT_SPECS)
 default_states = {
-    'logged_in': False, 'usuario_actual': "", 'equipo_seleccionado': None,
+    'logged_in': False, 'usuario_actual': "", 'equipo_seleccionado': None, 'vista_actual': "catalogo",
     'input_cliente': "Lorena Rojas", 'input_tec1': "Ignacio Morales", 'input_tec2': "emian Sanchez",
     'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
@@ -351,7 +388,7 @@ def seleccionar_equipo(tag):
         except: st.session_state.input_p_descarga = "7.5"
     else: st.session_state.update({'input_estado_eq': "Operativo", 'input_estado': "", 'input_reco': ""})
 def volver_catalogo(): 
-    st.session_state.equipo_seleccionado = None; st.session_state.vista_firmas = False
+    st.session_state.equipo_seleccionado = None; st.session_state.vista_firmas = False; st.session_state.vista_actual = "catalogo"
 
 # =============================================================================
 # 5. PANTALLA 1: SISTEMA DE LOGIN PREMIUM
@@ -382,15 +419,84 @@ else:
     with st.sidebar:
         st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas Copco</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
+        st.markdown("---")
+        
+        # MENÚ DE NAVEGACIÓN
+        if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
+            st.session_state.vista_actual = "catalogo"
+            st.session_state.vista_firmas = False
+            st.session_state.equipo_seleccionado = None
+            st.rerun()
+            
+        if st.button("📅 Planificación (15cenas)", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
+            st.session_state.vista_actual = "planificacion"
+            st.session_state.vista_firmas = False
+            st.session_state.equipo_seleccionado = None
+            st.rerun()
+            
         if len(st.session_state.informes_pendientes) > 0:
             st.markdown("---")
             st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
-            if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary"): st.session_state.vista_firmas = True; st.session_state.equipo_seleccionado = None; st.rerun()
+            if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"): 
+                st.session_state.vista_firmas = True
+                st.session_state.vista_actual = "firmas"
+                st.session_state.equipo_seleccionado = None
+                st.rerun()
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 6.1 VISTA DE FIRMAS Y ENVÍO MÚLTIPLE ---
-    if st.session_state.vista_firmas:
+    # --- 6.0 VISTA PLANIFICACIÓN (NUEVA CON COLORES EXACTOS) ---
+    if st.session_state.vista_actual == "planificacion":
+        mes_plan, rango_fechas = obtener_quincena_actual()
+        
+        st.markdown(f"""
+            <div style="margin-top: 1rem; margin-bottom: 2rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
+                <h2 style="color: white; margin: 0;">📅 Planificación: <span style="color: var(--bhp-orange); text-transform: uppercase;">{mes_plan}</span></h2>
+                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Ciclo operativo: {rango_fechas}</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        pendientes = [d for d in datos_planificacion if d["estado"] == "Pendiente"]
+        realizados = [d for d in datos_planificacion if d["estado"] == "Realizado"]
+        
+        col_pend, col_real = st.columns(2)
+        
+        with col_pend:
+            st.markdown(f"<h3 style='color: #FFC107; border-bottom: 2px solid #FFC107; padding-bottom: 5px;'>🟡 Pendientes ({len(pendientes)})</h3>", unsafe_allow_html=True)
+            for tarea in pendientes:
+                color_pauta = obtener_color_pauta(tarea['pauta'])
+                st.markdown(f"""
+                <div style="background-color: #1e2530; border: 1px solid #2b3543; border-left: 5px solid #FFC107; border-radius: 8px; padding: 15px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="color: white; margin: 0; font-size: 1.2rem;">{tarea['tag']}</h4>
+                        <span style="{color_pauta} font-weight: 800; padding: 3px 10px; border-radius: 4px; font-size: 0.8rem;">{tarea['pauta'].upper()}</span>
+                    </div>
+                    <p style="color: #8c9eb5; margin: 0 0 5px 0; font-size: 0.9rem;">{tarea['equipo']} &bull; {tarea['area']}</p>
+                    <p style="color: #FFC107; margin: 0; font-size: 0.85rem; font-weight: 600;">⏱️ Programado para: {tarea['wk']} ({tarea['obs']})</p>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.button(f"⚙️ Generar Reporte", key=f"btn_plan_{tarea['tag']}", use_container_width=True):
+                    seleccionar_equipo(tarea['tag'])
+                    st.session_state.vista_actual = "catalogo"
+                    st.rerun()
+
+        with col_real:
+            st.markdown(f"<h3 style='color: #00e676; border-bottom: 2px solid #00e676; padding-bottom: 5px;'>🟢 Realizados ({len(realizados)})</h3>", unsafe_allow_html=True)
+            for tarea in realizados:
+                color_pauta = obtener_color_pauta(tarea['pauta'])
+                st.markdown(f"""
+                <div style="background-color: #151a22; border: 1px solid #2b3543; border-left: 5px solid #00e676; border-radius: 8px; padding: 15px; margin-bottom: 12px; opacity: 0.8;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="color: #a0aab8; margin: 0; font-size: 1.2rem; text-decoration: line-through;">{tarea['tag']}</h4>
+                        <span style="{color_pauta} font-weight: 800; padding: 3px 10px; border-radius: 4px; font-size: 0.8rem;">{tarea['pauta'].upper()}</span>
+                    </div>
+                    <p style="color: #606d80; margin: 0 0 5px 0; font-size: 0.9rem;">{tarea['equipo']} &bull; {tarea['area']}</p>
+                    <p style="color: #00e676; margin: 0; font-size: 0.85rem; font-weight: 600;">✅ Completado en {tarea['wk']} ({tarea['obs']})</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+    # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL, SIN GUARDADO) ---
+    elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
             if st.button("⬅️ Volver", use_container_width=True): volver_catalogo(); st.rerun()
@@ -420,27 +526,23 @@ else:
                 if st.button("❌", key=f"del_inf_{i}", help="Quitar este informe de la bandeja"):
                     st.session_state.informes_pendientes.pop(i)
                     guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
-                    if len(st.session_state.informes_pendientes) == 0: st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None
+                    if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
                     st.rerun()
                     
         st.markdown("---")
         st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro. Usa el basurero nativo debajo del cuadro para borrarla y volver a empezar.")
         
-        # --- LÓGICA DE FIRMA MANUAL (SIN GUARDADO AUTOMÁTICO) ---
+        # --- LÓGICA DE FIRMA MANUAL LIMPIA ---
         c_tec, c_cli = st.columns(2)
-        
         with c_tec:
             st.markdown("### 🧑‍🔧 Firma del Técnico"); st.caption(f"Técnico: {st.session_state.usuario_actual.title()}")
             canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
-                    
         with c_cli:
             st.markdown("### 👷 Firma del Cliente"); st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
             canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
         
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
-            
-            # Verificamos que ambos canvas tengan al menos una línea dibujada
             tec_ok = canvas_tec.image_data is not None and canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
             cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
             
@@ -474,7 +576,7 @@ else:
                 st.warning("⚠️ Asegúrate de que ambas pizarras contengan una firma visible antes de generar los PDFs finales.")
 
     # --- 6.2 VISTA CATÁLOGO (DASHBOARD CINETICO Y PREMIUM) ---
-    elif st.session_state.equipo_seleccionado is None:
+    elif st.session_state.vista_actual == "catalogo" and st.session_state.equipo_seleccionado is None:
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(0,124,166,0) 0%, rgba(0,124,166,0.1) 50%, rgba(0,124,166,0) 100%); padding: 20px; border-radius: 15px;">
                 <h1 style="color: #007CA6; font-size: 4em; font-weight: 800; margin: 0; letter-spacing: -1px; text-transform: uppercase;">Atlas Copco <span style="color: #FF6600;">Spence</span></h1>
@@ -513,7 +615,7 @@ else:
                 contador += 1
 
     # --- 6.3 VISTA FORMULARIO Y GENERACIÓN ---
-    else:
+    elif st.session_state.equipo_seleccionado is not None:
         tag_sel = st.session_state.equipo_seleccionado; mod_d, ser_d, area_d, ubi_d = inventario_equipos[tag_sel]
         c_btn, c_tit = st.columns([1, 4])
         with c_btn: st.button("⬅️ Volver", on_click=volver_catalogo, use_container_width=True)
