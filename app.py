@@ -357,21 +357,38 @@ def guardar_pendientes(usuario, pendientes):
 # 3.1 BASE DE DATOS: PLANIFICACIÓN EN MATRIZ (CONECTADA A GOOGLE SHEETS)
 # =============================================================================
 def generar_planificacion_base():
-    """Plantilla de rescate en caso de que el Google Sheets esté vacío la primera vez."""
+    """Plantilla de rescate en caso de que el Google Sheets esté vacío la primera vez. (Extraída de tu Excel)."""
     meses = ["15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov", "15c Dic"]
     datos = [
-        {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "P1 Hecho", "15c Feb": "INSP Hecho WK10", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
-        {"TAG": "70-GC-014", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "INSP Falta", "15c Feb": "P1 Hecho WK10", "15c Mar": "INSP", "15c Abr": "P3", "15c May": "INSP"},
-        {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "P1 OK", "15c Feb": "INSP Pendiente W10", "15c Mar": "P3", "15c Abr": "INSP", "15c May": "P1"},
-        {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "INSP Falta", "15c Feb": "P1 Pendiente", "15c Mar": "INSP", "15c Abr": "P3", "15c May": "INSP"},
-        {"TAG": "50-GC-003", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "P1 F/S", "15c Feb": "INSP F/S", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
-        {"TAG": "50-GC-004", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "INSP Listo", "15c Feb": "P1 F/S WK8", "15c Mar": "INSP", "15c Abr": "P4", "15c May": "INSP"},
-        {"TAG": "50-CD-001", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4 Falta", "15c Feb": "INSP WK8", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "P2"},
-        {"TAG": "35-GC-006", "Equipo": "GA 250", "Área": "Chancado", "15c Ene": "P1 Falta", "15c Feb": "P2 F/S", "15c Mar": "P1", "15c Abr": "P1", "15c May": "P2"},
-        {"TAG": "35-GC-007", "Equipo": "GA 250", "Área": "Chancado", "15c Ene": "P3 Listo", "15c Feb": "P1 Hecho", "15c Mar": "P2", "15c Abr": "P1", "15c May": "P1"},
-        {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "15c Ene": "P1 OK", "15c Feb": "INSP Falta", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
-        {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "P1 OK", "15c Feb": "INSP Falta", "15c Mar": "P1", "15c Abr": "INSP", "15c May": "P2"},
-        {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "P1 OK", "15c Feb": "INSP WK10", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
+        {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "INSP", "15c Feb": "P1 Hecho WK7", "15c Mar": "INSP Hecho W10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
+        {"TAG": "70-GC-014", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "P2 Lista", "15c Feb": "INSP Falta", "15c Mar": "P1 Hecho W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+
+        {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1 OK WK4", "15c Mar": "INSP Pendiente W10", "15c Abr": "P3", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
+        {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "P2 Falta kit", "15c Feb": "INSP OK WK4", "15c Mar": "P1 Pendiente W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        {"TAG": "50-GC-003", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1 F/S WK7", "15c Mar": "INSP F/S WK9", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
+        {"TAG": "50-GC-004", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "P2 Lista", "15c Feb": "INSP", "15c Mar": "INSP F/S WK8", "15c Abr": "INSP", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        
+        {"TAG": "50-CD-001", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4 Falta", "15c Feb": "INSP", "15c Mar": "INSP WK8", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
+        {"TAG": "50-CD-002", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4 Falta", "15c Feb": "INSP", "15c Mar": "INSP WK8", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
+
+        {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "15c Ene": "INSP", "15c Feb": "P1 OK WK6", "15c Mar": "INSP WK11", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
+
+        {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P1 OK WK5", "15c Mar": "INSP WK11", "15c Abr": "P1", "15c May": "INSP", "15c Jun": "P2", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P4"},
+        {"TAG": "65-GC-009", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "P1 Falta Kit", "15c Feb": "INSP", "15c Mar": "P4 WK8", "15c Abr": "INSP", "15c May": "P1", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
+        
+        {"TAG": "65-CD-011", "Equipo": "CD 630", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P2 Falta Kit", "15c Mar": "INSP WK8", "15c Abr": "INSP", "15c May": "P2", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
+        {"TAG": "65-CD-012", "Equipo": "CD 630", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P2 Falta Kit", "15c Mar": "INSP WK8", "15c Abr": "INSP", "15c May": "P2", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
+
+        {"TAG": "35-GC-006", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1 Falta kit", "15c Feb": "P1 F/S", "15c Mar": "P2 F/S WK11", "15c Abr": "P1", "15c May": "P1", "15c Jun": "P2", "15c Jul": "P1", "15c Ago": "P1", "15c Sep": "P4", "15c Oct": "P1", "15c Nov": "P1", "15c Dic": "P2"},
+        {"TAG": "35-GC-007", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P3 Listo", "15c Feb": "P1 Hecho W6", "15c Mar": "P1 WK11", "15c Abr": "P2", "15c May": "P1", "15c Jun": "P1", "15c Jul": "P2", "15c Ago": "P1", "15c Sep": "P1", "15c Oct": "P4", "15c Nov": "P1", "15c Dic": "P1"},
+        {"TAG": "35-GC-008", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1 Falta kit", "15c Feb": "P2 Hecho W6", "15c Mar": "P1 WK11", "15c Abr": "P1", "15c May": "P2", "15c Jun": "P1", "15c Jul": "P1", "15c Ago": "P4", "15c Sep": "P1", "15c Oct": "P1", "15c Nov": "P2", "15c Dic": "P1"},
+
+        {"TAG": "20-GC-004", "Equipo": "GA 37", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1 Falta WK5", "15c Mar": "P1 WK10", "15c Abr": "INSP", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
+        {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1 OK WK4", "15c Mar": "INSP WK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
+        {"TAG": "20-GC-002", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1 Falta WK4", "15c Mar": "INSP WK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
+        {"TAG": "20-GC-003", "Equipo": "GA 90", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1 Hecho W7", "15c Mar": "INSP WK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
+        
+        {"TAG": "Taller", "Equipo": "GA 18", "Área": "Taller", "15c Ene": "INSP", "15c Feb": "P2 OK WK5", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"}
     ]
     for d in datos:
         for m in meses:
@@ -509,8 +526,8 @@ else:
         
         st.markdown("""
             <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; font-size: 0.85rem;">
-                <span style="background: #00e676; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟢 OK / Hecho (Realizado)</span>
-                <span style="background: #FFC107; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟡 Pendiente / Falta / WK</span>
+                <span style="background: #00e676; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟢 OK / Hecho / Listo</span>
+                <span style="background: #FFC107; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟡 Pendiente / Falta / WK / F/S</span>
                 <span style="border: 1px solid #8c9eb5; color: #8c9eb5; padding: 4px 10px; border-radius: 4px;">⚪ INSP (Inspección)</span>
                 <span style="background: #00BFFF; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🧊 P1</span>
                 <span style="background: #FF9800; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟠 P2</span>
@@ -525,18 +542,18 @@ else:
 
         if modo_edicion:
             st.info("💡 Haz doble clic en una celda para editarla. Al darle a Guardar, los datos irán directamente a tu Google Sheets.")
-            df_editado = st.data_editor(df_plan, use_container_width=True, hide_index=True, height=500)
+            df_editado = st.data_editor(df_plan, use_container_width=True, hide_index=True, height=780)
             if st.button("💾 Guardar y Actualizar Nube", type="primary"):
                 guardar_planificacion(df_editado)
-                st.success("✅ ¡Matriz actualizada em Google Sheets corretamente!")
+                st.success("✅ ¡Matriz actualizada en Google Sheets correctamente!")
                 st.rerun()
         else:
             columnas_15cenas = [col for col in df_plan.columns if "15c" in col]
             try: df_estilizado = df_plan.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
             except AttributeError: df_estilizado = df_plan.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
-            st.dataframe(df_estilizado, use_container_width=True, hide_index=True, height=500)
+            st.dataframe(df_estilizado, use_container_width=True, hide_index=True, height=780)
 
-    # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL LIMPIA, SIN COMENTARIOS NI DESCARGAS PREVIAS) ---
+    # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL, SIN GUARDADO) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -552,7 +569,6 @@ else:
                         try: pdf_viewer(inf['ruta_prev_pdf'], width=700, height=600)
                         except Exception as e: st.error(f"No se pudo desplegar el visor: {e}")
                         st.markdown("<br>", unsafe_allow_html=True)
-                        # --- REMOVIDOS LOS BOTONES DE DESCARGA PREVIA ---
                     else: st.warning("⚠️ La vista preliminar no está disponible.")
             with c_del:
                 st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
@@ -563,13 +579,11 @@ else:
                     st.rerun()
                     
         st.markdown("---")
-        # --- REMOVIDO EL MENSAJE INFORMATIVO DE INSTRUCCIONES ---
         
-        # FIRMA MANUAL LIMPIA Y SIN BUGS (SIN CAPTIONS)
+        # FIRMA MANUAL LIMPIA Y SIN BUGS
         c_tec, c_cli = st.columns(2)
         with c_tec:
             st.markdown("### 🧑‍🔧 Firma del Técnico")
-            # El key garantiza la persistencia durante el dibujado sin guardar automáticamente
             canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
         with c_cli:
             st.markdown("### 👷 Firma del Cliente")
@@ -578,12 +592,10 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
             
-            # Verificación estricta de trazos dibujados (no vacíos)
             tec_ok = canvas_tec.image_data is not None and canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
             cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
             
             if tec_ok and cli_ok:
-                # Función auxiliar para procesar los datos de imagen del canvas
                 def procesar_imagen_firma(img_data):
                     img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
                 
@@ -593,24 +605,17 @@ else:
                 informes_finales = []
                 with st.spinner("Fabricando documentos oficiales, inyectando firmas y transformando a PDF..."):
                     try:
-                        # Procesar cada informe en la bandeja sin límites
                         for inf in st.session_state.informes_pendientes:
                             doc = DocxTemplate(inf['file_plantilla']); context = inf['context']
-                            # Inyectar las firmas manuales capturadas como imágenes
                             context['firma_tecnico'] = InlineImage(doc, io_tec, width=Mm(40)); context['firma_cliente'] = InlineImage(doc, io_cli, width=Mm(40)); doc.render(context); doc.save(inf['ruta_docx']); ruta_pdf_gen = convertir_a_pdf(inf['ruta_docx'])
-                            # Determinar la ruta final (PDF si la conversión fue exitosa, DOCX si falló)
                             if ruta_pdf_gen: ruta_final = ruta_pdf_gen; nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
                             else: ruta_final = inf['ruta_docx']; nombre_final = inf['nombre_archivo_base']
-                            # Actualizar la base de datos de Google Sheets con la ruta final
                             tupla_lista = list(inf['tupla_db']); tupla_lista[18] = ruta_final; guardado_ok = guardar_registro(tuple(tupla_lista))
                             if not guardado_ok: st.error(f"⚠️ El PDF de {inf['tag']} se generó y envió, pero la base de datos de Google superó su límite. Verifica el catálogo en 1 minuto.")
-                            # Preparar datos para el envío por correo (para OneDrive)
                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"})
-                        
-                        # Enviar todos los informes firmados por correo
                         exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
                         if exito: 
-                            st.success("✅ ¡PERFECTO! Los documentos oficiales se firmaron, convirtieron a PDF y ya estão a caminho do seu OneDrive.")
+                            st.success("✅ ¡PERFECTO! Los documentos oficiales se firmaron, convirtieron a PDF y ya están camino a tu OneDrive.")
                             st.session_state.informes_pendientes = []
                             guardar_pendientes(st.session_state.usuario_actual, []) 
                             st.balloons()
@@ -689,7 +694,6 @@ else:
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Mediciones del Equipo"); c9, c10, c11, c12, c13, c14 = st.columns(6); h_m = c9.number_input("Horas Marcha Totales", step=1, value=int(st.session_state.input_h_marcha), format="%d"); h_c = c10.number_input("Horas en Carga", step=1, value=int(st.session_state.input_h_carga), format="%d"); unidad_p = c11.selectbox("Unidad de Presión", ["Bar", "psi"]); p_c_str = c12.text_input("P. Carga", value=str(st.session_state.input_p_carga)); p_d_str = c13.text_input("P. Descarga", value=str(st.session_state.input_p_descarga)); t_salida_str = c14.text_input("Temp Salida (°C)", value=str(st.session_state.input_temp)); p_c_clean = p_c_str.replace(',', '.'); p_d_clean = p_d_str.replace(',', '.'); t_salida_clean = t_salida_str.replace(',', '.')
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Evaluación y Diagnóstico Final"); est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True); est_ent = st.text_area("Descripción Condición Final:", key="input_estado", height=100); reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100); st.markdown("<br>", unsafe_allow_html=True)
             
-            # --- SIN LÍMITES DE RELATÓRIOS ---
             if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
                 if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
                 else: file_plantilla = "plantilla/fueradeservicio.docx" if est_eq == "Fuera de servicio" else f"plantilla/{tipo_plan.lower()}.docx" if tipo_plan in ["P1", "P2", "P3"] else "plantilla/inspeccion.docx"
