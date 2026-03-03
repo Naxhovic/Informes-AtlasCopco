@@ -314,7 +314,7 @@ def guardar_registro(data_tuple):
         except Exception as e: time.sleep(5)
     return False
 # =============================================================================
-# 3. CONVERSIÓN A PDF Y GESTIÓN DE BANDEJAS
+# 3. CONVERSIÓN A PDF, FECHAS Y BANDEJAS PRIVADAS
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -354,12 +354,10 @@ def guardar_pendientes(usuario, pendientes):
     except: pass
 
 # =============================================================================
-# 3.1 BASE DE DATOS: PLANIFICACIÓN EN MATRIZ (15CENAS)
+# 3.1 BASE DE DATOS: PLANIFICACIÓN EN MATRIZ (CONECTADA A GOOGLE SHEETS)
 # =============================================================================
-ARCHIVO_PLANIFICACION = os.path.join(RUTA_ONEDRIVE, "matriz_planificacion.json")
-
 def generar_planificacion_base():
-    """Genera la estructura inicial de la matriz con datos de tu Excel."""
+    """Plantilla de rescate en caso de que el Google Sheets esté vacío la primera vez."""
     meses = ["15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov", "15c Dic"]
     datos = [
         {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "P1 Hecho", "15c Feb": "INSP Hecho WK10", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
@@ -380,29 +378,38 @@ def generar_planificacion_base():
             if m not in d: d[m] = ""
     return pd.DataFrame(datos)
 
+@st.cache_data(ttl=60) # Revisa Google Sheets cada 60 segundos
 def cargar_planificacion():
-    if os.path.exists(ARCHIVO_PLANIFICACION):
-        try: return pd.read_json(ARCHIVO_PLANIFICACION)
-        except: pass
+    """Lee la pestaña 'planificacion' directamente desde Google Sheets."""
+    try:
+        sheet = get_sheet("planificacion")
+        if sheet:
+            data = sheet.get_all_values()
+            if len(data) > 1: # Si tiene datos y encabezados
+                df = pd.DataFrame(data[1:], columns=data[0])
+                return df
+    except Exception as e: pass
+    # Si la hoja está vacía (primera vez), retorna la base predeterminada
     return generar_planificacion_base()
 
 def guardar_planificacion(df):
-    os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
-    try: df.to_json(ARCHIVO_PLANIFICACION, orient="records", force_ascii=False, indent=4)
-    except: pass
+    """Guarda los cambios de la Matriz hacia Google Sheets."""
+    try:
+        sheet = get_sheet("planificacion")
+        if sheet:
+            sheet.clear() # Limpia la hoja vieja
+            datos_a_guardar = [df.columns.values.tolist()] + df.values.tolist()
+            sheet.append_rows(datos_a_guardar) # Sube la tabla completa
+            st.cache_data.clear() # Limpia la memoria para que los cambios se vean enseguida
+    except Exception as e:
+        st.error(f"Error al conectar con la Nube: {e}")
 
 def estilo_dinamico_celdas(val):
-    """Lógica de colores automática. ¡Magia visual basada en el texto de la celda!"""
+    """Lógica de colores automática basada en el texto de la celda."""
     if pd.isna(val) or val == "": return ''
     v = str(val).upper()
-    
-    # Prioridad 1: Estados Generales (Verde o Amarillo)
-    if any(x in v for x in ['HECHO', 'OK', 'LISTO', 'REALIZADO']): 
-        return 'background-color: #00e676; color: #1e2530; font-weight: bold;'
-    if any(x in v for x in ['FALTA', 'PENDIENTE', 'F/S', 'WK', 'PEND']): 
-        return 'background-color: #FFC107; color: #1e2530; font-weight: bold;'
-        
-    # Prioridad 2: Color nativo de las pautas programadas
+    if any(x in v for x in ['HECHO', 'OK', 'LISTO', 'REALIZADO']): return 'background-color: #00e676; color: #1e2530; font-weight: bold;'
+    if any(x in v for x in ['FALTA', 'PENDIENTE', 'F/S', 'WK', 'PEND']): return 'background-color: #FFC107; color: #1e2530; font-weight: bold;'
     if 'P1' in v: return 'background-color: #00BFFF; color: white; font-weight: bold;'
     if 'P2' in v: return 'background-color: #FF9800; color: white; font-weight: bold;'
     if 'P3' in v: return 'background-color: #9C27B0; color: white; font-weight: bold;'
@@ -425,8 +432,8 @@ default_states = {
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
 
-if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
-if 'df_planificacion' not in st.session_state: st.session_state.df_planificacion = cargar_planificacion()
+if 'informes_pendientes' not in st.session_state:
+    st.session_state.informes_pendientes = []
 
 def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
@@ -492,12 +499,12 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 6.0 VISTA MATRIZ DE PLANIFICACIÓN INTERACTIVA ---
+    # --- 6.0 VISTA MATRIZ DE PLANIFICACIÓN INTERACTIVA EN GOOGLE SHEETS ---
     if st.session_state.vista_actual == "planificacion":
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 2rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
                 <h2 style="color: white; margin: 0;">📅 Matriz Anual de Mantenimiento</h2>
-                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Planificación operativa por ciclos de 15cenas (del 15 al 15 de cada mes).</p>
+                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Planificación sincronizada con la base de datos Google Sheets.</p>
             </div>
         """, unsafe_allow_html=True)
         
@@ -514,25 +521,24 @@ else:
         """, unsafe_allow_html=True)
 
         modo_edicion = st.toggle("✏️ Habilitar Edición de Estados")
+        
+        # Carga la info fresca desde Google Sheets
+        df_plan = cargar_planificacion()
 
         if modo_edicion:
-            st.info("💡 Haz doble clic en una celda para editarla. Escribir **'OK'**, **'Hecho'** o **'Falta'** cambiará el color de la celda automáticamente tras guardar.")
-            df_editado = st.data_editor(st.session_state.df_planificacion, use_container_width=True, hide_index=True, height=500)
-            if st.button("💾 Guardar y Actualizar Matriz", type="primary"):
-                st.session_state.df_planificacion = df_editado
+            st.info("💡 Haz doble clic en una celda para editarla. Al darle a Guardar, los datos irán directamente a tu Google Sheets.")
+            df_editado = st.data_editor(df_plan, use_container_width=True, hide_index=True, height=500)
+            if st.button("💾 Guardar y Actualizar Nube", type="primary"):
                 guardar_planificacion(df_editado)
-                st.success("✅ ¡Planificación actualizada correctamente!")
+                st.success("✅ ¡Matriz actualizada en Google Sheets correctamente!")
                 st.rerun()
         else:
-            columnas_15cenas = [col for col in st.session_state.df_planificacion.columns if "15c" in col]
-            
-            # Aplicamos los estilos (Try/except para garantizar compatibilidad técnica)
-            try: df_estilizado = st.session_state.df_planificacion.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
-            except AttributeError: df_estilizado = st.session_state.df_planificacion.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
-            
+            columnas_15cenas = [col for col in df_plan.columns if "15c" in col]
+            try: df_estilizado = df_plan.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
+            except AttributeError: df_estilizado = df_plan.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
             st.dataframe(df_estilizado, use_container_width=True, hide_index=True, height=500)
 
-    # --- 6.1 VISTA DE FIRMAS (100% MANUAL PARA EVITAR BUGS DE BORRADO) ---
+    # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL, SIN GUARDADO) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -567,9 +573,9 @@ else:
                     st.rerun()
                     
         st.markdown("---")
-        st.info("💡 **Instrucciones:** Dibuja la firma. Usa el basurero para borrar de inmediato, o la flecha roja para descargar la firma.")
+        st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro. Usa el basurero nativo debajo del cuadro para borrarla y volver a empezar.")
         
-        # FIRMA MANUAL LIMPIA: Sin memorias que traben el funcionamiento de la Pizarra
+        # --- LÓGICA DE FIRMA MANUAL LIMPIA ---
         c_tec, c_cli = st.columns(2)
         with c_tec:
             st.markdown("### 🧑‍🔧 Firma del Técnico"); st.caption(f"Técnico: {st.session_state.usuario_actual.title()}")
@@ -580,8 +586,6 @@ else:
         
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
-            
-            # Verificación de trazos
             tec_ok = canvas_tec.image_data is not None and canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
             cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
             
