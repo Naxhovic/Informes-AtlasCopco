@@ -412,46 +412,46 @@ def guardar_planificacion(df):
         st.error(f"Error al conectar con la Nube: {e}")
 
 # =============================================================================
-# ESTRATEGIA VISUAL DE COLORES (MATRIZ Y TICKETS)
+# ESTRATEGIA VISUAL: COLORES DARK UI ELEGANCE (MENOS CHILLONES)
 # =============================================================================
 def estilo_dinamico_celdas(val):
     if pd.isna(val) or val == "": return ''
     v = str(val).upper()
     base_css = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
     
-    if 'F/S' in v or 'FUERA' in v: return base_css + 'background-color: rgba(255, 23, 68, 0.25); color: #ff1744; font-weight: bold; border-left: 4px solid #ff1744;'
-    if 'HECHO' in v or 'LISTO' in v or 'OK' in v: return base_css + 'background-color: rgba(0, 230, 118, 0.25); color: #00e676; font-weight: bold; border-left: 4px solid #00e676;'
+    if 'F/S' in v or 'FUERA' in v: return base_css + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
+    if 'HECHO' in v or 'LISTO' in v or 'OK' in v: return base_css + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
     if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND', 'LUNES', 'MARTES', 'MIÉRCOLES', 'MIERCOLES', 'JUEVES']): 
-        return base_css + 'background-color: rgba(255, 193, 7, 0.25); color: #FFC107; font-weight: bold; border-left: 4px solid #FFC107;'
+        return base_css + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
     
-    if 'P1' in v: return base_css + 'background-color: rgba(0, 191, 255, 0.15); color: #00BFFF; font-weight: bold;'
-    if 'P2' in v: return base_css + 'background-color: rgba(255, 152, 0, 0.15); color: #FF9800; font-weight: bold;'
-    if 'P3' in v: return base_css + 'background-color: rgba(156, 39, 176, 0.15); color: #9C27B0; font-weight: bold;'
-    if 'P4' in v: return base_css + 'background-color: rgba(244, 67, 54, 0.15); color: #F44336; font-weight: bold;'
+    if 'P1' in v: return base_css + 'background-color: #0c2d48; color: #66c2ff; font-weight: bold;'
+    if 'P2' in v: return base_css + 'background-color: #4a2c00; color: #ffb04c; font-weight: bold;'
+    if 'P3' in v: return base_css + 'background-color: #301047; color: #d78aff; font-weight: bold;'
+    if 'P4' in v: return base_css + 'background-color: #471015; color: #ff8a93; font-weight: bold;'
     if 'INSP' in v or v == 'I': return base_css + 'color: #8c9eb5; font-style: italic;'
     return base_css
 
 def estilo_simple_editor(val):
     if pd.isna(val) or val == "": return ''
     v = str(val).upper()
-    if 'F/S' in v or 'FUERA' in v: return 'background-color: #ff1744; color: white;'
-    if 'HECHO' in v or 'LISTO' in v or 'OK' in v: return 'background-color: #00e676; color: black;'
-    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND', 'LUNES', 'MARTES', 'MIÉRCOLES', 'MIERCOLES', 'JUEVES']): return 'background-color: #FFC107; color: black;'
-    if 'P1' in v: return 'background-color: #003b5c; color: #00BFFF;' 
-    if 'P2' in v: return 'background-color: #5c3700; color: #FF9800;'
-    if 'P3' in v: return 'background-color: #430c4d; color: #e166ff;'
-    if 'P4' in v: return 'background-color: #5c0e0e; color: #ff6e6e;'
+    if 'F/S' in v or 'FUERA' in v: return 'background-color: #471015; color: #ff8a93;'
+    if 'HECHO' in v or 'LISTO' in v or 'OK' in v: return 'background-color: #063f22; color: #6ee7b7;'
+    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND', 'LUNES', 'MARTES', 'MIÉRCOLES', 'MIERCOLES', 'JUEVES']): return 'background-color: #423205; color: #fde047;'
+    if 'P1' in v: return 'background-color: #0c2d48; color: #66c2ff;' 
+    if 'P2' in v: return 'background-color: #4a2c00; color: #ffb04c;'
+    if 'P3' in v: return 'background-color: #301047; color: #d78aff;'
+    if 'P4' in v: return 'background-color: #471015; color: #ff8a93;'
     if 'INSP' in v or v == 'I': return 'color: #8c9eb5;'
     return ''
 
 def estilo_pautas_puras(val):
-    """Estilo exclusivo de "Badges" para la columna de Intervención en los tickets."""
+    """Estilo exclusivo de 'Badges' elegantes para la columna de Intervención en tickets."""
     v = str(val).upper()
-    if 'P1' == v: return 'background-color: #00BFFF; color: white; font-weight: bold; text-align: center; border-radius: 4px;'
-    if 'P2' == v: return 'background-color: #FF9800; color: white; font-weight: bold; text-align: center; border-radius: 4px;'
-    if 'P3' == v: return 'background-color: #9C27B0; color: white; font-weight: bold; text-align: center; border-radius: 4px;'
-    if 'P4' == v: return 'background-color: #F44336; color: white; font-weight: bold; text-align: center; border-radius: 4px;'
-    if 'INSP' in v or 'I' == v: return 'background-color: transparent; color: #8c9eb5; font-weight: bold; text-align: center; border: 1px dashed #8c9eb5; border-radius: 4px;'
+    if 'P1' == v: return 'background-color: #0c2d48; color: #66c2ff; font-weight: bold; text-align: center; border-radius: 4px; border: 1px solid #1a5c94;'
+    if 'P2' == v: return 'background-color: #4a2c00; color: #ffb04c; font-weight: bold; text-align: center; border-radius: 4px; border: 1px solid #8c5300;'
+    if 'P3' == v: return 'background-color: #301047; color: #d78aff; font-weight: bold; text-align: center; border-radius: 4px; border: 1px solid #622291;'
+    if 'P4' == v: return 'background-color: #471015; color: #ff8a93; font-weight: bold; text-align: center; border-radius: 4px; border: 1px solid #8e202a;'
+    if 'INSP' in v or 'I' == v: return 'background-color: transparent; color: #8c9eb5; font-weight: bold; text-align: center; border: 1px dashed #455065; border-radius: 4px;'
     return ''
 
 # =============================================================================
@@ -560,7 +560,7 @@ else:
         tab_faltantes, tab_kanban, tab_matriz = st.tabs(["⚠️ Listado de Faltantes (Tickets)", "🗓️ Tablero Turno (4x3)", "📊 Matriz Anual Completa"])
 
         # ==========================================
-        # PESTAÑA 1: FALTANTES DE LA QUINCENA (TICKETS INTERACTIVOS + COLUMNA DE INTERVENCIÓN)
+        # PESTAÑA 1: FALTANTES DE LA QUINCENA (TICKETS INTERACTIVOS)
         # ==========================================
         with tab_faltantes:
             st.markdown("### ⚠️ Equipos Faltantes de la Quincena")
@@ -571,7 +571,6 @@ else:
                 df_faltantes = df_quincena_act[~df_quincena_act[mes_col_actual].str.upper().str.contains('HECHO|OK|LISTO')].copy()
                 
                 if not df_faltantes.empty:
-                    # EXTRAER LA PAUTA PARA LA NUEVA COLUMNA
                     import re
                     def extraer_pauta(txt):
                         match = re.search(r'(P[1-4]|INSP|I)', str(txt).upper())
@@ -582,7 +581,6 @@ else:
                     
                     df_mostrar_falta = df_faltantes[['✔️ Terminado', 'TAG', 'Equipo', 'Área', 'Intervención', mes_col_actual]]
                     
-                    # APLICAR LOS COLORES ASIGNADOS SOLO A LA COLUMNA INTERVENCIÓN
                     try: df_falta_estilo = df_mostrar_falta.style.map(estilo_pautas_puras, subset=['Intervención']).map(estilo_simple_editor, subset=[mes_col_actual])
                     except AttributeError: df_falta_estilo = df_mostrar_falta.style.applymap(estilo_pautas_puras, subset=['Intervención']).applymap(estilo_simple_editor, subset=[mes_col_actual])
                     
@@ -610,8 +608,6 @@ else:
                                 tag_completado = row["TAG"]
                                 pauta_limpia = row["Intervención"]
                                 idx = df_plan.index[df_plan['TAG'] == tag_completado].tolist()[0]
-                                
-                                # Escribimos Hecho + WK automáticamente usando la pauta limpia
                                 df_plan.at[idx, mes_col_actual] = f"{pauta_limpia}\nHecho {semana_actual}"
 
                             guardar_planificacion(df_plan)
@@ -677,11 +673,11 @@ else:
                             """, unsafe_allow_html=True)
                         st.markdown('</div>', unsafe_allow_html=True)
 
-                render_kanban_col(k_cols[0], "Día 1 (Lunes)", lunes, "#00BFFF")
-                render_kanban_col(k_cols[1], "Día 2 (Martes)", martes, "#00BFFF")
-                render_kanban_col(k_cols[2], "Día 3 (Miércoles)", miercoles, "#00BFFF")
-                render_kanban_col(k_cols[3], "Día 4 (Jueves)", jueves, "#F44336")
-                render_kanban_col(k_cols[4], "✅ Completados", completados, "#00e676")
+                render_kanban_col(k_cols[0], "Día 1 (Lunes)", lunes, "#66c2ff")
+                render_kanban_col(k_cols[1], "Día 2 (Martes)", martes, "#66c2ff")
+                render_kanban_col(k_cols[2], "Día 3 (Miércoles)", miercoles, "#66c2ff")
+                render_kanban_col(k_cols[3], "Día 4 (Jueves)", jueves, "#ff8a93")
+                render_kanban_col(k_cols[4], "✅ Completados", completados, "#6ee7b7")
 
                 st.markdown("---")
                 st.markdown("### ⚙️ Mover Tarjetas de Día")
