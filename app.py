@@ -329,6 +329,20 @@ def obtener_fecha_hoy_esp():
     ahora = pd.Timestamp.now()
     return f"{ahora.day} de {meses[ahora.month]} de {ahora.year}"
 
+# 🔥 AQUÍ ESTÁ LA FUNCIÓN QUE FALTABA
+def obtener_quincena_actual():
+    hoy = datetime.date.today()
+    meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    if hoy.day < 15:
+        mes_plan = meses[hoy.month - 1]
+        inicio = f"15 de {meses[hoy.month - 2 if hoy.month > 1 else 11]}"
+        fin = f"15 de {mes_plan}"
+    else:
+        mes_plan = meses[hoy.month] if hoy.month < 12 else "Enero"
+        inicio = f"15 de {meses[hoy.month - 1]}"
+        fin = f"15 de {mes_plan}"
+    return mes_plan, f"{inicio} al {fin}"
+
 def cargar_pendientes(usuario):
     archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
     if os.path.exists(archivo):
@@ -414,14 +428,22 @@ def guardar_planificacion(df):
 def estilo_dinamico_celdas(val):
     if pd.isna(val) or val == "": return ''
     v = str(val).upper()
-    if 'F/S' in v or 'FUERA' in v: return 'background-color: rgba(255, 23, 68, 0.25); color: #ff1744; font-weight: bold; border-left: 4px solid #ff1744;'
-    if 'HECHO' in v: return 'background-color: rgba(0, 230, 118, 0.25); color: #00e676; font-weight: bold; border-left: 4px solid #00e676;'
-    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND']): return 'background-color: rgba(255, 193, 7, 0.25); color: #FFC107; font-weight: bold; border-left: 4px solid #FFC107;'
+    
+    if 'F/S' in v or 'FUERA' in v:
+        return 'background-color: rgba(255, 23, 68, 0.25); color: #ff1744; font-weight: bold; border-left: 4px solid #ff1744;'
+    
+    if 'HECHO' in v: 
+        return 'background-color: rgba(0, 230, 118, 0.25); color: #00e676; font-weight: bold; border-left: 4px solid #00e676;'
+        
+    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND']): 
+        return 'background-color: rgba(255, 193, 7, 0.25); color: #FFC107; font-weight: bold; border-left: 4px solid #FFC107;'
+    
     if 'P1' in v: return 'background-color: rgba(0, 191, 255, 0.15); color: #00BFFF; font-weight: bold;'
     if 'P2' in v: return 'background-color: rgba(255, 152, 0, 0.15); color: #FF9800; font-weight: bold;'
     if 'P3' in v: return 'background-color: rgba(156, 39, 176, 0.15); color: #9C27B0; font-weight: bold;'
     if 'P4' in v: return 'background-color: rgba(244, 67, 54, 0.15); color: #F44336; font-weight: bold;'
     if 'INSP' in v or v == 'I': return 'color: #8c9eb5; font-style: italic;'
+    
     return ''
 
 def estilo_simple_editor(val):
@@ -537,7 +559,6 @@ else:
             </div>
         """, unsafe_allow_html=True)
 
-        # CREACIÓN DE LAS DOS PESTAÑAS (MACRO Y MICRO)
         tab_matriz, tab_kanban = st.tabs(["📊 Vista Macro (Matriz Anual)", "🗓️ Vista Micro (Tablero Turno 4x3)"])
 
         # ==========================================
