@@ -16,7 +16,7 @@ from google.oauth2.service_account import Credentials
 from streamlit_pdf_viewer import pdf_viewer
 
 # =============================================================================
-# 0.1 CONFIGURACIÓN DE NUBE Y CORREO
+# 0. CONFIGURACIÓN DE NUBE Y CORREO
 # =============================================================================
 RUTA_ONEDRIVE = "Reportes_Temporales" 
 MI_CORREO_CORPORATIVO = "ignacio.a.morales@atlascopco.com"
@@ -68,7 +68,6 @@ def aplicar_estilos_premium():
         #MainMenu {visibility: hidden;} 
         footer {visibility: hidden;} 
         
-        /* 🔥 BOTÓN DE MENÚ LATERAL CELESTE VIBRANTE */
         [data-testid="collapsedControl"] {
             display: flex !important;
             visibility: visible !important;
@@ -272,6 +271,7 @@ def guardar_registro(data_tuple):
                 st.cache_data.clear(); return True
         except Exception as e: time.sleep(5)
     return False
+
 # =============================================================================
 # 3. FUNCIONES DE AYUDA Y PLANIFICACIÓN
 # =============================================================================
@@ -438,261 +438,85 @@ for key, value in default_states.items():
 
 if 'informes_pendientes' not in st.session_state:
     st.session_state.informes_pendientes = []
-
-def seleccionar_equipo(tag):
-    st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
-    reg = buscar_ultimo_registro(tag)
-    if reg:
-        st.session_state.input_cliente = reg[1]
-        st.session_state.input_tec1 = reg[5]; st.session_state.input_tec2 = reg[6]
-        st.session_state.input_estado = reg[3]
-        st.session_state.input_reco = reg[11] if reg[11] else ""
-        st.session_state.input_estado_eq = reg[12] if reg[12] else "Operativo"
-        st.session_state.input_h_marcha = int(reg[9]) if reg[9] else 0; st.session_state.input_h_carga = int(reg[10]) if reg[10] else 0
-        st.session_state.input_temp = str(reg[2]).replace(',', '.') if reg[2] is not None else "70.0"
-        try: st.session_state.input_p_carga = str(reg[7]).split()[0].replace(',', '.')
-        except: st.session_state.input_p_carga = "7.0"
-        try: st.session_state.input_p_descarga = str(reg[8]).split()[0].replace(',', '.')
-        except: st.session_state.input_p_descarga = "7.5"
-    else: st.session_state.update({'input_estado_eq': "Operativo", 'input_estado': "", 'input_reco': ""})
-def volver_catalogo(): 
-    st.session_state.equipo_seleccionado = None; st.session_state.vista_firmas = False; st.session_state.vista_actual = "catalogo"
-
-# =============================================================================
-# 5. PANTALLA 1: SISTEMA DE LOGIN PREMIUM
-# =============================================================================
-if not st.session_state.logged_in:
-    st.markdown("<br><br><br>", unsafe_allow_html=True)
-    _, col_centro, _ = st.columns([1, 1.5, 1])
-    with col_centro:
-        with st.container(border=True):
-            st.markdown("<h1 style='text-align: center; border-bottom:none;'>⚙️ <span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h1>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: gray;'>Sistema de Gestión de Reportes Técnicos - Atlas Copco</p>", unsafe_allow_html=True)
-            st.markdown("---")
-            with st.form("form_login"):
-                u_in = st.text_input("Usuario Corporativo").lower()
-                p_in = st.text_input("Contraseña", type="password")
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.form_submit_button("Acceder de forma segura", type="primary", use_container_width=True):
-                    if u_in in USUARIOS and USUARIOS[u_in] == p_in: 
-                        st.session_state.update({'logged_in': True, 'usuario_actual': u_in})
-                        st.session_state.informes_pendientes = cargar_pendientes(u_in)
-                        st.rerun()
-                    else: st.error("❌ Credenciales inválidas.")
-
-# =============================================================================
-# 6. PANTALLA PRINCIPAL: APLICACIÓN AUTENTICADA
-# =============================================================================
-else:
-    with st.sidebar:
-        st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas Copco</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
-        st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
-        st.markdown("---")
-        
-        if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
-            st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
-            
-        if st.button("📅 Planificación Hidrometalurgia", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
-            st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
-            
-        if len(st.session_state.informes_pendientes) > 0:
-            st.markdown("---")
-            st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
-            if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"): 
-                st.session_state.vista_firmas = True; st.session_state.vista_actual = "firmas"; st.session_state.equipo_seleccionado = None; st.rerun()
-        st.markdown("---")
-        if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
-
-    # --- 6.0 VISTA MATRIZ Y GESTIÓN ÁGIL (LA VERSIÓN FAVORITA) ---
+    # --- 6.0 VISTA MATRIZ Y GESTIÓN DUAL (ANTI-ERRORES) ---
     if st.session_state.vista_actual == "planificacion":
         df_plan = cargar_planificacion()
         if "Área" not in df_plan.columns or "TAG" not in df_plan.columns: df_plan = generar_planificacion_base()
         df_plan = df_plan.fillna("")
         
         mes_plan, rango_fechas = obtener_quincena_actual()
-        mes_col_actual = f"15c {mes_plan[:3]}"
+        mes_actual = obtener_mes_actual_abrev()
         
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
-                <h2 style="color: white; margin: 0;">📅 Planificación Operativa</h2>
-                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Ciclo en curso: {rango_fechas}</p>
+                <h2 style="color: white; margin: 0;">📅 Control Operativo de Mantenimiento</h2>
+                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Estructura Oficial 4 Columnas | Mes Activo: {mes_actual}</p>
             </div>
         """, unsafe_allow_html=True)
         
-        tab_faltantes, tab_kanban, tab_calendario, tab_matriz = st.tabs(["⚠️ Faltantes (Tickets)", "🗓️ Tablero Turno (4x3)", "📆 Mapa Histórico", "📊 Matriz Anual"])
+        tab_faltantes, tab_calendario, tab_matriz = st.tabs(["⚠️ Lista Faltantes (Tickets)", "📆 Historial en Calendario", "📊 Matriz Anual (Vista Excel)"])
 
         # ==========================================
-        # PESTAÑA 1: FALTANTES DE LA QUINCENA (TICKETS RÁPIDOS)
+        # PESTAÑA 1: FALTANTES Y ASIGNACIÓN (AUTOMATIZADO WKs)
         # ==========================================
         with tab_faltantes:
-            st.markdown("### ⚠️ Equipos Pendientes")
-            st.info("Marca con un ticket (✔️) la casilla de la izquierda para los equipos que ya realizaste y dale a Guardar. Se anotarán en verde automáticamente.")
+            st.markdown("### ⚠️ Equipos Pendientes del Mes")
+            st.info("Elige el día en que realizaste el equipo y dale al Ticket ✔️. El sistema calculará la semana (WK) sola y la guardará en la columna 'WK Real'.")
             
             c_fec1, c_fec2 = st.columns([1, 4])
             with c_fec1:
-                fecha_rapida = st.date_input("Fecha de ejecución a registrar:", datetime.date.today(), key="fecha_faltantes")
+                fecha_rapida = st.date_input("Fecha en que se realizó:", datetime.date.today(), key="fecha_faltantes")
             
-            if mes_col_actual in df_plan.columns:
-                df_quincena_act = df_plan[df_plan[mes_col_actual].str.strip() != ""]
-                
-                import re
-                def es_pendiente(val):
-                    v = str(val).upper()
-                    if 'FALTA' in v or 'PEND' in v: return True
-                    if not re.search(r'(\d{2}/\d{2}|WK\d+|HECHO|OK)', v): return True
-                    return False
-                
-                mask = df_quincena_act[mes_col_actual].apply(es_pendiente)
-                df_faltantes = df_quincena_act[mask].copy()
+            col_p, col_wp, col_e, col_wr = f"{mes_actual}_Plan", f"{mes_actual}_W_Plan", f"{mes_actual}_Est", f"{mes_actual}_Real"
+            
+            if col_p in df_plan.columns:
+                df_mes = df_plan[df_plan[col_p].str.strip() != ""]
+                df_faltantes = df_mes[df_mes[col_e] == "Pendiente"].copy()
                 
                 if not df_faltantes.empty:
-                    def extraer_pauta(txt):
-                        match = re.search(r'(P[1-4]|INSP|I)', str(txt).upper())
-                        return match.group(1) if match else "INSP"
-                        
-                    df_faltantes["Intervención"] = df_faltantes[mes_col_actual].apply(extraer_pauta)
                     df_faltantes.insert(0, "✔️ Terminado", False)
-                    df_mostrar_falta = df_faltantes[['✔️ Terminado', 'TAG', 'Equipo', 'Área', 'Intervención', mes_col_actual]]
+                    # Use the correct columns names that exist in the dataframe
+                    df_mostrar_falta = df_faltantes[['✔️ Terminado', 'TAG', 'Equipo', 'Área', col_p]]
+                    df_mostrar_falta.columns = ['✔️ Terminado', 'TAG', 'Equipo', 'Área', 'Intervención']
                     
-                    try: df_falta_estilo = df_mostrar_falta.style.map(estilo_pautas_puras, subset=['Intervención']).map(estilo_simple_editor, subset=[mes_col_actual])
-                    except AttributeError: df_falta_estilo = df_mostrar_falta.style.applymap(estilo_pautas_puras, subset=['Intervención']).applymap(estilo_simple_editor, subset=[mes_col_actual])
+                    try: df_falta_estilo = df_mostrar_falta.style.map(estilo_pautas_puras, subset=['Intervención'])
+                    except AttributeError: df_falta_estilo = df_mostrar_falta.style.applymap(estilo_pautas_puras, subset=['Intervención'])
                     
                     configuracion_columnas = {
                         "✔️ Terminado": st.column_config.CheckboxColumn("¿Listo?", default=False),
-                        "TAG": st.column_config.TextColumn("TAG", disabled=True),
-                        "Equipo": st.column_config.TextColumn("Equipo", disabled=True),
-                        "Área": st.column_config.TextColumn("Área", disabled=True),
-                        "Intervención": st.column_config.TextColumn("Intervención", disabled=True),
-                        mes_col_actual: st.column_config.TextColumn("Comentario Original", disabled=True)
+                        "TAG": st.column_config.TextColumn(disabled=True),
+                        "Equipo": st.column_config.TextColumn(disabled=True),
+                        "Área": st.column_config.TextColumn(disabled=True),
+                        "Intervención": st.column_config.TextColumn(disabled=True)
                     }
                     
                     edited_faltantes = st.data_editor(df_falta_estilo, hide_index=True, use_container_width=True, column_config=configuracion_columnas, height=500)
                     
-                    if st.button("💾 Guardar Equipos Terminados", type="primary"):
+                    if st.button("💾 Guardar y Calcular Semana Automática", type="primary"):
                         terminados = edited_faltantes[edited_faltantes["✔️ Terminado"] == True]
                         if len(terminados) > 0:
-                            str_fecha = f"{fecha_rapida.strftime('%d/%m')} (WK{fecha_rapida.isocalendar()[1]})"
+                            semana_iso = f"WK{fecha_rapida.isocalendar()[1]}"
                             for _, row in terminados.iterrows():
                                 tag_completado = row["TAG"]
-                                pauta_limpia = row["Intervención"]
                                 idx = df_plan.index[df_plan['TAG'] == tag_completado].tolist()[0]
-                                df_plan.at[idx, mes_col_actual] = f"{pauta_limpia}\n{str_fecha}"
+                                
+                                df_plan.at[idx, col_e] = "Hecho"
+                                df_plan.at[idx, col_wr] = semana_iso
 
                             guardar_planificacion(df_plan)
-                            st.success(f"✅ ¡Excelente! {len(terminados)} equipos completados el {str_fecha}.")
+                            st.success(f"✅ ¡Excelente! {len(terminados)} equipos pasados a 'Hecho' en la {semana_iso}.")
                             st.rerun()
                         else:
                             st.warning("Marca algún equipo con un ticket primero.")
                 else:
-                    st.success("🎉 ¡Impresionante! No hay ningún equipo pendiente para esta quincena.")
+                    st.success("🎉 ¡Impresionante! No hay ningún equipo pendiente para este mes.")
 
         # ==========================================
-        # PESTAÑA 2: TABLERO 4x3 CON SCROLL INTERNO
-        # ==========================================
-        with tab_kanban:
-            st.markdown("""
-                <style>
-                .kanban-col { background-color: #11151c; border: 1px solid #2b3543; border-radius: 8px; padding: 15px; height: 500px; overflow-y: auto; position: relative; }
-                .kanban-col::-webkit-scrollbar { width: 6px; }
-                .kanban-col::-webkit-scrollbar-track { background: transparent; }
-                .kanban-col::-webkit-scrollbar-thumb { background-color: #455065; border-radius: 10px; }
-                .kanban-col::-webkit-scrollbar-thumb:hover { background-color: #00BFFF; }
-                .kanban-header { color: white; text-align: center; border-bottom: 3px solid; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; position: sticky; top: -15px; background-color: #11151c; z-index: 10; padding-top: 5px; }
-                .kanban-card { background-color: #1a212b; border-left: 4px solid #007CA6; border-radius: 6px; padding: 12px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.15); transition: transform 0.2s; }
-                .kanban-card:hover { transform: scale(1.02); border-left-color: var(--bhp-orange) !important;}
-                .kanban-card-title { color: white; font-weight: 800; font-size: 1.1rem; margin:0 0 5px 0; display: flex; justify-content: space-between; align-items: center;}
-                .kanban-card-sub { color: #8c9eb5; font-size: 0.8rem; margin:0; }
-                </style>
-            """, unsafe_allow_html=True)
-
-            c_k1, c_k2 = st.columns([1, 3])
-            with c_k1:
-                fecha_inicio_turno = st.date_input("📅 Selecciona el Lunes de tu turno:", datetime.date.today())
-            with c_k2:
-                st.markdown(f"<div style='margin-top:33px; color:#66c2ff; font-size:0.9rem;'>💡 Al asignar un equipo a un día, se guardará la fecha exacta automáticamente en la matriz.</div>", unsafe_allow_html=True)
-
-            import datetime as dt
-            dias_turno = [fecha_inicio_turno + dt.timedelta(days=i) for i in range(4)]
-            fechas_str = [d.strftime("%d/%m") for d in dias_turno]
-
-            if mes_col_actual not in df_plan.columns:
-                st.error(f"No hay una columna llamada {mes_col_actual} en la matriz.")
-            else:
-                df_quincena = df_plan[df_plan[mes_col_actual].str.strip() != ""]
-                col_d1, col_d2, col_d3, col_d4, col_pend = [], [], [], [], []
-                lista_asignables = []
-                
-                import re
-                for _, row in df_quincena.iterrows():
-                    texto = str(row[mes_col_actual]).upper()
-                    match = re.search(r'(P[1-4]|INSP|I)', texto)
-                    pauta_txt = match.group(1) if match else "INSP"
-                    item = {"tag": row["TAG"], "eq": row["Equipo"], "area": row["Área"], "txt": pauta_txt}
-                    
-                    if fechas_str[0] in texto or "LUNES" in texto: col_d1.append(item)
-                    elif fechas_str[1] in texto or "MARTES" in texto: col_d2.append(item)
-                    elif fechas_str[2] in texto or "MIÉRCOLES" in texto or "MIERCOLES" in texto: col_d3.append(item)
-                    elif fechas_str[3] in texto or "JUEVES" in texto: col_d4.append(item)
-                    elif not re.search(r'(\d{2}/\d{2}|WK\d+|HECHO|OK)', texto) or 'FALTA' in texto: 
-                        col_pend.append(item); lista_asignables.append(item)
-                    else: lista_asignables.append(item) 
-
-                k_cols = st.columns(5)
-                def render_kanban_col(col_obj, title, items, color_border):
-                    with col_obj:
-                        st.markdown(f'<div class="kanban-col"><div class="kanban-header" style="border-bottom-color: {color_border};">{title} ({len(items)})</div>', unsafe_allow_html=True)
-                        for it in items:
-                            st.markdown(f"""
-                            <div class="kanban-card" style="border-left-color: {color_border};">
-                                <div class="kanban-card-title"><span>{it['tag']}</span> <span style="font-size:0.75rem; background:#11151c; color:{color_border}; padding:3px 6px; border-radius:4px; border: 1px solid {color_border};">{it['txt']}</span></div>
-                                <p class="kanban-card-sub">{it['eq']} • {it['area']}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-
-                render_kanban_col(k_cols[0], f"Día 1 ({fechas_str[0]})", col_d1, "#66c2ff")
-                render_kanban_col(k_cols[1], f"Día 2 ({fechas_str[1]})", col_d2, "#66c2ff")
-                render_kanban_col(k_cols[2], f"Día 3 ({fechas_str[2]})", col_d3, "#66c2ff")
-                render_kanban_col(k_cols[3], f"Día 4 ({fechas_str[3]})", col_d4, "#ff8a93")
-                render_kanban_col(k_cols[4], "⚠️ Pendientes", col_pend, "#fde047")
-
-                st.markdown("---")
-                with st.form("form_asignacion_kanban"):
-                    c_f1, c_f2, c_f3 = st.columns([2, 1, 1])
-                    todos_disponibles = [f"{it['tag']} ({it['txt']}) - {it['area']}" for it in lista_asignables + col_d1 + col_d2 + col_d3 + col_d4]
-                    if len(todos_disponibles) == 0: todos_disponibles = ["No hay tareas para asignar"]
-                    
-                    tag_sel_raw = c_f1.selectbox("1. Elige el Equipo:", ["-- Selecciona un equipo --"] + todos_disponibles)
-                    dia_asignar = c_f2.selectbox("2. Mover a:", [f"Día 1 ({fechas_str[0]})", f"Día 2 ({fechas_str[1]})", f"Día 3 ({fechas_str[2]})", f"Día 4 ({fechas_str[3]})", "Devolver a Pendiente"])
-                    
-                    c_f3.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
-                    if c_f3.form_submit_button("🚀 Actualizar Tablero", use_container_width=True):
-                        if tag_sel_raw != "-- Selecciona un equipo --" and tag_sel_raw != "No hay tareas para asignar":
-                            tag_asignar = tag_sel_raw.split(" ")[0] 
-                            idx = df_plan.index[df_plan['TAG'] == tag_asignar].tolist()[0]
-                            celda_actual = str(df_plan.at[idx, mes_col_actual])
-                            
-                            match_p = re.search(r'(P[1-4]|INSP|I)', celda_actual.upper())
-                            pauta_limpia = match_p.group(1) if match_p else "INSP"
-                            
-                            if dia_asignar == "Devolver a Pendiente": 
-                                nuevo_texto = f"{pauta_limpia}\nFalta"
-                            else: 
-                                dia_idx = int(dia_asignar.split(" ")[1]) - 1
-                                date_obj = dias_turno[dia_idx]
-                                nuevo_texto = f"{pauta_limpia}\n{date_obj.strftime('%d/%m')} (WK{date_obj.isocalendar()[1]})"
-                                
-                            df_plan.at[idx, mes_col_actual] = nuevo_texto
-                            guardar_planificacion(df_plan)
-                            st.success(f"✅ {tag_asignar} movido a {dia_asignar}.")
-                            st.rerun()
-
-        # ==========================================
-        # PESTAÑA 3: MAPA DE CALENDARIO HISTÓRICO
+        # PESTAÑA 2: MAPA DE CALENDARIO HISTÓRICO
         # ==========================================
         with tab_calendario:
             st.markdown("### 📆 Mapa Histórico del Mes")
-            st.info("Este calendario lee los registros de reportes ingresados y dibuja automáticamente qué se ejecutó cada día.")
+            st.info("Este calendario lee los registros históricos de los reportes para pintar qué equipos se mantuvieron cada día.")
             
             import calendar
             hoy = datetime.date.today()
@@ -700,21 +524,21 @@ else:
             semanas_mes = cal.monthdatescalendar(hoy.year, hoy.month)
             
             tareas_por_fecha = {}
-            for col in df_plan.columns:
-                if "15c" in col:
-                    for idx, row in df_plan.iterrows():
-                        val = str(row[col]).upper()
-                        import re
-                        matches = re.findall(r'(\d{2}/\d{2})', val)
-                        for m in matches:
+            try:
+                sheet_int = get_sheet("intervenciones")
+                if sheet_int:
+                    datos_int = sheet_int.get_all_values()
+                    for r in datos_int:
+                        if len(r) >= 16:
+                            tag, fecha_str, pauta = r[0], r[5], r[15]
                             try:
-                                d, m_num = map(int, m.split('/'))
-                                fecha_tarea = datetime.date(hoy.year, m_num, d)
+                                d, m_num, y = map(int, fecha_str.split()[0].split('/'))
+                                if y < 100: y += 2000
+                                fecha_tarea = datetime.date(y, m_num, d)
                                 if fecha_tarea not in tareas_por_fecha: tareas_por_fecha[fecha_tarea] = []
-                                pauta_match = re.search(r'(P[1-4]|INSP|I)', val)
-                                p_txt = pauta_match.group(1) if pauta_match else "INSP"
-                                tareas_por_fecha[fecha_tarea].append((row['TAG'], p_txt))
+                                tareas_por_fecha[fecha_tarea].append((tag, pauta))
                             except: pass
+            except: pass
 
             html_cal = '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top:20px;">'
             dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
@@ -744,7 +568,7 @@ else:
             st.markdown(html_cal, unsafe_allow_html=True)
 
         # ==========================================
-        # PESTAÑA 4: LA MATRIZ ANUAL ORIGINAL
+        # PESTAÑA 3: LA MATRIZ ANUAL (FORMATO EXCEL - LISTAS DESPLEGABLES)
         # ==========================================
         with tab_matriz:
             col_fil1, col_fil2, col_fil3 = st.columns([1, 1, 1.5])
@@ -752,21 +576,29 @@ else:
                 areas_disp = ["Todas"] + sorted(list(df_plan["Área"].unique()))
                 filtro_area = st.selectbox("🏢 Filtrar por Área:", areas_disp, key="filtro_area_matriz")
             with col_fil2:
-                modo_edicion_matriz = st.toggle("✏️ Edición de Matriz Completa")
+                modo_edicion_matriz = st.toggle("✏️ Habilitar Edición de Listas Desplegables")
             with col_fil3:
                 st.markdown("<div style='margin-top:30px;'></div>", unsafe_allow_html=True)
-                if modo_edicion_matriz: st.info("Edita cualquier celda del año completo.")
+                st.info("Pauta | Estado (Desplegable) | WK Realizada")
                 
             df_mostrar = df_plan.copy()
             if filtro_area != "Todas": df_mostrar = df_mostrar[df_mostrar["Área"] == filtro_area]
-                
-            columnas_15cenas = [col for col in df_plan.columns if "15c" in col]
+            
+            # Configurar las Listas Desplegables en el editor
+            config_cols = {
+                "TAG": st.column_config.TextColumn(disabled=True, width="small"),
+                "Equipo": st.column_config.TextColumn(disabled=True, width="small"),
+                "Área": st.column_config.TextColumn(disabled=True, width="small")
+            }
+            
+            meses_list = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+            for m in meses_list:
+                config_cols[f"{m}_Plan"] = st.column_config.SelectboxColumn(f"{m} Pauta", options=["INSP", "P1", "P2", "P3", "P4"], width="small")
+                config_cols[f"{m}_Est"] = st.column_config.SelectboxColumn(f"Est", options=["Pendiente", "Hecho", "No Hecho", "F/S"], width="small")
+                config_cols[f"{m}_Real"] = st.column_config.TextColumn(f"Real", width="small")
 
             if modo_edicion_matriz:
-                try: df_estilizado_edit = df_mostrar.style.map(estilo_simple_editor, subset=columnas_15cenas)
-                except AttributeError: df_estilizado_edit = df_mostrar.style.applymap(estilo_simple_editor, subset=columnas_15cenas)
-                config_cols = {col: st.column_config.TextColumn(width="medium") for col in columnas_15cenas}
-                df_editado = st.data_editor(df_estilizado_edit, use_container_width=True, hide_index=True, height=700, column_config=config_cols)
+                df_editado = st.data_editor(df_mostrar, use_container_width=True, hide_index=True, height=700, column_config=config_cols)
                 if st.button("💾 Guardar Matriz en Nube", type="primary", use_container_width=True):
                     df_final_guardar = df_plan.copy()
                     df_editado_str = df_editado.astype(str)
@@ -775,9 +607,8 @@ else:
                     st.success("✅ ¡Base de Datos actualizada con éxito!")
                     st.rerun()
             else:
-                try: df_estilizado_view = df_mostrar.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
-                except AttributeError: df_estilizado_view = df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
-                st.dataframe(df_estilizado_view, use_container_width=True, hide_index=True, height=700)
+                df_estilizado_view = aplicar_estilos_matriz(df_mostrar)
+                st.dataframe(df_estilizado_view, use_container_width=True, hide_index=True, height=700, column_config=config_cols)
 
     # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL LIMPIA) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
@@ -857,7 +688,6 @@ else:
                 <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">Sistema Integrado de Control de Activos • Hidrometalurgia</p>
             </div>
         """, unsafe_allow_html=True)
-        
         estados_db = obtener_estados_actuales(); total_equipos = len(inventario_equipos); operativos = sum(1 for tag in inventario_equipos.keys() if estados_db.get(tag, "Operativo") == "Operativo"); fuera_servicio = total_equipos - operativos
         
         m1, m2, m3 = st.columns(3)
