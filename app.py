@@ -536,13 +536,13 @@ else:
             except AttributeError: df_estilizado = df_plan.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
             st.dataframe(df_estilizado, use_container_width=True, hide_index=True, height=500)
 
-    # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL, SIN GUARDADO) ---
+    # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL LIMPIA, SIN COMENTARIOS NI DESCARGAS PREVIAS) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
             if st.button("⬅️ Volver", use_container_width=True): volver_catalogo(); st.rerun()
         with c_v2: st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas Digital</h1>", unsafe_allow_html=True)
-        st.markdown("---"); st.markdown(f"### 📑 Revisión de Informes ({len(st.session_state.informes_pendientes)})"); st.info("👀 **Para el Cliente:** Por favor, revise el documento oficial antes de firmar.")
+        st.markdown("---"); st.markdown(f"### 📑 Revisión de Informes ({len(st.session_state.informes_pendientes)})")
         
         for i, inf in enumerate(st.session_state.informes_pendientes):
             c_exp, c_del = st.columns([12, 1])
@@ -552,15 +552,7 @@ else:
                         try: pdf_viewer(inf['ruta_prev_pdf'], width=700, height=600)
                         except Exception as e: st.error(f"No se pudo desplegar el visor: {e}")
                         st.markdown("<br>", unsafe_allow_html=True)
-                        col_dl1, col_dl2 = st.columns(2)
-                        with col_dl1:
-                            with open(inf['ruta_prev_pdf'], "rb") as f2: 
-                                st.download_button("📥 Descargar Borrador (PDF)", f2, file_name=f"Borrador_{inf['tag']}.pdf", mime="application/pdf", key=f"dl_prev_pdf_{i}", use_container_width=True)
-                        with col_dl2:
-                            ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{inf['nombre_archivo_base']}")
-                            if os.path.exists(ruta_prev_docx):
-                                with open(ruta_prev_docx, "rb") as f3: 
-                                    st.download_button("📝 Descargar Borrador (Word)", f3, file_name=f"Borrador_{inf['tag']}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"dl_prev_docx_{i}", use_container_width=True)
+                        # --- REMOVIDOS LOS BOTONES DE DESCARGA PREVIA ---
                     else: st.warning("⚠️ La vista preliminar no está disponible.")
             with c_del:
                 st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
@@ -571,25 +563,27 @@ else:
                     st.rerun()
                     
         st.markdown("---")
-        st.info("💡 **Instrucciones:** Dibuja la firma. Usa el basurero para borrar de inmediato, ou a seta vermelha para baixar a assinatura.")
+        # --- REMOVIDO EL MENSAJE INFORMATIVO DE INSTRUCCIONES ---
         
-        # FIRMA MANUAL LIMPIA Y SIN BUGS
+        # FIRMA MANUAL LIMPIA Y SIN BUGS (SIN CAPTIONS)
         c_tec, c_cli = st.columns(2)
         with c_tec:
-            st.markdown("### 🧑‍🔧 Firma del Técnico"); st.caption(f"Técnico: {st.session_state.usuario_actual.title()}")
+            st.markdown("### 🧑‍🔧 Firma del Técnico")
+            # El key garantiza la persistencia durante el dibujado sin guardar automáticamente
             canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
         with c_cli:
-            st.markdown("### 👷 Firma del Cliente"); st.caption(f"Cliente: {st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes else 'N/A'}")
+            st.markdown("### 👷 Firma del Cliente")
             canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
         
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
             
-            # Verificação de traços desenhados
+            # Verificación estricta de trazos dibujados (no vacíos)
             tec_ok = canvas_tec.image_data is not None and canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
             cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
             
             if tec_ok and cli_ok:
+                # Función auxiliar para procesar los datos de imagen del canvas
                 def procesar_imagen_firma(img_data):
                     img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
                 
@@ -599,14 +593,21 @@ else:
                 informes_finales = []
                 with st.spinner("Fabricando documentos oficiales, inyectando firmas y transformando a PDF..."):
                     try:
+                        # Procesar cada informe en la bandeja sin límites
                         for inf in st.session_state.informes_pendientes:
                             doc = DocxTemplate(inf['file_plantilla']); context = inf['context']
+                            # Inyectar las firmas manuales capturadas como imágenes
                             context['firma_tecnico'] = InlineImage(doc, io_tec, width=Mm(40)); context['firma_cliente'] = InlineImage(doc, io_cli, width=Mm(40)); doc.render(context); doc.save(inf['ruta_docx']); ruta_pdf_gen = convertir_a_pdf(inf['ruta_docx'])
+                            # Determinar la ruta final (PDF si la conversión fue exitosa, DOCX si falló)
                             if ruta_pdf_gen: ruta_final = ruta_pdf_gen; nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
                             else: ruta_final = inf['ruta_docx']; nombre_final = inf['nombre_archivo_base']
+                            # Actualizar la base de datos de Google Sheets con la ruta final
                             tupla_lista = list(inf['tupla_db']); tupla_lista[18] = ruta_final; guardado_ok = guardar_registro(tuple(tupla_lista))
                             if not guardado_ok: st.error(f"⚠️ El PDF de {inf['tag']} se generó y envió, pero la base de datos de Google superó su límite. Verifica el catálogo en 1 minuto.")
+                            # Preparar datos para el envío por correo (para OneDrive)
                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"})
+                        
+                        # Enviar todos los informes firmados por correo
                         exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
                         if exito: 
                             st.success("✅ ¡PERFECTO! Los documentos oficiales se firmaron, convirtieron a PDF y ya estão a caminho do seu OneDrive.")
@@ -688,7 +689,7 @@ else:
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Mediciones del Equipo"); c9, c10, c11, c12, c13, c14 = st.columns(6); h_m = c9.number_input("Horas Marcha Totales", step=1, value=int(st.session_state.input_h_marcha), format="%d"); h_c = c10.number_input("Horas en Carga", step=1, value=int(st.session_state.input_h_carga), format="%d"); unidad_p = c11.selectbox("Unidad de Presión", ["Bar", "psi"]); p_c_str = c12.text_input("P. Carga", value=str(st.session_state.input_p_carga)); p_d_str = c13.text_input("P. Descarga", value=str(st.session_state.input_p_descarga)); t_salida_str = c14.text_input("Temp Salida (°C)", value=str(st.session_state.input_temp)); p_c_clean = p_c_str.replace(',', '.'); p_d_clean = p_d_str.replace(',', '.'); t_salida_clean = t_salida_str.replace(',', '.')
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Evaluación y Diagnóstico Final"); est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True); est_ent = st.text_area("Descripción Condición Final:", key="input_estado", height=100); reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100); st.markdown("<br>", unsafe_allow_html=True)
             
-            # --- REMOVIDA A RESTRIÇÃO DO LIMITE DE RELATÓRIOS ---
+            # --- SIN LÍMITES DE RELATÓRIOS ---
             if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
                 if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
                 else: file_plantilla = "plantilla/fueradeservicio.docx" if est_eq == "Fuera de servicio" else f"plantilla/{tipo_plan.lower()}.docx" if tipo_plan in ["P1", "P2", "P3"] else "plantilla/inspeccion.docx"
