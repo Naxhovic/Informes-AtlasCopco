@@ -365,32 +365,24 @@ def generar_planificacion_base():
     datos = [
         {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK7", "15c Mar": "INSP\nHecho W10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "70-GC-014", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "P2\nLista", "15c Feb": "INSP\nFalta", "15c Mar": "P1\nHecho W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
-
         {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK4", "15c Mar": "INSP\nPdte W10", "15c Abr": "P3", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "P2\nFalta kit", "15c Feb": "INSP\nHecho WK4", "15c Mar": "P1\nPdte W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
         {"TAG": "50-GC-003", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1\nF/S WK7", "15c Mar": "INSP\nF/S WK9", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "50-GC-004", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "P2\nLista", "15c Feb": "INSP", "15c Mar": "INSP\nF/S WK8", "15c Abr": "INSP", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
-        
         {"TAG": "50-CD-001", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4\nFalta", "15c Feb": "INSP", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
         {"TAG": "50-CD-002", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4\nFalta", "15c Feb": "INSP", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
-
         {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK6", "15c Mar": "INSP\nWK11", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-
         {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK5", "15c Mar": "INSP\nWK11", "15c Abr": "P1", "15c May": "INSP", "15c Jun": "P2", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P4"},
         {"TAG": "65-GC-009", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "P1\nFalta Kit", "15c Feb": "INSP", "15c Mar": "P4\nWK8", "15c Abr": "INSP", "15c May": "P1", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
-        
         {"TAG": "65-CD-011", "Equipo": "CD 630", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P2\nFalta Kit", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "P2", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
         {"TAG": "65-CD-012", "Equipo": "CD 630", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P2\nFalta Kit", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "P2", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
-
         {"TAG": "35-GC-006", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1\nFalta kit", "15c Feb": "P1\nF/S", "15c Mar": "P2\nF/S WK11", "15c Abr": "P1", "15c May": "P1", "15c Jun": "P2", "15c Jul": "P1", "15c Ago": "P1", "15c Sep": "P4", "15c Oct": "P1", "15c Nov": "P1", "15c Dic": "P2"},
         {"TAG": "35-GC-007", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P3\nHecho", "15c Feb": "P1\nHecho W6", "15c Mar": "P1\nWK11", "15c Abr": "P2", "15c May": "P1", "15c Jun": "P1", "15c Jul": "P2", "15c Ago": "P1", "15c Sep": "P1", "15c Oct": "P4", "15c Nov": "P1", "15c Dic": "P1"},
         {"TAG": "35-GC-008", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1\nFalta kit", "15c Feb": "P2\nHecho W6", "15c Mar": "P1\nWK11", "15c Abr": "P1", "15c May": "P2", "15c Jun": "P1", "15c Jul": "P1", "15c Ago": "P4", "15c Sep": "P1", "15c Oct": "P1", "15c Nov": "P2", "15c Dic": "P1"},
-
         {"TAG": "20-GC-004", "Equipo": "GA 37", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nFalta WK5", "15c Mar": "P1\nWK10", "15c Abr": "INSP", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
         {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK4", "15c Mar": "INSP\nWK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "20-GC-002", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nFalta WK4", "15c Mar": "INSP\nWK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "20-GC-003", "Equipo": "GA 90", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nHecho W7", "15c Mar": "INSP\nWK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        
         {"TAG": "Taller", "Equipo": "GA 18", "Área": "Taller", "15c Ene": "INSP", "15c Feb": "P2\nHecho WK5", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"}
     ]
     return pd.DataFrame(datos)
@@ -419,7 +411,7 @@ def guardar_planificacion(df):
         st.error(f"Error al conectar con la Nube: {e}")
 
 # =============================================================================
-# ESTRATEGIA VISUAL: COLORES NEÓN TRANSLÚCIDOS Y REGLAS DE DÍAS
+# ESTRATEGIA VISUAL DE COLORES (MATRIZ Y TICKETS)
 # =============================================================================
 def estilo_dinamico_celdas(val):
     if pd.isna(val) or val == "": return ''
@@ -449,6 +441,16 @@ def estilo_simple_editor(val):
     if 'P3' in v: return 'background-color: #430c4d; color: #e166ff;'
     if 'P4' in v: return 'background-color: #5c0e0e; color: #ff6e6e;'
     if 'INSP' in v or v == 'I': return 'color: #8c9eb5;'
+    return ''
+
+def estilo_pautas_puras(val):
+    """Estilo exclusivo de "Badges" para la columna de Intervención en los tickets."""
+    v = str(val).upper()
+    if 'P1' == v: return 'background-color: #00BFFF; color: white; font-weight: bold; text-align: center; border-radius: 4px;'
+    if 'P2' == v: return 'background-color: #FF9800; color: white; font-weight: bold; text-align: center; border-radius: 4px;'
+    if 'P3' == v: return 'background-color: #9C27B0; color: white; font-weight: bold; text-align: center; border-radius: 4px;'
+    if 'P4' == v: return 'background-color: #F44336; color: white; font-weight: bold; text-align: center; border-radius: 4px;'
+    if 'INSP' in v or 'I' == v: return 'background-color: transparent; color: #8c9eb5; font-weight: bold; text-align: center; border: 1px dashed #8c9eb5; border-radius: 4px;'
     return ''
 
 # =============================================================================
@@ -549,16 +551,15 @@ else:
             </div>
         """, unsafe_allow_html=True)
         
-        # Selector Global de Semana (Se aplica a Kanban y a Faltantes)
         col_w1, col_w2 = st.columns([1, 4])
         with col_w1:
-            semana_actual = st.text_input("📆 Semana en curso:", value="WK10", help="Esta semana se registrará al mover o marcar tareas.")
+            semana_actual = st.text_input("📆 Semana en curso:", value="WK10", help="Esta semana se registrará automáticamente en la matriz.")
         
         st.markdown("<br>", unsafe_allow_html=True)
         tab_faltantes, tab_kanban, tab_matriz = st.tabs(["⚠️ Listado de Faltantes (Tickets)", "🗓️ Tablero Turno (4x3)", "📊 Matriz Anual Completa"])
 
         # ==========================================
-        # PESTAÑA 1: FALTANTES DE LA QUINCENA (TICKETS INTERACTIVOS)
+        # PESTAÑA 1: FALTANTES DE LA QUINCENA (TICKETS INTERACTIVOS + COLUMNA DE INTERVENCIÓN)
         # ==========================================
         with tab_faltantes:
             st.markdown("### ⚠️ Equipos Faltantes de la Quincena")
@@ -569,45 +570,54 @@ else:
                 df_faltantes = df_quincena_act[~df_quincena_act[mes_col_actual].str.upper().str.contains('HECHO|OK|LISTO')].copy()
                 
                 if not df_faltantes.empty:
-                    df_faltantes.insert(0, "✔️ Terminado", False) # Agregamos la columna de Checkbox
-                    df_mostrar_falta = df_faltantes[['✔️ Terminado', 'TAG', 'Equipo', 'Área', mes_col_actual]]
+                    # EXTRAER LA PAUTA PARA LA NUEVA COLUMNA
+                    import re
+                    def extraer_pauta(txt):
+                        match = re.search(r'(P[1-4]|INSP|I)', str(txt).upper())
+                        return match.group(1) if match else "INSP"
+                        
+                    df_faltantes["Intervención"] = df_faltantes[mes_col_actual].apply(extraer_pauta)
+                    df_faltantes.insert(0, "✔️ Terminado", False)
+                    
+                    df_mostrar_falta = df_faltantes[['✔️ Terminado', 'TAG', 'Equipo', 'Área', 'Intervención', mes_col_actual]]
+                    
+                    # APLICAR LOS COLORES ASIGNADOS SOLO A LA COLUMNA INTERVENCIÓN
+                    try: df_falta_estilo = df_mostrar_falta.style.map(estilo_pautas_puras, subset=['Intervención']).map(estilo_simple_editor, subset=[mes_col_actual])
+                    except AttributeError: df_falta_estilo = df_mostrar_falta.style.applymap(estilo_pautas_puras, subset=['Intervención']).applymap(estilo_simple_editor, subset=[mes_col_actual])
                     
                     configuracion_columnas = {
                         "✔️ Terminado": st.column_config.CheckboxColumn("¿Listo?", default=False),
-                        "TAG": st.column_config.TextColumn(disabled=True),
-                        "Equipo": st.column_config.TextColumn(disabled=True),
-                        "Área": st.column_config.TextColumn(disabled=True),
-                        mes_col_actual: st.column_config.TextColumn("Estado Actual", disabled=True)
+                        "TAG": st.column_config.TextColumn("TAG", disabled=True),
+                        "Equipo": st.column_config.TextColumn("Equipo", disabled=True),
+                        "Área": st.column_config.TextColumn("Área", disabled=True),
+                        "Intervención": st.column_config.TextColumn("Intervención", disabled=True),
+                        mes_col_actual: st.column_config.TextColumn("Comentario Original", disabled=True)
                     }
                     
                     edited_faltantes = st.data_editor(
-                        df_mostrar_falta,
+                        df_falta_estilo,
                         hide_index=True,
                         use_container_width=True,
-                        column_config=configuracion_columnas
+                        column_config=configuracion_columnas,
+                        height=500
                     )
                     
                     if st.button("💾 Guardar Equipos Terminados", type="primary"):
                         terminados = edited_faltantes[edited_faltantes["✔️ Terminado"] == True]
                         if len(terminados) > 0:
-                            import re
                             for _, row in terminados.iterrows():
                                 tag_completado = row["TAG"]
+                                pauta_limpia = row["Intervención"]
                                 idx = df_plan.index[df_plan['TAG'] == tag_completado].tolist()[0]
-                                celda = str(df_plan.at[idx, mes_col_actual])
                                 
-                                # Extraemos P1, P2... para no borrarlo
-                                match_p = re.search(r'(P[1-4]|INSP|I)', celda.upper())
-                                pauta_limpia = match_p.group(1) if match_p else "INSP"
-                                
-                                # Escribimos Hecho + WK automáticamente
+                                # Escribimos Hecho + WK automáticamente usando la pauta limpia
                                 df_plan.at[idx, mes_col_actual] = f"{pauta_limpia}\nHecho {semana_actual}"
 
                             guardar_planificacion(df_plan)
                             st.success(f"✅ ¡Excelente! {len(terminados)} equipos actualizados a 'Hecho {semana_actual}'.")
                             st.rerun()
                         else:
-                            st.warning("No marcaste ningún equipo con el ticket. Haz clic en la casilla vacía primero.")
+                            st.warning("No marcaste ningún equipo con el ticket. Haz clic en el cuadradito vacío primero.")
                 else:
                     st.success("🎉 ¡Impresionante! No hay ningún equipo pendiente para esta quincena.")
 
@@ -851,7 +861,7 @@ else:
         tag_sel = st.session_state.equipo_seleccionado; mod_d, ser_d, area_d, ubi_d = inventario_equipos[tag_sel]
         c_btn, c_tit = st.columns([1, 4])
         with c_btn: st.button("⬅️ Volver", on_click=volver_catalogo, use_container_width=True)
-        with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Servicio: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
+        with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Serviço: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True); tab1, tab2, tab3, tab4 = st.tabs(["📋 1. Reporte y Diagnóstico", "📚 2. Ficha Técnica", "🔍 3. Bitácora de Observaciones", "👤 4. Gestión de Área"])
         with tab1:
             st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área", area_d, disabled=True); ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
