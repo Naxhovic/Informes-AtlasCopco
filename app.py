@@ -329,7 +329,6 @@ def obtener_fecha_hoy_esp():
     ahora = pd.Timestamp.now()
     return f"{ahora.day} de {meses[ahora.month]} de {ahora.year}"
 
-# 🔥 AQUÍ ESTÁ LA FUNCIÓN QUE FALTABA
 def obtener_quincena_actual():
     hoy = datetime.date.today()
     meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
@@ -366,37 +365,26 @@ def generar_planificacion_base():
     datos = [
         {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK7", "15c Mar": "INSP\nHecho W10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "70-GC-014", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "P2\nLista", "15c Feb": "INSP\nFalta", "15c Mar": "P1\nHecho W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
-
         {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK4", "15c Mar": "INSP\nPdte W10", "15c Abr": "P3", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "P2\nFalta kit", "15c Feb": "INSP\nHecho WK4", "15c Mar": "P1\nPdte W10", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
         {"TAG": "50-GC-003", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1\nF/S WK7", "15c Mar": "INSP\nF/S WK9", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "50-GC-004", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "P2\nLista", "15c Feb": "INSP", "15c Mar": "INSP\nF/S WK8", "15c Abr": "INSP", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
-        
         {"TAG": "50-CD-001", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4\nFalta", "15c Feb": "INSP", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
         {"TAG": "50-CD-002", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4\nFalta", "15c Feb": "INSP", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
-
         {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK6", "15c Mar": "INSP\nWK11", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-
         {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK5", "15c Mar": "INSP\nWK11", "15c Abr": "P1", "15c May": "INSP", "15c Jun": "P2", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P4"},
         {"TAG": "65-GC-009", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "P1\nFalta Kit", "15c Feb": "INSP", "15c Mar": "P4\nWK8", "15c Abr": "INSP", "15c May": "P1", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
-        
         {"TAG": "65-CD-011", "Equipo": "CD 630", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P2\nFalta Kit", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "P2", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
         {"TAG": "65-CD-012", "Equipo": "CD 630", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P2\nFalta Kit", "15c Mar": "INSP\nWK8", "15c Abr": "INSP", "15c May": "P2", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
-
         {"TAG": "35-GC-006", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1\nFalta kit", "15c Feb": "P1\nF/S", "15c Mar": "P2\nF/S WK11", "15c Abr": "P1", "15c May": "P1", "15c Jun": "P2", "15c Jul": "P1", "15c Ago": "P1", "15c Sep": "P4", "15c Oct": "P1", "15c Nov": "P1", "15c Dic": "P2"},
         {"TAG": "35-GC-007", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P3\nHecho", "15c Feb": "P1\nHecho W6", "15c Mar": "P1\nWK11", "15c Abr": "P2", "15c May": "P1", "15c Jun": "P1", "15c Jul": "P2", "15c Ago": "P1", "15c Sep": "P1", "15c Oct": "P4", "15c Nov": "P1", "15c Dic": "P1"},
         {"TAG": "35-GC-008", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1\nFalta kit", "15c Feb": "P2\nHecho W6", "15c Mar": "P1\nWK11", "15c Abr": "P1", "15c May": "P2", "15c Jun": "P1", "15c Jul": "P1", "15c Ago": "P4", "15c Sep": "P1", "15c Oct": "P1", "15c Nov": "P2", "15c Dic": "P1"},
-
         {"TAG": "20-GC-004", "Equipo": "GA 37", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nFalta WK5", "15c Mar": "P1\nWK10", "15c Abr": "INSP", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
         {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nHecho WK4", "15c Mar": "INSP\nWK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "20-GC-002", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nFalta WK4", "15c Mar": "INSP\nWK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
         {"TAG": "20-GC-003", "Equipo": "GA 90", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nHecho W7", "15c Mar": "INSP\nWK10", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        
         {"TAG": "Taller", "Equipo": "GA 18", "Área": "Taller", "15c Ene": "INSP", "15c Feb": "P2\nHecho WK5", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"}
     ]
-    for d in datos:
-        for m in meses:
-            if m not in d: d[m] = ""
     return pd.DataFrame(datos)
 
 @st.cache_data(ttl=60)
@@ -423,35 +411,32 @@ def guardar_planificacion(df):
         st.error(f"Error al conectar con la Nube: {e}")
 
 # =============================================================================
-# ESTRATEGIA VISUAL: COLORES NEÓN TRANSLÚCIDOS
+# ESTRATEGIA VISUAL: COLORES NEÓN TRANSLÚCIDOS Y REGLAS DE DÍAS
 # =============================================================================
 def estilo_dinamico_celdas(val):
     if pd.isna(val) or val == "": return ''
     v = str(val).upper()
+    base_css = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
     
-    if 'F/S' in v or 'FUERA' in v:
-        return 'background-color: rgba(255, 23, 68, 0.25); color: #ff1744; font-weight: bold; border-left: 4px solid #ff1744;'
+    if 'F/S' in v or 'FUERA' in v: return base_css + 'background-color: rgba(255, 23, 68, 0.25); color: #ff1744; font-weight: bold; border-left: 4px solid #ff1744;'
+    if 'HECHO' in v or 'LISTO' in v or 'OK' in v: return base_css + 'background-color: rgba(0, 230, 118, 0.25); color: #00e676; font-weight: bold; border-left: 4px solid #00e676;'
+    # Cualquier día o palabra pendiente la pinta de amarillo
+    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND', 'LUNES', 'MARTES', 'MIÉRCOLES', 'MIERCOLES', 'JUEVES']): 
+        return base_css + 'background-color: rgba(255, 193, 7, 0.25); color: #FFC107; font-weight: bold; border-left: 4px solid #FFC107;'
     
-    if 'HECHO' in v: 
-        return 'background-color: rgba(0, 230, 118, 0.25); color: #00e676; font-weight: bold; border-left: 4px solid #00e676;'
-        
-    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND']): 
-        return 'background-color: rgba(255, 193, 7, 0.25); color: #FFC107; font-weight: bold; border-left: 4px solid #FFC107;'
-    
-    if 'P1' in v: return 'background-color: rgba(0, 191, 255, 0.15); color: #00BFFF; font-weight: bold;'
-    if 'P2' in v: return 'background-color: rgba(255, 152, 0, 0.15); color: #FF9800; font-weight: bold;'
-    if 'P3' in v: return 'background-color: rgba(156, 39, 176, 0.15); color: #9C27B0; font-weight: bold;'
-    if 'P4' in v: return 'background-color: rgba(244, 67, 54, 0.15); color: #F44336; font-weight: bold;'
-    if 'INSP' in v or v == 'I': return 'color: #8c9eb5; font-style: italic;'
-    
-    return ''
+    if 'P1' in v: return base_css + 'background-color: rgba(0, 191, 255, 0.15); color: #00BFFF; font-weight: bold;'
+    if 'P2' in v: return base_css + 'background-color: rgba(255, 152, 0, 0.15); color: #FF9800; font-weight: bold;'
+    if 'P3' in v: return base_css + 'background-color: rgba(156, 39, 176, 0.15); color: #9C27B0; font-weight: bold;'
+    if 'P4' in v: return base_css + 'background-color: rgba(244, 67, 54, 0.15); color: #F44336; font-weight: bold;'
+    if 'INSP' in v or v == 'I': return base_css + 'color: #8c9eb5; font-style: italic;'
+    return base_css
 
 def estilo_simple_editor(val):
     if pd.isna(val) or val == "": return ''
     v = str(val).upper()
     if 'F/S' in v or 'FUERA' in v: return 'background-color: #ff1744; color: white;'
-    if 'HECHO' in v: return 'background-color: #00e676; color: black;'
-    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND']): return 'background-color: #FFC107; color: black;'
+    if 'HECHO' in v or 'LISTO' in v or 'OK' in v: return 'background-color: #00e676; color: black;'
+    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND', 'LUNES', 'MARTES', 'MIÉRCOLES', 'MIERCOLES', 'JUEVES']): return 'background-color: #FFC107; color: black;'
     if 'P1' in v: return 'background-color: #003b5c; color: #00BFFF;' 
     if 'P2' in v: return 'background-color: #5c3700; color: #FF9800;'
     if 'P3' in v: return 'background-color: #430c4d; color: #e166ff;'
@@ -541,12 +526,10 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 6.0 VISTA DE PLANIFICACIÓN DUAL (MATRIZ + KANBAN 4x3) ---
+    # --- 6.0 VISTA MATRIZ Y GESTIÓN DUAL (ANTI-ERRORES) ---
     if st.session_state.vista_actual == "planificacion":
         df_plan = cargar_planificacion()
-        
-        if "Área" not in df_plan.columns or "TAG" not in df_plan.columns:
-            df_plan = generar_planificacion_base()
+        if "Área" not in df_plan.columns or "TAG" not in df_plan.columns: df_plan = generar_planificacion_base()
         df_plan = df_plan.fillna("")
         
         mes_plan, rango_fechas = obtener_quincena_actual()
@@ -554,15 +537,117 @@ else:
         
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
-                <h2 style="color: white; margin: 0;">📅 Planificación</h2>
-                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Ciclo Operativo: {rango_fechas}</p>
+                <h2 style="color: white; margin: 0;">📅 Gestión Operativa de Planificación</h2>
+                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Ciclo en curso: {rango_fechas}</p>
             </div>
         """, unsafe_allow_html=True)
-
-        tab_matriz, tab_kanban = st.tabs(["📊 Vista Macro (Matriz Anual)", "🗓️ Vista Micro (Tablero Turno 4x3)"])
+        
+        tab_kanban, tab_matriz = st.tabs(["🗓️ Turno Semanal (4x3)", "📊 Matriz Anual Completa"])
 
         # ==========================================
-        # PESTAÑA 1: LA MATRIZ ANUAL (MACROMANEJO)
+        # PESTAÑA 1: TABLERO 4x3 (GESTIÓN ÁGIL)
+        # ==========================================
+        with tab_kanban:
+            st.markdown("""
+                <style>
+                .kanban-col { background-color: #1a212b; border: 1px solid #2b3543; border-radius: 8px; padding: 15px; min-height: 400px; }
+                .kanban-header { color: white; text-align: center; border-bottom: 3px solid; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; }
+                .kanban-card { background-color: #2b3543; border-left: 4px solid #007CA6; border-radius: 6px; padding: 12px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                .kanban-card-title { color: white; font-weight: 800; font-size: 1.1rem; margin:0 0 5px 0; display: flex; justify-content: space-between; align-items: center;}
+                .kanban-card-sub { color: #8c9eb5; font-size: 0.8rem; margin:0; }
+                </style>
+            """, unsafe_allow_html=True)
+            
+            c_k1, c_k2 = st.columns([1, 2.5])
+            with c_k1:
+                semana_actual = st.text_input("📆 Semana a Registrar (Ej: WK10)", value="WK10")
+            with c_k2:
+                st.markdown(f"<div style='margin-top:33px; color:#00BFFF; font-size:0.9rem;'>💡 Al asignar un equipo a un día, se escribirá automáticamente <b>'{semana_actual}'</b> en la base de datos de Google Sheets.</div>", unsafe_allow_html=True)
+
+            if mes_col_actual not in df_plan.columns:
+                st.error(f"No hay una columna llamada {mes_col_actual} en la matriz.")
+            else:
+                df_quincena = df_plan[df_plan[mes_col_actual].str.strip() != ""]
+                
+                lunes, martes, miercoles, jueves, completados = [], [], [], [], []
+                pendientes_lista = []
+                
+                for _, row in df_quincena.iterrows():
+                    texto = str(row[mes_col_actual]).upper()
+                    # Extraer solo la pauta (P1, P2, INSP...) con regex seguro
+                    import re
+                    match = re.search(r'(P[1-4]|INSP|I)', texto)
+                    pauta_txt = match.group(1) if match else "INSP"
+                    
+                    item = {"tag": row["TAG"], "eq": row["Equipo"], "area": row["Área"], "txt": pauta_txt}
+                    
+                    if any(x in texto for x in ['HECHO', 'OK', 'LISTO']): completados.append(item)
+                    elif "LUNES" in texto: lunes.append(item)
+                    elif "MARTES" in texto: martes.append(item)
+                    elif "MIÉRCOLES" in texto or "MIERCOLES" in texto: miercoles.append(item)
+                    elif "JUEVES" in texto: jueves.append(item)
+                    else: pendientes_lista.append(item) # Va a la lista oculta
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                k_cols = st.columns(5)
+                
+                def render_kanban_col(col_obj, title, items, color_border):
+                    with col_obj:
+                        st.markdown(f'<div class="kanban-col"><div class="kanban-header" style="border-bottom-color: {color_border};">{title} ({len(items)})</div>', unsafe_allow_html=True)
+                        for it in items:
+                            st.markdown(f"""
+                            <div class="kanban-card" style="border-left-color: {color_border};">
+                                <div class="kanban-card-title"><span>{it['tag']}</span> <span style="font-size:0.8rem; background:#1e2530; color:{color_border}; padding:3px 8px; border-radius:4px; border: 1px solid {color_border};">{it['txt']}</span></div>
+                                <p class="kanban-card-sub">{it['eq']} • {it['area']}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+                render_kanban_col(k_cols[0], "Lunes", lunes, "#00BFFF")
+                render_kanban_col(k_cols[1], "Martes", martes, "#00BFFF")
+                render_kanban_col(k_cols[2], "Miércoles", miercoles, "#00BFFF")
+                render_kanban_col(k_cols[3], "Jueves", jueves, "#00BFFF")
+                render_kanban_col(k_cols[4], "✅ Completados", completados, "#00e676")
+
+                st.markdown("---")
+                st.markdown("### ⚙️ Asignación a Días de Turno")
+                with st.form("form_asignacion_kanban"):
+                    c_f1, c_f2, c_f3 = st.columns([2, 1, 1])
+                    
+                    # Permite asignar pendientes, o re-asignar los que ya están en lunes/martes/etc.
+                    todos_disponibles = [f"{it['tag']} ({it['txt']}) - {it['area']}" for it in pendientes_lista + lunes + martes + miercoles + jueves]
+                    if len(todos_disponibles) == 0: todos_disponibles = ["No hay tareas para asignar"]
+                    
+                    tag_sel_raw = c_f1.selectbox("1. Elige el Equipo (Pendiente o Asignado):", ["-- Selecciona un equipo --"] + todos_disponibles)
+                    dia_asignar = c_f2.selectbox("2. Mover a:", ["Lunes", "Martes", "Miércoles", "Jueves", "Hecho", "Fuera de Servicio", "Devolver a Pendiente"])
+                    
+                    c_f3.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
+                    if c_f3.form_submit_button("🚀 Actualizar Tablero", use_container_width=True):
+                        if tag_sel_raw != "-- Selecciona un equipo --" and tag_sel_raw != "No hay tareas para asignar":
+                            tag_asignar = tag_sel_raw.split(" ")[0] # Saca el TAG del texto
+                            idx = df_plan.index[df_plan['TAG'] == tag_asignar].tolist()[0]
+                            celda_actual = str(df_plan.at[idx, mes_col_actual])
+                            
+                            import re
+                            match_p = re.search(r'(P[1-4]|INSP|I)', celda_actual.upper())
+                            pauta_limpia = match_p.group(1) if match_p else "INSP"
+                            
+                            if dia_asignar == "Devolver a Pendiente":
+                                nuevo_texto = f"{pauta_limpia}\nFalta"
+                            elif dia_asignar == "Hecho":
+                                nuevo_texto = f"{pauta_limpia}\nHecho {semana_actual}"
+                            elif dia_asignar == "Fuera de Servicio":
+                                nuevo_texto = f"{pauta_limpia}\nF/S {semana_actual}"
+                            else:
+                                nuevo_texto = f"{pauta_limpia}\n{dia_asignar} {semana_actual}"
+                                
+                            df_plan.at[idx, mes_col_actual] = nuevo_texto
+                            guardar_planificacion(df_plan)
+                            st.success(f"✅ {tag_asignar} movido a {dia_asignar} {semana_actual}.")
+                            st.rerun()
+
+        # ==========================================
+        # PESTAÑA 2: LA MATRIZ ANUAL (MACROMANEJO)
         # ==========================================
         with tab_matriz:
             col_fil1, col_fil2, col_fil3 = st.columns([1, 1, 1.5])
@@ -570,27 +655,14 @@ else:
                 areas_disp = ["Todas"] + sorted(list(df_plan["Área"].unique()))
                 filtro_area = st.selectbox("🏢 Filtrar por Área:", areas_disp, key="filtro_area_matriz")
             with col_fil2:
-                modo_edicion = st.toggle("✏️ Habilitar Edición de Tabla", help="Actívalo para modificar la tabla. Guarda al terminar.")
+                modo_edicion = st.toggle("✏️ Edición de Matriz Completa")
             with col_fil3:
                 st.markdown("<div style='margin-top:30px;'></div>", unsafe_allow_html=True)
-                if modo_edicion: st.info("Escribe, presiona Shift+Enter y dale clic afuera para aplicar el color.")
+                if modo_edicion: st.info("Edita cualquier celda del año completo.")
                 
             df_mostrar = df_plan.copy()
             if filtro_area != "Todas": df_mostrar = df_mostrar[df_mostrar["Área"] == filtro_area]
                 
-            if mes_col_actual in df_mostrar.columns:
-                datos_mes = df_mostrar[mes_col_actual].astype(str).str.upper()
-                c_fs = sum(datos_mes.str.contains('F/S') | datos_mes.str.contains('FUERA'))
-                c_ok = sum(datos_mes.str.contains('HECHO') | datos_mes.str.contains('OK') | datos_mes.str.contains('LISTO'))
-                c_pend = sum(datos_mes.str.contains('FALTA') | datos_mes.str.contains('PEND') | datos_mes.str.contains('WK')) - c_fs 
-                
-                st.markdown(f"<p style='color: white; margin-bottom:5px; font-weight:bold;'>📊 Resumen Quincena Actual ({mes_col_actual}):</p>", unsafe_allow_html=True)
-                k1, k2, k3, k4 = st.columns(4)
-                k1.markdown(f"<div style='background:rgba(0,230,118,0.1); border:1px solid #00e676; padding:10px; border-radius:8px; text-align:center;'><h3 style='color:#00e676; margin:0;'>{c_ok}</h3><small>🟢 Ejecutados</small></div>", unsafe_allow_html=True)
-                k2.markdown(f"<div style='background:rgba(255,193,7,0.1); border:1px solid #FFC107; padding:10px; border-radius:8px; text-align:center;'><h3 style='color:#FFC107; margin:0;'>{c_pend}</h3><small>🟡 Pendientes</small></div>", unsafe_allow_html=True)
-                k3.markdown(f"<div style='background:rgba(255,23,68,0.1); border:1px solid #ff1744; padding:10px; border-radius:8px; text-align:center;'><h3 style='color:#ff1744; margin:0;'>{c_fs}</h3><small>🚨 Fuera de Servicio</small></div>", unsafe_allow_html=True)
-                st.markdown("<br>", unsafe_allow_html=True)
-
             columnas_15cenas = [col for col in df_plan.columns if "15c" in col]
 
             if modo_edicion:
@@ -598,7 +670,7 @@ else:
                 except AttributeError: df_estilizado_edit = df_mostrar.style.applymap(estilo_simple_editor, subset=columnas_15cenas)
                 config_cols = {col: st.column_config.TextColumn(width="medium") for col in columnas_15cenas}
                 df_editado = st.data_editor(df_estilizado_edit, use_container_width=True, hide_index=True, height=700, column_config=config_cols)
-                if st.button("💾 Guardar Cambios en Google Sheets", type="primary", use_container_width=True):
+                if st.button("💾 Guardar Matriz en Nube", type="primary", use_container_width=True):
                     df_final_guardar = df_plan.copy()
                     df_editado_str = df_editado.astype(str)
                     df_final_guardar.update(df_editado_str)
@@ -609,92 +681,6 @@ else:
                 try: df_estilizado_view = df_mostrar.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
                 except AttributeError: df_estilizado_view = df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
                 st.dataframe(df_estilizado_view, use_container_width=True, hide_index=True, height=700)
-
-        # ==========================================
-        # PESTAÑA 2: TABLERO KANBAN 4x3 (MICROMANEJO)
-        # ==========================================
-        with tab_kanban:
-            st.markdown("""
-                <style>
-                .kanban-col { background-color: #1a212b; border: 1px solid #2b3543; border-radius: 8px; padding: 15px; min-height: 500px; }
-                .kanban-header { color: white; text-align: center; border-bottom: 2px solid var(--ac-blue); padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; }
-                .kanban-card { background-color: #2b3543; border-left: 4px solid #FFC107; border-radius: 6px; padding: 12px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-                .kanban-card-title { color: white; font-weight: 800; font-size: 1rem; margin:0 0 5px 0; display: flex; justify-content: space-between;}
-                .kanban-card-sub { color: #8c9eb5; font-size: 0.8rem; margin:0; }
-                </style>
-            """, unsafe_allow_html=True)
-            
-            st.markdown("### Asignación de Turno (Ciclo de 4 Días)")
-            st.caption(f"Visualizando pendientes de la quincena actual: **{mes_col_actual}**")
-            
-            if mes_col_actual not in df_plan.columns:
-                st.error("No se encontró la columna del mes actual.")
-            else:
-                # Filtrar solo equipos que tienen texto en esta quincena y NO dicen "Hecho"
-                df_quincena = df_plan[df_plan[mes_col_actual].str.strip() != ""]
-                df_pendientes = df_quincena[~df_quincena[mes_col_actual].str.upper().str.contains('HECHO|OK|LISTO')]
-                
-                # Cajas para cada día
-                dia1, dia2, dia3, dia4, backlog = [], [], [], [], []
-                
-                for _, row in df_pendientes.iterrows():
-                    texto = str(row[mes_col_actual]).upper()
-                    item = {"tag": row["TAG"], "eq": row["Equipo"], "area": row["Área"], "txt": row[mes_col_actual].split('\n')[0]} # Muestra solo la 1ra linea (ej: P1)
-                    
-                    if "DÍA 1" in texto or "DIA 1" in texto: dia1.append(item)
-                    elif "DÍA 2" in texto or "DIA 2" in texto: dia2.append(item)
-                    elif "DÍA 3" in texto or "DIA 3" in texto: dia3.append(item)
-                    elif "DÍA 4" in texto or "DIA 4" in texto: dia4.append(item)
-                    else: backlog.append(item)
-
-                # DIBUJAR EL TABLERO (5 Columnas)
-                k_cols = st.columns(5)
-                
-                def render_kanban_col(col_obj, title, items, color_border):
-                    with col_obj:
-                        st.markdown(f'<div class="kanban-col"><div class="kanban-header" style="border-bottom-color: {color_border};">{title} ({len(items)})</div>', unsafe_allow_html=True)
-                        for it in items:
-                            st.markdown(f"""
-                            <div class="kanban-card" style="border-left-color: {color_border};">
-                                <div class="kanban-card-title"><span>{it['tag']}</span> <span style="font-size:0.8rem; background:#1e2530; padding:2px 6px; border-radius:4px;">{it['txt']}</span></div>
-                                <p class="kanban-card-sub">{it['eq']} • {it['area']}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-
-                render_kanban_col(k_cols[0], "🟡 Pendientes", backlog, "#FFC107")
-                render_kanban_col(k_cols[1], "Día 1 (Ingreso)", dia1, "#00BFFF")
-                render_kanban_col(k_cols[2], "Día 2", dia2, "#00BFFF")
-                render_kanban_col(k_cols[3], "Día 3", dia3, "#00BFFF")
-                render_kanban_col(k_cols[4], "Día 4 (Salida)", dia4, "#F44336")
-
-                st.markdown("---")
-                st.markdown("### ⚙️ Panel de Asignación Rápida")
-                with st.form("form_asignacion_kanban"):
-                    c_f1, c_f2, c_f3 = st.columns(3)
-                    opciones_tags = df_pendientes["TAG"].tolist()
-                    
-                    tag_asignar = c_f1.selectbox("1. Selecciona el Equipo:", opciones_tags)
-                    dia_asignar = c_f2.selectbox("2. Asignar al día de turno:", ["Día 1", "Día 2", "Día 3", "Día 4", "Devolver a Pendientes"])
-                    
-                    c_f3.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
-                    if c_f3.form_submit_button("🚀 Actualizar Tablero", use_container_width=True):
-                        if tag_asignar:
-                            import re
-                            idx = df_plan.index[df_plan['TAG'] == tag_asignar].tolist()[0]
-                            celda_actual = str(df_plan.at[idx, mes_col_actual])
-                            
-                            # Limpiar cualquier día asignado previamente
-                            celda_limpia = re.sub(r'(?i)\n?D[ÍI]A [1-4]', '', celda_actual).strip()
-                            
-                            if dia_asignar == "Devolver a Pendientes":
-                                df_plan.at[idx, mes_col_actual] = celda_limpia
-                            else:
-                                df_plan.at[idx, mes_col_actual] = f"{celda_limpia}\n{dia_asignar}"
-                                
-                            guardar_planificacion(df_plan)
-                            st.success(f"✅ {tag_asignar} movido a {dia_asignar}")
-                            st.rerun()
 
     # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL LIMPIA) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
