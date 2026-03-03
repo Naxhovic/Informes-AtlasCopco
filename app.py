@@ -53,7 +53,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (SOLUCIÓN DEFINITIVA PARA EL MENÚ)
+# 0.2 ESTILOS PREMIUM (DISEÑO NATIVO Y BOTÓN ELEGANTE)
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -63,29 +63,30 @@ def aplicar_estilos_premium():
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap');
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         
-        /* Se aplicó la fuente solo a textos para no romper los íconos del sistema */
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
         
-        /* Ocultar marca de agua y menú de 3 puntitos */
         #MainMenu {visibility: hidden;} 
         footer {visibility: hidden;} 
         
         /* ========================================================= */
-        /* 🔥 PARCHE DE RESCATE: BOTÓN DE MENÚ LATERAL SIEMPRE VISIBLE */
+        /* 🔥 BOTÓN DE MENÚ LATERAL: ELEGANTE Y DE ALTO CONTRASTE    */
         /* ========================================================= */
         [data-testid="collapsedControl"] {
             display: flex !important;
             visibility: visible !important;
             opacity: 1 !important;
             z-index: 999999 !important;
-            background-color: var(--bhp-orange) !important;
-            border-radius: 5px !important;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
-            margin-top: 10px !important;
-            margin-left: 10px !important;
+            background-color: #00BFFF !important; /* Celeste vibrante de alto contraste */
+            border-radius: 8px !important;
+            box-shadow: 0 4px 15px rgba(0, 191, 255, 0.4) !important;
+            margin-top: 15px !important;
+            margin-left: 15px !important;
+            transition: all 0.3s ease !important;
         }
         [data-testid="collapsedControl"]:hover {
-            background-color: var(--ac-blue) !important;
+            background-color: var(--ac-blue) !important; /* Azul Atlas Copco al pasar el mouse */
+            box-shadow: 0 6px 20px rgba(0, 124, 166, 0.6) !important;
+            transform: scale(1.05) !important;
         }
         [data-testid="collapsedControl"] svg {
             fill: white !important;
