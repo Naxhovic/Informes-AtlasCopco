@@ -329,6 +329,20 @@ def obtener_fecha_hoy_esp():
     ahora = pd.Timestamp.now()
     return f"{ahora.day} de {meses[ahora.month]} de {ahora.year}"
 
+# 🔥 ESTA ES LA FUNCIÓN QUE FALTABA
+def obtener_quincena_actual():
+    hoy = datetime.date.today()
+    meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    if hoy.day < 15:
+        mes_plan = meses[hoy.month - 1]
+        inicio = f"15 de {meses[hoy.month - 2 if hoy.month > 1 else 11]}"
+        fin = f"15 de {mes_plan}"
+    else:
+        mes_plan = meses[hoy.month] if hoy.month < 12 else "Enero"
+        inicio = f"15 de {meses[hoy.month - 1]}"
+        fin = f"15 de {mes_plan}"
+    return mes_plan, f"{inicio} al {fin}"
+
 def cargar_pendientes(usuario):
     archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
     if os.path.exists(archivo):
@@ -586,7 +600,6 @@ else:
             
             if st.button("💾 Guardar Cambios en Google Sheets", type="primary", use_container_width=True):
                 df_final_guardar = df_plan.copy()
-                # Actualiza de forma segura evitando problemas de índices
                 df_editado_str = df_editado.astype(str)
                 df_final_guardar.update(df_editado_str)
                 guardar_planificacion(df_final_guardar)
