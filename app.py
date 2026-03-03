@@ -55,7 +55,6 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
 # =============================================================================
 # 0.2 ESTILOS PREMIUM (SOLUCIÓN DEFINITIVA PARA EL MENÚ)
 # =============================================================================
-# initial_sidebar_state="expanded" asegura que el menú empiece abierto
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
 def aplicar_estilos_premium():
@@ -63,14 +62,36 @@ def aplicar_estilos_premium():
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap');
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
-        html, body, [class*="css"] { font-family: 'Montserrat', sans-serif !important; }
         
-        /* SOLUCIÓN INFALIBLE DEL MENÚ: 
-        Jamás tocamos el "header" para no romper la flecha nativa de Streamlit.
-        Solo ocultamos el botón de los 3 puntitos (#MainMenu) y la marca de agua (footer). 
-        */
+        /* Se aplicó la fuente solo a textos para no romper los íconos del sistema */
+        html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
+        
+        /* Ocultar marca de agua y menú de 3 puntitos */
         #MainMenu {visibility: hidden;} 
         footer {visibility: hidden;} 
+        
+        /* ========================================================= */
+        /* 🔥 PARCHE DE RESCATE: BOTÓN DE MENÚ LATERAL SIEMPRE VISIBLE */
+        /* ========================================================= */
+        [data-testid="collapsedControl"] {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 999999 !important;
+            background-color: var(--bhp-orange) !important;
+            border-radius: 5px !important;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
+            margin-top: 10px !important;
+            margin-left: 10px !important;
+        }
+        [data-testid="collapsedControl"]:hover {
+            background-color: var(--ac-blue) !important;
+        }
+        [data-testid="collapsedControl"] svg {
+            fill: white !important;
+            stroke: white !important;
+        }
+        /* ========================================================= */
         
         div.stButton > button:first-child {
             background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%);
@@ -506,9 +527,17 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 6.0 VISTA MATRIZ DE PLANIFICACIÓN INTERACTIVA ---
+    # --- 6.0 VISTA MATRIZ DE PLANIFICACIÓN INTERACTIVA (ANTI-ERRORES) ---
     if st.session_state.vista_actual == "planificacion":
         df_plan = cargar_planificacion()
+        
+        # 🛡️ ESCUDO ANTI-ERRORES: Si Google Sheets lee una tabla vieja o rota, forzamos la base correcta
+        if "Área" not in df_plan.columns or "TAG" not in df_plan.columns:
+            df_plan = generar_planificacion_base()
+            
+        # 🛡️ Limpiamos cualquier valor "NaN" (Nulo) que pueda romper la lectura de textos
+        df_plan = df_plan.fillna("")
+        
         mes_plan, rango_fechas = obtener_quincena_actual()
         mes_col_actual = f"15c {mes_plan[:3]}"
         
@@ -537,7 +566,7 @@ else:
             datos_mes = df_mostrar[mes_col_actual].astype(str).str.upper()
             c_fs = sum(datos_mes.str.contains('F/S') | datos_mes.str.contains('FUERA'))
             c_ok = sum(datos_mes.str.contains('HECHO') | datos_mes.str.contains('OK') | datos_mes.str.contains('LISTO'))
-            c_pend = sum(datos_mes.str.contains('FALTA') | datos_mes.str.contains('PEND') | datos_mes.str.contains('WK')) - c_fs
+            c_pend = sum(datos_mes.str.contains('FALTA') | datos_mes.str.contains('PEND') | datos_mes.str.contains('WK')) - c_fs 
             
             st.markdown(f"<p style='color: white; margin-bottom:5px; font-weight:bold;'>📊 Resumen Quincena Actual ({mes_col_actual}):</p>", unsafe_allow_html=True)
             k1, k2, k3, k4 = st.columns(4)
@@ -557,14 +586,16 @@ else:
             
             if st.button("💾 Guardar Cambios en Google Sheets", type="primary", use_container_width=True):
                 df_final_guardar = df_plan.copy()
-                df_final_guardar.update(df_editado)
+                # Actualiza de forma segura evitando problemas de índices
+                df_editado_str = df_editado.astype(str)
+                df_final_guardar.update(df_editado_str)
                 guardar_planificacion(df_final_guardar)
                 st.success("✅ ¡Base de Datos actualizada con éxito!")
                 st.rerun()
         else:
-            try: df_estilizado = df_mostrar.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
-            except AttributeError: df_estilizado = df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
-            st.dataframe(df_estilizado, use_container_width=True, hide_index=True, height=700)
+            try: df_estilizado_view = df_mostrar.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
+            except AttributeError: df_estilizado_view = df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
+            st.dataframe(df_estilizado_view, use_container_width=True, hide_index=True, height=700)
 
     # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL LIMPIA) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
