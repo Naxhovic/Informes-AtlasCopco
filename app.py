@@ -420,7 +420,6 @@ def estilo_dinamico_celdas(val):
     
     if 'F/S' in v or 'FUERA' in v: return base_css + 'background-color: rgba(255, 23, 68, 0.25); color: #ff1744; font-weight: bold; border-left: 4px solid #ff1744;'
     if 'HECHO' in v or 'LISTO' in v or 'OK' in v: return base_css + 'background-color: rgba(0, 230, 118, 0.25); color: #00e676; font-weight: bold; border-left: 4px solid #00e676;'
-    # Cualquier día o palabra pendiente la pinta de amarillo
     if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND', 'LUNES', 'MARTES', 'MIÉRCOLES', 'MIERCOLES', 'JUEVES']): 
         return base_css + 'background-color: rgba(255, 193, 7, 0.25); color: #FFC107; font-weight: bold; border-left: 4px solid #FFC107;'
     
@@ -537,21 +536,27 @@ else:
         
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
-                <h2 style="color: white; margin: 0;">📅 Gestión Operativa de Planificación</h2>
+                <h2 style="color: white; margin: 0;">📅 Planificación Operativa</h2>
                 <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Ciclo en curso: {rango_fechas}</p>
             </div>
         """, unsafe_allow_html=True)
         
-        tab_kanban, tab_matriz = st.tabs(["🗓️ Turno Semanal (4x3)", "📊 Matriz Anual Completa"])
+        # --- AHORA HAY 3 PESTAÑAS (INCLUYENDO FALTANTES) ---
+        tab_kanban, tab_faltantes, tab_matriz = st.tabs(["🗓️ Turno Semanal (4x3)", "⚠️ Faltantes (Quincena)", "📊 Matriz Anual Completa"])
 
         # ==========================================
-        # PESTAÑA 1: TABLERO 4x3 (GESTIÓN ÁGIL)
+        # PESTAÑA 1: TABLERO 4x3 CON SCROLL INTERNO
         # ==========================================
         with tab_kanban:
+            # MAGIA CSS: Las columnas tienen "height" fijo y "overflow-y" para hacer scroll interno. El título tiene "sticky" para no moverse.
             st.markdown("""
                 <style>
-                .kanban-col { background-color: #1a212b; border: 1px solid #2b3543; border-radius: 8px; padding: 15px; min-height: 400px; }
-                .kanban-header { color: white; text-align: center; border-bottom: 3px solid; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; }
+                .kanban-col { background-color: #1a212b; border: 1px solid #2b3543; border-radius: 8px; padding: 15px; height: 500px; overflow-y: auto; position: relative; }
+                .kanban-col::-webkit-scrollbar { width: 6px; }
+                .kanban-col::-webkit-scrollbar-track { background: transparent; }
+                .kanban-col::-webkit-scrollbar-thumb { background-color: #455065; border-radius: 10px; }
+                .kanban-col::-webkit-scrollbar-thumb:hover { background-color: #00BFFF; }
+                .kanban-header { color: white; text-align: center; border-bottom: 3px solid; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; position: sticky; top: -15px; background-color: #1a212b; z-index: 10; padding-top: 5px; }
                 .kanban-card { background-color: #2b3543; border-left: 4px solid #007CA6; border-radius: 6px; padding: 12px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
                 .kanban-card-title { color: white; font-weight: 800; font-size: 1.1rem; margin:0 0 5px 0; display: flex; justify-content: space-between; align-items: center;}
                 .kanban-card-sub { color: #8c9eb5; font-size: 0.8rem; margin:0; }
@@ -562,7 +567,7 @@ else:
             with c_k1:
                 semana_actual = st.text_input("📆 Semana a Registrar (Ej: WK10)", value="WK10")
             with c_k2:
-                st.markdown(f"<div style='margin-top:33px; color:#00BFFF; font-size:0.9rem;'>💡 Al asignar un equipo a un día, se escribirá automáticamente <b>'{semana_actual}'</b> en la base de datos de Google Sheets.</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='margin-top:33px; color:#00BFFF; font-size:0.9rem;'>💡 Al asignar un equipo a un día o marcarlo como Hecho, se registrará la <b>'{semana_actual}'</b> automáticamente en la Nube.</div>", unsafe_allow_html=True)
 
             if mes_col_actual not in df_plan.columns:
                 st.error(f"No hay una columna llamada {mes_col_actual} en la matriz.")
@@ -574,7 +579,6 @@ else:
                 
                 for _, row in df_quincena.iterrows():
                     texto = str(row[mes_col_actual]).upper()
-                    # Extraer solo la pauta (P1, P2, INSP...) con regex seguro
                     import re
                     match = re.search(r'(P[1-4]|INSP|I)', texto)
                     pauta_txt = match.group(1) if match else "INSP"
@@ -586,7 +590,7 @@ else:
                     elif "MARTES" in texto: martes.append(item)
                     elif "MIÉRCOLES" in texto or "MIERCOLES" in texto: miercoles.append(item)
                     elif "JUEVES" in texto: jueves.append(item)
-                    else: pendientes_lista.append(item) # Va a la lista oculta
+                    else: pendientes_lista.append(item)
 
                 st.markdown("<br>", unsafe_allow_html=True)
                 k_cols = st.columns(5)
@@ -603,28 +607,27 @@ else:
                             """, unsafe_allow_html=True)
                         st.markdown('</div>', unsafe_allow_html=True)
 
-                render_kanban_col(k_cols[0], "Lunes", lunes, "#00BFFF")
-                render_kanban_col(k_cols[1], "Martes", martes, "#00BFFF")
-                render_kanban_col(k_cols[2], "Miércoles", miercoles, "#00BFFF")
-                render_kanban_col(k_cols[3], "Jueves", jueves, "#00BFFF")
+                # Ya NO mostramos los pendientes en cajas. Directo a los días.
+                render_kanban_col(k_cols[0], "Día 1 (Lunes)", lunes, "#00BFFF")
+                render_kanban_col(k_cols[1], "Día 2 (Martes)", martes, "#00BFFF")
+                render_kanban_col(k_cols[2], "Día 3 (Miércoles)", miercoles, "#00BFFF")
+                render_kanban_col(k_cols[3], "Día 4 (Jueves)", jueves, "#F44336")
                 render_kanban_col(k_cols[4], "✅ Completados", completados, "#00e676")
 
                 st.markdown("---")
-                st.markdown("### ⚙️ Asignación a Días de Turno")
+                st.markdown("### ⚙️ Panel de Asignación Diaria")
                 with st.form("form_asignacion_kanban"):
                     c_f1, c_f2, c_f3 = st.columns([2, 1, 1])
-                    
-                    # Permite asignar pendientes, o re-asignar los que ya están en lunes/martes/etc.
                     todos_disponibles = [f"{it['tag']} ({it['txt']}) - {it['area']}" for it in pendientes_lista + lunes + martes + miercoles + jueves]
                     if len(todos_disponibles) == 0: todos_disponibles = ["No hay tareas para asignar"]
                     
-                    tag_sel_raw = c_f1.selectbox("1. Elige el Equipo (Pendiente o Asignado):", ["-- Selecciona un equipo --"] + todos_disponibles)
-                    dia_asignar = c_f2.selectbox("2. Mover a:", ["Lunes", "Martes", "Miércoles", "Jueves", "Hecho", "Fuera de Servicio", "Devolver a Pendiente"])
+                    tag_sel_raw = c_f1.selectbox("1. Elige el Equipo (Faltantes o Asignados):", ["-- Selecciona un equipo --"] + todos_disponibles)
+                    dia_asignar = c_f2.selectbox("2. Mover a:", ["Lunes", "Martes", "Miércoles", "Jueves", "Hecho", "Fuera de Servicio", "Devolver a Faltantes"])
                     
                     c_f3.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
                     if c_f3.form_submit_button("🚀 Actualizar Tablero", use_container_width=True):
                         if tag_sel_raw != "-- Selecciona un equipo --" and tag_sel_raw != "No hay tareas para asignar":
-                            tag_asignar = tag_sel_raw.split(" ")[0] # Saca el TAG del texto
+                            tag_asignar = tag_sel_raw.split(" ")[0] 
                             idx = df_plan.index[df_plan['TAG'] == tag_asignar].tolist()[0]
                             celda_actual = str(df_plan.at[idx, mes_col_actual])
                             
@@ -632,14 +635,10 @@ else:
                             match_p = re.search(r'(P[1-4]|INSP|I)', celda_actual.upper())
                             pauta_limpia = match_p.group(1) if match_p else "INSP"
                             
-                            if dia_asignar == "Devolver a Pendiente":
-                                nuevo_texto = f"{pauta_limpia}\nFalta"
-                            elif dia_asignar == "Hecho":
-                                nuevo_texto = f"{pauta_limpia}\nHecho {semana_actual}"
-                            elif dia_asignar == "Fuera de Servicio":
-                                nuevo_texto = f"{pauta_limpia}\nF/S {semana_actual}"
-                            else:
-                                nuevo_texto = f"{pauta_limpia}\n{dia_asignar} {semana_actual}"
+                            if dia_asignar == "Devolver a Faltantes": nuevo_texto = f"{pauta_limpia}\nFalta"
+                            elif dia_asignar == "Hecho": nuevo_texto = f"{pauta_limpia}\nHecho {semana_actual}"
+                            elif dia_asignar == "Fuera de Servicio": nuevo_texto = f"{pauta_limpia}\nF/S {semana_actual}"
+                            else: nuevo_texto = f"{pauta_limpia}\n{dia_asignar} {semana_actual}"
                                 
                             df_plan.at[idx, mes_col_actual] = nuevo_texto
                             guardar_planificacion(df_plan)
@@ -647,7 +646,30 @@ else:
                             st.rerun()
 
         # ==========================================
-        # PESTAÑA 2: LA MATRIZ ANUAL (MACROMANEJO)
+        # PESTAÑA 2: FALTANTES DE LA QUINCENA
+        # ==========================================
+        with tab_faltantes:
+            st.markdown("### ⚠️ Equipos Faltantes (Resumen Quincena)")
+            st.info(f"Mostrando todos los equipos programados para **{mes_col_actual}** que aún NO han sido marcados como 'Hecho', 'OK' o 'Listo'.")
+            
+            if mes_col_actual in df_plan.columns:
+                df_quincena_act = df_plan[df_plan[mes_col_actual].str.strip() != ""]
+                df_faltantes = df_quincena_act[~df_quincena_act[mes_col_actual].str.upper().str.contains('HECHO|OK|LISTO')]
+                
+                if not df_faltantes.empty:
+                    df_mostrar_falta = df_faltantes[['TAG', 'Equipo', 'Área', mes_col_actual]].copy()
+                    df_mostrar_falta.columns = ['TAG', 'Equipo', 'Área', 'Estado Pendiente']
+                    
+                    # Aplicamos un estilo claro y simple para ver qué falta y por qué
+                    try: df_falta_estilo = df_mostrar_falta.style.map(estilo_simple_editor, subset=['Estado Pendiente'])
+                    except AttributeError: df_falta_estilo = df_mostrar_falta.style.applymap(estilo_simple_editor, subset=['Estado Pendiente'])
+                    
+                    st.dataframe(df_falta_estilo, use_container_width=True, hide_index=True)
+                else:
+                    st.success("🎉 ¡Excelente trabajo! No hay ningún equipo pendiente para esta quincena.")
+
+        # ==========================================
+        # PESTAÑA 3: LA MATRIZ ANUAL (MACROMANEJO)
         # ==========================================
         with tab_matriz:
             col_fil1, col_fil2, col_fil3 = st.columns([1, 1, 1.5])
@@ -655,17 +677,17 @@ else:
                 areas_disp = ["Todas"] + sorted(list(df_plan["Área"].unique()))
                 filtro_area = st.selectbox("🏢 Filtrar por Área:", areas_disp, key="filtro_area_matriz")
             with col_fil2:
-                modo_edicion = st.toggle("✏️ Edición de Matriz Completa")
+                modo_edicion_matriz = st.toggle("✏️ Edición de Matriz Completa")
             with col_fil3:
                 st.markdown("<div style='margin-top:30px;'></div>", unsafe_allow_html=True)
-                if modo_edicion: st.info("Edita cualquier celda del año completo.")
+                if modo_edicion_matriz: st.info("Edita cualquier celda del año completo.")
                 
             df_mostrar = df_plan.copy()
             if filtro_area != "Todas": df_mostrar = df_mostrar[df_mostrar["Área"] == filtro_area]
                 
             columnas_15cenas = [col for col in df_plan.columns if "15c" in col]
 
-            if modo_edicion:
+            if modo_edicion_matriz:
                 try: df_estilizado_edit = df_mostrar.style.map(estilo_simple_editor, subset=columnas_15cenas)
                 except AttributeError: df_estilizado_edit = df_mostrar.style.applymap(estilo_simple_editor, subset=columnas_15cenas)
                 config_cols = {col: st.column_config.TextColumn(width="medium") for col in columnas_15cenas}
