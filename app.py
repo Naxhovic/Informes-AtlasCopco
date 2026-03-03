@@ -314,7 +314,7 @@ def guardar_registro(data_tuple):
         except Exception as e: time.sleep(5)
     return False
 # =============================================================================
-# 3. CONVERSIÓN A PDF, FECHAS EN ESPAÑOL Y BANDEJAS PRIVADAS
+# 3. CONVERSIÓN A PDF Y GESTIÓN DE BANDEJAS
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -354,6 +354,63 @@ def guardar_pendientes(usuario, pendientes):
     except: pass
 
 # =============================================================================
+# 3.1 BASE DE DATOS: PLANIFICACIÓN EN MATRIZ (15CENAS)
+# =============================================================================
+ARCHIVO_PLANIFICACION = os.path.join(RUTA_ONEDRIVE, "matriz_planificacion.json")
+
+def generar_planificacion_base():
+    """Genera la estructura inicial de la matriz con datos de tu Excel."""
+    meses = ["15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov", "15c Dic"]
+    datos = [
+        {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "P1 Hecho", "15c Feb": "INSP Hecho WK10", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
+        {"TAG": "70-GC-014", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "INSP Falta", "15c Feb": "P1 Hecho WK10", "15c Mar": "INSP", "15c Abr": "P3", "15c May": "INSP"},
+        {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "P1 OK", "15c Feb": "INSP Pendiente W10", "15c Mar": "P3", "15c Abr": "INSP", "15c May": "P1"},
+        {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "INSP Falta", "15c Feb": "P1 Pendiente", "15c Mar": "INSP", "15c Abr": "P3", "15c May": "INSP"},
+        {"TAG": "50-GC-003", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "P1 F/S", "15c Feb": "INSP F/S", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
+        {"TAG": "50-GC-004", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "INSP Listo", "15c Feb": "P1 F/S WK8", "15c Mar": "INSP", "15c Abr": "P4", "15c May": "INSP"},
+        {"TAG": "50-CD-001", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4 Falta", "15c Feb": "INSP WK8", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "P2"},
+        {"TAG": "35-GC-006", "Equipo": "GA 250", "Área": "Chancado", "15c Ene": "P1 Falta", "15c Feb": "P2 F/S", "15c Mar": "P1", "15c Abr": "P1", "15c May": "P2"},
+        {"TAG": "35-GC-007", "Equipo": "GA 250", "Área": "Chancado", "15c Ene": "P3 Listo", "15c Feb": "P1 Hecho", "15c Mar": "P2", "15c Abr": "P1", "15c May": "P1"},
+        {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "15c Ene": "P1 OK", "15c Feb": "INSP Falta", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
+        {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "P1 OK", "15c Feb": "INSP Falta", "15c Mar": "P1", "15c Abr": "INSP", "15c May": "P2"},
+        {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "P1 OK", "15c Feb": "INSP WK10", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1"},
+    ]
+    for d in datos:
+        for m in meses:
+            if m not in d: d[m] = ""
+    return pd.DataFrame(datos)
+
+def cargar_planificacion():
+    if os.path.exists(ARCHIVO_PLANIFICACION):
+        try: return pd.read_json(ARCHIVO_PLANIFICACION)
+        except: pass
+    return generar_planificacion_base()
+
+def guardar_planificacion(df):
+    os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
+    try: df.to_json(ARCHIVO_PLANIFICACION, orient="records", force_ascii=False, indent=4)
+    except: pass
+
+def estilo_dinamico_celdas(val):
+    """Lógica de colores automática. ¡Magia visual basada en el texto de la celda!"""
+    if pd.isna(val) or val == "": return ''
+    v = str(val).upper()
+    
+    # Prioridad 1: Estados Generales (Verde o Amarillo)
+    if any(x in v for x in ['HECHO', 'OK', 'LISTO', 'REALIZADO']): 
+        return 'background-color: #00e676; color: #1e2530; font-weight: bold;'
+    if any(x in v for x in ['FALTA', 'PENDIENTE', 'F/S', 'WK', 'PEND']): 
+        return 'background-color: #FFC107; color: #1e2530; font-weight: bold;'
+        
+    # Prioridad 2: Color nativo de las pautas programadas
+    if 'P1' in v: return 'background-color: #00BFFF; color: white; font-weight: bold;'
+    if 'P2' in v: return 'background-color: #FF9800; color: white; font-weight: bold;'
+    if 'P3' in v: return 'background-color: #9C27B0; color: white; font-weight: bold;'
+    if 'P4' in v: return 'background-color: #F44336; color: white; font-weight: bold;'
+    if 'INSP' in v or v == 'I': return 'color: #8c9eb5; font-style: italic;'
+    return ''
+
+# =============================================================================
 # 4. INICIALIZACIÓN DE VARIABLES DE SESIÓN
 # =============================================================================
 ESPECIFICACIONES = obtener_especificaciones(DEFAULT_SPECS)
@@ -368,8 +425,8 @@ default_states = {
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
 
-if 'informes_pendientes' not in st.session_state:
-    st.session_state.informes_pendientes = []
+if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
+if 'df_planificacion' not in st.session_state: st.session_state.df_planificacion = cargar_planificacion()
 
 def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
@@ -421,81 +478,61 @@ else:
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
         st.markdown("---")
         
-        # MENÚ DE NAVEGACIÓN
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
-            st.session_state.vista_actual = "catalogo"
-            st.session_state.vista_firmas = False
-            st.session_state.equipo_seleccionado = None
-            st.rerun()
+            st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
             
-        if st.button("📅 Planificación (15cenas)", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
-            st.session_state.vista_actual = "planificacion"
-            st.session_state.vista_firmas = False
-            st.session_state.equipo_seleccionado = None
-            st.rerun()
+        if st.button("📅 Matriz de Planificación", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
+            st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
             
         if len(st.session_state.informes_pendientes) > 0:
             st.markdown("---")
             st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
             if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"): 
-                st.session_state.vista_firmas = True
-                st.session_state.vista_actual = "firmas"
-                st.session_state.equipo_seleccionado = None
-                st.rerun()
+                st.session_state.vista_firmas = True; st.session_state.vista_actual = "firmas"; st.session_state.equipo_seleccionado = None; st.rerun()
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 6.0 VISTA PLANIFICACIÓN (NUEVA CON COLORES EXACTOS) ---
+    # --- 6.0 VISTA MATRIZ DE PLANIFICACIÓN INTERACTIVA ---
     if st.session_state.vista_actual == "planificacion":
-        mes_plan, rango_fechas = obtener_quincena_actual()
-        
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 2rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
-                <h2 style="color: white; margin: 0;">📅 Planificación: <span style="color: var(--bhp-orange); text-transform: uppercase;">{mes_plan}</span></h2>
-                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Ciclo operativo: {rango_fechas}</p>
+                <h2 style="color: white; margin: 0;">📅 Matriz Anual de Mantenimiento</h2>
+                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Planificación operativa por ciclos de 15cenas (del 15 al 15 de cada mes).</p>
             </div>
         """, unsafe_allow_html=True)
         
-        pendientes = [d for d in datos_planificacion if d["estado"] == "Pendiente"]
-        realizados = [d for d in datos_planificacion if d["estado"] == "Realizado"]
-        
-        col_pend, col_real = st.columns(2)
-        
-        with col_pend:
-            st.markdown(f"<h3 style='color: #FFC107; border-bottom: 2px solid #FFC107; padding-bottom: 5px;'>🟡 Pendientes ({len(pendientes)})</h3>", unsafe_allow_html=True)
-            for tarea in pendientes:
-                color_pauta = obtener_color_pauta(tarea['pauta'])
-                st.markdown(f"""
-                <div style="background-color: #1e2530; border: 1px solid #2b3543; border-left: 5px solid #FFC107; border-radius: 8px; padding: 15px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h4 style="color: white; margin: 0; font-size: 1.2rem;">{tarea['tag']}</h4>
-                        <span style="{color_pauta} font-weight: 800; padding: 3px 10px; border-radius: 4px; font-size: 0.8rem;">{tarea['pauta'].upper()}</span>
-                    </div>
-                    <p style="color: #8c9eb5; margin: 0 0 5px 0; font-size: 0.9rem;">{tarea['equipo']} &bull; {tarea['area']}</p>
-                    <p style="color: #FFC107; margin: 0; font-size: 0.85rem; font-weight: 600;">⏱️ Programado para: {tarea['wk']} ({tarea['obs']})</p>
-                </div>
-                """, unsafe_allow_html=True)
-                if st.button(f"⚙️ Generar Reporte", key=f"btn_plan_{tarea['tag']}", use_container_width=True):
-                    seleccionar_equipo(tarea['tag'])
-                    st.session_state.vista_actual = "catalogo"
-                    st.rerun()
+        st.markdown("""
+            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; font-size: 0.85rem;">
+                <span style="background: #00e676; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟢 OK / Hecho (Realizado)</span>
+                <span style="background: #FFC107; color: black; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟡 Pendiente / Falta / WK</span>
+                <span style="border: 1px solid #8c9eb5; color: #8c9eb5; padding: 4px 10px; border-radius: 4px;">⚪ INSP (Inspección)</span>
+                <span style="background: #00BFFF; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🧊 P1</span>
+                <span style="background: #FF9800; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟠 P2</span>
+                <span style="background: #9C27B0; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🟣 P3</span>
+                <span style="background: #F44336; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold;">🔴 P4</span>
+            </div>
+        """, unsafe_allow_html=True)
 
-        with col_real:
-            st.markdown(f"<h3 style='color: #00e676; border-bottom: 2px solid #00e676; padding-bottom: 5px;'>🟢 Realizados ({len(realizados)})</h3>", unsafe_allow_html=True)
-            for tarea in realizados:
-                color_pauta = obtener_color_pauta(tarea['pauta'])
-                st.markdown(f"""
-                <div style="background-color: #151a22; border: 1px solid #2b3543; border-left: 5px solid #00e676; border-radius: 8px; padding: 15px; margin-bottom: 12px; opacity: 0.8;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h4 style="color: #a0aab8; margin: 0; font-size: 1.2rem; text-decoration: line-through;">{tarea['tag']}</h4>
-                        <span style="{color_pauta} font-weight: 800; padding: 3px 10px; border-radius: 4px; font-size: 0.8rem;">{tarea['pauta'].upper()}</span>
-                    </div>
-                    <p style="color: #606d80; margin: 0 0 5px 0; font-size: 0.9rem;">{tarea['equipo']} &bull; {tarea['area']}</p>
-                    <p style="color: #00e676; margin: 0; font-size: 0.85rem; font-weight: 600;">✅ Completado en {tarea['wk']} ({tarea['obs']})</p>
-                </div>
-                """, unsafe_allow_html=True)
+        modo_edicion = st.toggle("✏️ Habilitar Edición de Estados")
 
-    # --- 6.1 VISTA DE FIRMAS (FIRMA MANUAL, SIN GUARDADO) ---
+        if modo_edicion:
+            st.info("💡 Haz doble clic en una celda para editarla. Escribir **'OK'**, **'Hecho'** o **'Falta'** cambiará el color de la celda automáticamente tras guardar.")
+            df_editado = st.data_editor(st.session_state.df_planificacion, use_container_width=True, hide_index=True, height=500)
+            if st.button("💾 Guardar y Actualizar Matriz", type="primary"):
+                st.session_state.df_planificacion = df_editado
+                guardar_planificacion(df_editado)
+                st.success("✅ ¡Planificación actualizada correctamente!")
+                st.rerun()
+        else:
+            columnas_15cenas = [col for col in st.session_state.df_planificacion.columns if "15c" in col]
+            
+            # Aplicamos los estilos (Try/except para garantizar compatibilidad técnica)
+            try: df_estilizado = st.session_state.df_planificacion.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
+            except AttributeError: df_estilizado = st.session_state.df_planificacion.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
+            
+            st.dataframe(df_estilizado, use_container_width=True, hide_index=True, height=500)
+
+    # --- 6.1 VISTA DE FIRMAS (100% MANUAL PARA EVITAR BUGS DE BORRADO) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -530,9 +567,9 @@ else:
                     st.rerun()
                     
         st.markdown("---")
-        st.info("💡 **Instrucciones:** Dibuja la firma en el recuadro. Usa el basurero nativo debajo del cuadro para borrarla y volver a empezar.")
+        st.info("💡 **Instrucciones:** Dibuja la firma. Usa el basurero para borrar de inmediato, o la flecha roja para descargar la firma.")
         
-        # --- LÓGICA DE FIRMA MANUAL LIMPIA ---
+        # FIRMA MANUAL LIMPIA: Sin memorias que traben el funcionamiento de la Pizarra
         c_tec, c_cli = st.columns(2)
         with c_tec:
             st.markdown("### 🧑‍🔧 Firma del Técnico"); st.caption(f"Técnico: {st.session_state.usuario_actual.title()}")
@@ -543,6 +580,8 @@ else:
         
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
+            
+            # Verificación de trazos
             tec_ok = canvas_tec.image_data is not None and canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
             cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
             
