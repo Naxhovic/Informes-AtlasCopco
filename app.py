@@ -65,17 +65,26 @@ def aplicar_estilos_premium():
         
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
         
-        /* 🔥 ANIQUILACIÓN TOTAL DE MARCAS DE STREAMLIT 🔥 */
-        #MainMenu {visibility: hidden !important;} 
-        header {visibility: hidden !important; display: none !important;} 
-        footer {visibility: hidden !important; display: none !important;} 
+        /* 🔥 ANIQUILACIÓN EXTREMA: MENÚS, STREAMLIT Y GITHUB 🔥 */
+        header {visibility: hidden !important; display: none !important;}
+        [data-testid="stHeader"] {display: none !important;}
+        [data-testid="stToolbar"] {display: none !important;}
+        [data-testid="stDecoration"] {display: none !important;}
+        #MainMenu {display: none !important;} 
+        footer {display: none !important;} 
         .stAppDeployButton {display: none !important;}
         
-        /* Elimina la burbuja "Hosted with Streamlit" en todas sus variantes */
+        /* 🚫 BLOQUEO DIRECTO A CUALQUIER LINK DE GITHUB 🚫 */
+        a[href*="github.com"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        
+        /* Elimina la burbuja de Hosted with Streamlit */
         [data-testid="viewerBadge"] {display: none !important;}
-        a[href^="https://streamlit.io/cloud"] {display: none !important;}
         div[class^="viewerBadge_container"] {display: none !important;}
-        .viewerBadge_container__1QSob {display: none !important;}
         
         /* BOTÓN DE MENÚ LATERAL CELESTE VIBRANTE */
         [data-testid="collapsedControl"] {
