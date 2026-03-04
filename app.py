@@ -65,13 +65,17 @@ def aplicar_estilos_premium():
         
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
         
-        /* 🔥 ELIMINA LA BURBUJA "HOSTED WITH STREAMLIT" ABAJO A LA DERECHA 🔥 */
-        footer {visibility: hidden !important;} 
-        div[class^="viewerBadge_container"] {display: none !important;}
-        
-        /* 🔥 ELIMINA EL MENÚ SUPERIOR Y EL BOTÓN DE DEPLOY 🔥 */
+        /* 🔥 ANIQUILACIÓN TOTAL DE MARCAS DE STREAMLIT 🔥 */
         #MainMenu {visibility: hidden !important;} 
-        header {visibility: hidden !important;} 
+        header {visibility: hidden !important; display: none !important;} 
+        footer {visibility: hidden !important; display: none !important;} 
+        .stAppDeployButton {display: none !important;}
+        
+        /* Elimina la burbuja "Hosted with Streamlit" en todas sus variantes */
+        [data-testid="viewerBadge"] {display: none !important;}
+        a[href^="https://streamlit.io/cloud"] {display: none !important;}
+        div[class^="viewerBadge_container"] {display: none !important;}
+        .viewerBadge_container__1QSob {display: none !important;}
         
         /* BOTÓN DE MENÚ LATERAL CELESTE VIBRANTE */
         [data-testid="collapsedControl"] {
