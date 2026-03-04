@@ -65,26 +65,22 @@ def aplicar_estilos_premium():
         
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
         
-        #MainMenu {visibility: hidden;} 
-        footer {visibility: hidden;} 
+        /* 🔥 ELIMINA LA BURBUJA "HOSTED WITH STREAMLIT" ABAJO A LA DERECHA 🔥 */
+        footer {visibility: hidden !important;} 
+        div[class^="viewerBadge_container"] {display: none !important;}
         
+        /* 🔥 ELIMINA EL MENÚ SUPERIOR Y EL BOTÓN DE DEPLOY 🔥 */
+        #MainMenu {visibility: hidden !important;} 
+        header {visibility: hidden !important;} 
+        
+        /* BOTÓN DE MENÚ LATERAL CELESTE VIBRANTE */
         [data-testid="collapsedControl"] {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            z-index: 999999 !important;
-            background-color: #00BFFF !important; 
-            border-radius: 8px !important;
-            box-shadow: 0 4px 15px rgba(0, 191, 255, 0.4) !important;
-            margin-top: 15px !important;
-            margin-left: 15px !important;
-            transition: all 0.3s ease !important;
+            display: flex !important; visibility: visible !important; opacity: 1 !important;
+            z-index: 999999 !important; background-color: #00BFFF !important; 
+            border-radius: 8px !important; box-shadow: 0 4px 15px rgba(0, 191, 255, 0.4) !important;
+            margin-top: 15px !important; margin-left: 15px !important; transition: all 0.3s ease !important;
         }
-        [data-testid="collapsedControl"]:hover {
-            background-color: var(--ac-blue) !important; 
-            box-shadow: 0 6px 20px rgba(0, 124, 166, 0.6) !important;
-            transform: scale(1.05) !important;
-        }
+        [data-testid="collapsedControl"]:hover { background-color: var(--ac-blue) !important; transform: scale(1.05) !important; }
         [data-testid="collapsedControl"] svg { fill: white !important; stroke: white !important; }
         
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
@@ -102,7 +98,6 @@ def aplicar_estilos_premium():
         .stTabs [aria-selected="true"] { color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; }
         </style>
     """, unsafe_allow_html=True)
-aplicar_estilos_premium()
 
 # =============================================================================
 # 1. DATOS MAESTROS Y GOOGLE SHEETS
