@@ -684,75 +684,110 @@ else:
                 except AttributeError: df_estilizado_view = df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
                 st.dataframe(df_estilizado_view, use_container_width=True, hide_index=True, height=700)
 
-    # --- 6.1 VISTA DE FIRMAS ---
+    # --- 6.1 VISTA DE FIRMAS (AGRUPADA POR ÁREAS) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
             if st.button("⬅️ Volver", use_container_width=True): volver_catalogo(); st.rerun()
-        with c_v2: st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas Digital</h1>", unsafe_allow_html=True)
-        st.markdown("---"); st.markdown(f"### 📑 Revisión de Informes ({len(st.session_state.informes_pendientes)})")
-        
-        for i, inf in enumerate(st.session_state.informes_pendientes):
-            c_exp, c_del = st.columns([12, 1])
-            with c_exp:
-                with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
-                    if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
-                        try: pdf_viewer(inf['ruta_prev_pdf'], width=700, height=600)
-                        except Exception as e: st.error(f"No se pudo desplegar el visor: {e}")
-                        st.markdown("<br>", unsafe_allow_html=True)
-                    else: st.warning("⚠️ La vista preliminar no está disponible.")
-            with c_del:
-                st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-                if st.button("❌", key=f"del_inf_{i}", help="Quitar este informe de la bandeja"):
-                    st.session_state.informes_pendientes.pop(i)
-                    guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
-                    if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
-                    st.rerun()
-                    
+        with c_v2: st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas por Área</h1>", unsafe_allow_html=True)
         st.markdown("---")
         
-        c_tec, c_cli = st.columns(2)
-        with c_tec:
-            st.markdown("### 🧑‍🔧 Firma del Técnico")
-            canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_tecnico")
-        with c_cli:
-            st.markdown("### 👷 Firma del Cliente")
-            canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key="canvas_cliente")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🚀 Aprobar, Firmar y Subir a la Nube", type="primary", use_container_width=True):
-            
-            tec_ok = canvas_tec.image_data is not None and canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
-            cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
-            
-            if tec_ok and cli_ok:
-                def procesar_imagen_firma(img_data):
-                    img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
+        if len(st.session_state.informes_pendientes) == 0:
+            st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
+        else:
+            # 1. MAGIA: Agrupar todos los informes pendientes según su Macro-Área
+            areas_agrupadas = {}
+            for inf in st.session_state.informes_pendientes:
+                tag = inf['tag']
+                # Obtenemos la macro-área desde el inventario maestro (ej: "Mina", "Área Seca")
+                if tag in inventario_equipos:
+                    macro_area = inventario_equipos[tag][3].title()
+                else:
+                    macro_area = "General"
                 
-                io_tec = procesar_imagen_firma(canvas_tec.image_data)
-                io_cli = procesar_imagen_firma(canvas_cli.image_data)
+                if macro_area not in areas_agrupadas:
+                    areas_agrupadas[macro_area] = []
+                areas_agrupadas[macro_area].append(inf)
+
+            # 2. DIBUJAR UNA PIZARRA INDEPENDIENTE POR CADA ÁREA
+            for macro_area, informes_area in areas_agrupadas.items():
+                st.markdown(f"### 🏢 Informes de {macro_area} ({len(informes_area)} pendientes)")
                 
-                informes_finales = []
-                with st.spinner("Fabricando documentos oficiales, inyectando firmas y transformando a PDF..."):
-                    try:
-                        for inf in st.session_state.informes_pendientes:
-                            doc = DocxTemplate(inf['file_plantilla']); context = inf['context']
-                            context['firma_tecnico'] = InlineImage(doc, io_tec, width=Mm(40)); context['firma_cliente'] = InlineImage(doc, io_cli, width=Mm(40)); doc.render(context); doc.save(inf['ruta_docx']); ruta_pdf_gen = convertir_a_pdf(inf['ruta_docx'])
-                            if ruta_pdf_gen: ruta_final = ruta_pdf_gen; nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
-                            else: ruta_final = inf['ruta_docx']; nombre_final = inf['nombre_archivo_base']
-                            tupla_lista = list(inf['tupla_db']); tupla_lista[18] = ruta_final; guardado_ok = guardar_registro(tuple(tupla_lista))
-                            if not guardado_ok: st.error(f"⚠️ El PDF de {inf['tag']} se generó y envió, pero la base de datos de Google superó su límite. Verifica el catálogo en 1 minuto.")
-                            informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{inf['area'].title()}@@{inf['tag']}@@{nombre_final}"})
-                        exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
-                        if exito: 
-                            st.success("✅ ¡PERFECTO! Los documentos oficiales se firmaron, convirtieron a PDF y ya están camino a tu OneDrive.")
-                            st.session_state.informes_pendientes = []
-                            guardar_pendientes(st.session_state.usuario_actual, []) 
-                            st.balloons()
-                        else: st.error(f"Error de red: {mensaje_correo}")
-                    except Exception as e: st.error(f"Error sistémico procesando las firmas: {e}")
-            else: 
-                st.warning("⚠️ Asegúrate de que ambas pizarras contengan una firma visible antes de generar los PDFs finales.")
+                with st.container(border=True):
+                    # Listar los documentos que pertenecen SÓLO a esta área
+                    for inf in informes_area:
+                        c_exp, c_del = st.columns([12, 1])
+                        with c_exp:
+                            with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
+                                if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
+                                    try: pdf_viewer(inf['ruta_prev_pdf'], width=700, height=600)
+                                    except Exception as e: st.error(f"No se pudo desplegar el visor: {e}")
+                                    st.markdown("<br>", unsafe_allow_html=True)
+                                else: st.warning("⚠️ La vista preliminar no está disponible.")
+                        with c_del:
+                            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+                            key_borrar = f"del_{inf['tag']}_{inf['tupla_db'][5].replace('/','')}_{inf['tipo_plan']}"
+                            if st.button("❌", key=key_borrar, help="Quitar este informe de la bandeja"):
+                                st.session_state.informes_pendientes.remove(inf)
+                                guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
+                                if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
+                                st.rerun()
+                    
+                    st.markdown("---")
+                    
+                    # Lienzos de firma EXCLUSIVOS para esta área
+                    c_tec, c_cli = st.columns(2)
+                    with c_tec:
+                        st.markdown(f"#### 🧑‍🔧 Firma del Técnico ({macro_area})")
+                        canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key=f"canvas_tec_{macro_area}")
+                    with c_cli:
+                        st.markdown(f"#### 👷 Firma del Cliente ({macro_area})")
+                        canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key=f"canvas_cli_{macro_area}")
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    
+                    # Botón de envío EXCLUSIVO para procesar los documentos de esta área
+                    if st.button(f"🚀 Aprobar, Firmar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
+                        
+                        tec_ok = canvas_tec.image_data is not None and canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
+                        cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
+                        
+                        if tec_ok and cli_ok:
+                            def procesar_imagen_firma(img_data):
+                                img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
+                            
+                            io_tec = procesar_imagen_firma(canvas_tec.image_data)
+                            io_cli = procesar_imagen_firma(canvas_cli.image_data)
+                            
+                            informes_finales = []
+                            with st.spinner(f"Inyectando firmas en los documentos de {macro_area}..."):
+                                try:
+                                    for inf in informes_area:
+                                        doc = DocxTemplate(inf['file_plantilla']); context = inf['context']
+                                        context['firma_tecnico'] = InlineImage(doc, io_tec, width=Mm(40)); context['firma_cliente'] = InlineImage(doc, io_cli, width=Mm(40)); doc.render(context); doc.save(inf['ruta_docx']); ruta_pdf_gen = convertir_a_pdf(inf['ruta_docx'])
+                                        if ruta_pdf_gen: ruta_final = ruta_pdf_gen; nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
+                                        else: ruta_final = inf['ruta_docx']; nombre_final = inf['nombre_archivo_base']
+                                        tupla_lista = list(inf['tupla_db']); tupla_lista[18] = ruta_final; guardado_ok = guardar_registro(tuple(tupla_lista))
+                                        if not guardado_ok: st.error(f"⚠️ El PDF de {inf['tag']} se generó y envió, pero la base de datos superó su límite.")
+                                        informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{macro_area}@@{inf['tag']}@@{nombre_final}"})
+                                    
+                                    exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
+                                    if exito: 
+                                        st.success(f"✅ ¡PERFECTO! Los documentos de {macro_area} se firmaron y enviaron.")
+                                        # Eliminar de la bandeja general SOLO los informes que acabamos de enviar
+                                        for inf_enviado in informes_area:
+                                            if inf_enviado in st.session_state.informes_pendientes:
+                                                st.session_state.informes_pendientes.remove(inf_enviado)
+                                        
+                                        guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
+                                        time.sleep(2)
+                                        if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
+                                        st.rerun()
+                                    else: st.error(f"Error de red: {mensaje_correo}")
+                                except Exception as e: st.error(f"Error sistémico procesando las firmas: {e}")
+                        else: 
+                            st.warning(f"⚠️ Asegúrate de que ambas pizarras contengan una firma visible para {macro_area}.")
+                st.markdown("<br><br>", unsafe_allow_html=True)
 
     # --- 6.2 VISTA CATÁLOGO (DASHBOARD CINETICO Y PREMIUM) ---
     elif st.session_state.vista_actual == "catalogo" and st.session_state.equipo_seleccionado is None:
