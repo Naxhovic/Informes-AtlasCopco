@@ -835,42 +835,33 @@ else:
                     
         with tab2:
             st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
+            
+            # 🔥 ESTA ES LA LÍNEA MÁGICA QUE FALTABA 🔥
+            ESPECIFICACIONES = obtener_especificaciones(DEFAULT_SPECS)
+            
             with st.expander("✏️ Agregar o Corregir Datos Faltantes"):
                 with st.form(key=f"form_specs_{tag_sel}"):
-                    c_e1, c_e2 = st.columns(2); opc_claves = ["N° Parte Filtro Aceite", "N° Parte Filtro Aire", "N° Parte Kit", "N° Parte Separador", "Litros de Aceite", "Tipo de Aceite", "Cant. Filtros Aceite", "Cant. Filtros Aire", "Otro dato nuevo..."]; clave_sel = c_e1.selectbox("¿Qué dato vas a ingresar?", opc_claves); clave_final = c_e1.text_input("Escribe el nombre del dato:") if clave_sel == "Otro dato nuevo..." else clave_sel; valor_final = c_e2.text_input("Ingresa el valor:")
+                    c_e1, c_e2 = st.columns(2)
+                    opc_claves = ["N° Parte Filtro Aceite", "N° Parte Filtro Aire", "N° Parte Kit", "N° Parte Separador", "Litros de Aceite", "Tipo de Aceite", "Cant. Filtros Aceite", "Cant. Filtros Aire", "Otro dato nuevo..."]
+                    clave_sel = c_e1.selectbox("¿Qué dato vas a ingresar?", opc_claves)
+                    clave_final = c_e1.text_input("Escribe el nombre del dato:") if clave_sel == "Otro dato nuevo..." else clave_sel
+                    valor_final = c_e2.text_input("Ingresa el valor:")
                     if st.form_submit_button("💾 Guardar en Base de Datos", use_container_width=True):
-                        if clave_final and valor_final: guardar_especificacion_db(mod_d, clave_final.strip(), valor_final.strip()); st.success("✅ ¡Dato guardado!"); st.rerun()
+                        if clave_final and valor_final: 
+                            guardar_especificacion_db(mod_d, clave_final.strip(), valor_final.strip())
+                            st.success("✅ ¡Dato guardado!")
+                            st.rerun()
+                            
             if mod_d in ESPECIFICACIONES:
                 specs = {k: v for k, v in ESPECIFICACIONES[mod_d].items() if k != "Manual"}
                 if specs:
                     cols = st.columns(3)
                     for i, (k, v) in enumerate(specs.items()):
-                        with cols[i % 3]: st.markdown(f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
-                st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### 📥 Documentación y Manuales")
+                        with cols[i % 3]: 
+                            st.markdown(f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
+                
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.markdown("### 📥 Documentación y Manuales")
                 if "Manual" in ESPECIFICACIONES[mod_d] and os.path.exists(ESPECIFICACIONES[mod_d]["Manual"]):
-                    with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f: st.download_button(label=f"📕 Descargar Manual de {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
-        with tab3:
-            st.markdown(f"### 🔍 Bitácora Permanente del Equipo: {tag_sel}")
-            with st.form(key=f"form_obs_{tag_sel}"):
-                nueva_obs = st.text_area("Escribe una nueva observación:", height=100)
-                if st.form_submit_button("➕ Dejar constancia en la bitácora", use_container_width=True):
-                    if nueva_obs: agregar_observacion(tag_sel, st.session_state.usuario_actual, nueva_obs); st.success("✅ Observación registrada."); st.rerun()
-            st.markdown("---"); df_obs = obtener_observaciones(tag_sel)
-            if not df_obs.empty:
-                for _, row in df_obs.iterrows():
-                    col_obs, col_del = st.columns([11, 1])
-                    with col_obs: st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #FF6600;'><small style='color: #aeb9cc;'><b>👤 Técnico: {row['usuario']}</b> &nbsp;|&nbsp; 📅 Fecha: {row['fecha']}</small><br><span style='color: white; font-size: 1.05em;'>{row['texto']}</span></div>", unsafe_allow_html=True)
-                    with col_del:
-                        if st.button("🗑️", key=f"del_obs_{row['id']}"): eliminar_observacion(row['id']); st.rerun()
-        with tab4:
-            st.markdown(f"### 👤 Información de Contactos y Seguridad del Área: {tag_sel}")
-            with st.expander("✏️ Editar o Agregar Contacto / Dato de Seguridad"):
-                with st.form(key=f"form_area_{tag_sel}"):
-                    c_a1, c_a2 = st.columns(2); opc_area = ["Dueño de Área (Turno 1-3)", "Dueño de Área (Turno 2-4)", "PEA", "Frecuencia Radial", "Supervisor a cargo", "Jefe de Turno", "Otro cargo..."]; clave_sel_area = c_a1.selectbox("¿Qué dato vas a ingresar?", opc_area); clave_final_area = c_a1.text_input("Escribe el nombre del cargo:") if clave_sel_area == "Otro cargo..." else clave_sel_area; valor_final_area = c_a2.text_input("Ingresa la información:")
-                    if st.form_submit_button("💾 Guardar Información", use_container_width=True):
-                        if clave_final_area and valor_final_area: guardar_dato_equipo(tag_sel, clave_final_area.strip(), valor_final_area.strip()); st.success("✅ Dato actualizado!"); st.rerun()
-            datos_equipo = obtener_datos_equipo(tag_sel); cols_area = st.columns(2)
-            for i, (k, v) in enumerate(datos_equipo.items()):
-                with cols_area[i % 2]: st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #FF6600;'><span style='color: #aeb9cc; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
-        st.markdown("<br><hr>", unsafe_allow_html=True); st.markdown("### 📋 Trazabilidad Histórica de Intervenciones"); df_hist = obtener_todo_el_historial(tag_sel)
-        if not df_hist.empty: st.dataframe(df_hist, use_container_width=True)
+                    with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f: 
+                        st.download_button(label=f"📕 Descargar Manual de {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
