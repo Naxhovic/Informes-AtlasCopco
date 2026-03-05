@@ -53,7 +53,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM 
+# 0.2 ESTILOS PREMIUM (BOTÓN LATERAL BLINDADO)
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -62,41 +62,35 @@ def aplicar_estilos_premium():
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap');
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
-        
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
         
-        #MainMenu {visibility: hidden;} 
-        footer {visibility: hidden;} 
-        header {visibility: hidden;} 
+        /* 🔥 SOLUCIÓN INFALIBLE DE MENÚ LATERAL 🔥 */
+        /* Hacemos el header transparente para no borrar el botón del menú, pero ocultamos la basura derecha */
+        header { background: transparent !important; }
+        [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; } 
+        [data-testid="stDecoration"] { display: none !important; }
         
+        /* Blindaje del botón lateral para que NUNCA desaparezca */
         [data-testid="collapsedControl"] {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            z-index: 999999 !important;
-            background-color: #00BFFF !important; 
-            border-radius: 8px !important;
-            box-shadow: 0 4px 15px rgba(0, 191, 255, 0.4) !important;
-            margin-top: 15px !important;
-            margin-left: 15px !important;
-            transition: all 0.3s ease !important;
+            display: flex !important; visibility: visible !important; opacity: 1 !important;
+            z-index: 999999 !important; background-color: var(--ac-blue) !important; 
+            border-radius: 8px !important; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4) !important;
+            margin-top: 15px !important; margin-left: 15px !important; transition: all 0.3s ease !important;
         }
-        [data-testid="collapsedControl"]:hover {
-            background-color: var(--ac-blue) !important; 
-            box-shadow: 0 6px 20px rgba(0, 124, 166, 0.6) !important;
-            transform: scale(1.05) !important;
-        }
+        [data-testid="collapsedControl"]:hover { background-color: var(--bhp-orange) !important; transform: scale(1.05) !important; }
         [data-testid="collapsedControl"] svg { fill: white !important; stroke: white !important; }
         
+        /* 🚫 BLOQUEO DIRECTO A CUALQUIER LINK DE GITHUB Y MARCAS DE AGUA 🚫 */
+        a[href*="github.com"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+        [data-testid="viewerBadge"] {display: none !important;}
+        div[class^="viewerBadge_container"] {display: none !important;}
+        footer {display: none !important;} 
+        
+        /* DISEÑO DE BOTONES Y TARJETAS */
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
-        
         [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 12px !important; border: 1px solid #2b3543 !important; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important; }
         [data-testid="stVerticalBlockBorderWrapper"]:hover { transform: translateY(-6px) !important; box-shadow: 0 10px 25px rgba(0, 124, 166, 0.25) !important; border-color: var(--ac-blue) !important; }
-        
-        div[class^="st-key-btn_"] button { background: transparent !important; border: 1px solid rgba(255,255,255,0.05) !important; color: white !important; font-size: 1.6rem !important; font-weight: 800 !important; padding: 1.2rem !important; border-radius: 8px !important; box-shadow: none !important; }
-        div[class^="st-key-btn_"] button:hover { background: rgba(0, 124, 166, 0.2) !important; border-color: var(--ac-blue) !important; color: #fff !important; box-shadow: inset 0 0 15px rgba(0,124,166,0.3) !important; }
-        
         .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select { border-radius: 6px !important; border: 1px solid #2b3543 !important; background-color: #1e2530 !important; color: white !important; }
         .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus { border-color: var(--bhp-orange) !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.3) !important; }
         .stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #2b3543; }
@@ -106,7 +100,7 @@ def aplicar_estilos_premium():
 aplicar_estilos_premium()
 
 # =============================================================================
-# 1. DATOS MAESTROS Y GOOGLE SHEETS
+# 1. DATOS MAESTROS E INVENTARIO
 # =============================================================================
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "admin": "admin123"}
 DEFAULT_SPECS = {
@@ -122,20 +116,30 @@ DEFAULT_SPECS = {
     "CD 80+": {"Filtro de Gases": "DD/PD 80", "Desecante": "Alúmina", "Kit Válvulas": "2901 1622 00", "Silenciador": "1621 1234 00", "Manual": "manuales/manual_cd80.pdf"},
     "CD 630": {"Filtro de Gases": "DD/PD 630", "Desecante": "Alúmina", "Kit Válvulas": "2901 1625 00", "Silenciador": "1621 1235 00", "Manual": "manuales/manual_cd630.pdf"}
 }
+
 inventario_equipos = {
-    "20-GC-001": ["GA 75", "AII482673", "truck shop", "mina"], "20-GC-002": ["GA 75", "AII482674", "truck shop", "mina"], "20-GC-003": ["GA 90", "AIF095178", "truck shop", "mina"], "20-GC-004": ["GA 37", "AII390776", "truck shop", "mina"],
-    "35-GC-006": ["GA 250", "AIF095420", "chancado secundario", "área seca"], "35-GC-007": ["GA 250", "AIF095421", "chancado secundario", "área seca"], "35-GC-008": ["GA 250", "AIF095302", "chancado secundario", "área seca"],
-    "50-GC-001": ["GA 45", "API542705", "planta SX", "área húmeda"], "50-GC-002": ["GA 45", "API542706", "planta SX", "área húmeda"], "50-GC-003": ["ZT 37", "API791692", "planta SX", "área húmeda"], "50-GC-004": ["ZT 37", "API791693", "planta SX", "área húmeda"], "50-CD-001": ["CD 80+", "API095825", "planta SX", "área húmeda"], "50-CD-002": ["CD 80+", "API095826", "planta SX", "área húmeda"],
-    "55-GC-015": ["GA 30", "API501440", "planta borra", "área húmeda"],
-    "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "área húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "área húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "área húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "área húmeda"],
-    "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "área húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "área húmeda"],
-    "Taller": ["GA 18", "API335343", "Taller", "Taller"]
+    "20-GC-001": ["GA 75", "AII482673", "truck shop", "Mina"], "20-GC-002": ["GA 75", "AII482674", "truck shop", "Mina"], "20-GC-003": ["GA 90", "AIF095178", "truck shop", "Mina"], "20-GC-004": ["GA 37", "AII390776", "truck shop", "Mina"],
+    "35-GC-006": ["GA 250", "AIF095420", "chancado secundario", "Área Seca"], "35-GC-007": ["GA 250", "AIF095421", "chancado secundario", "Área Seca"], "35-GC-008": ["GA 250", "AIF095302", "chancado secundario", "Área Seca"],
+    "50-GC-001": ["GA 45", "API542705", "planta SX", "Área Húmeda"], "50-GC-002": ["GA 45", "API542706", "planta SX", "Área Húmeda"], "50-GC-003": ["ZT 37", "API791692", "planta SX", "Área Húmeda"], "50-GC-004": ["ZT 37", "API791693", "planta SX", "Área Húmeda"], "50-CD-001": ["CD 80+", "API095825", "planta SX", "Área Húmeda"], "50-CD-002": ["CD 80+", "API095826", "planta SX", "Área Húmeda"],
+    "55-GC-015": ["GA 30", "API501440", "planta borra", "Área Húmeda"],
+    "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "Área Húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "Área Húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "Área Húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "Área Húmeda"],
+    "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "Área Húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "Área Húmeda"],
+    "Taller": ["GA 18", "API335343", "Taller", "Taller Central"]
 }
 
+# =============================================================================
+# 2. CONEXIÓN A GOOGLE SHEETS (HÍBRIDA RENDER / LOCAL)
+# =============================================================================
 @st.cache_resource
 def get_gspread_client():
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    creds_dict = json.loads(st.secrets["gcp_json"]) # Usa os.environ["gcp_json"] si subes esto a Render
+    try:
+        # Intenta en Render
+        creds_dict = json.loads(os.environ["gcp_json"])
+    except:
+        # Falla y busca en Local / Streamlit Cloud
+        creds_dict = json.loads(st.secrets["gcp_json"])
+    
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     return gspread.authorize(creds)
 
@@ -147,28 +151,59 @@ def get_sheet(sheet_name):
         except gspread.exceptions.WorksheetNotFound: return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e: return None
 
+# =============================================================================
+# 3. FUNCIONES DE BASE DE DATOS
+# =============================================================================
 @st.cache_data(ttl=120)
-def obtener_datos_equipo(tag):
-    datos = {}
+def obtener_estados_actuales():
+    estados = {}
     try:
-        sheet = get_sheet("datos_equipo")
+        sheet = get_sheet("estados_equipos") 
         if sheet:
             data = sheet.get_all_values()
             for row in data:
-                if len(row) >= 3 and row[0] == tag: datos[row[1]] = row[2]
+                if len(row) >= 2: estados[row[0]] = row[1]
     except: pass
+    return estados
+
+def actualizar_estado_equipo_en_nube(tag, nuevo_estado):
+    try:
+        sheet = get_sheet("estados_equipos")
+        if sheet:
+            try:
+                celda = sheet.find(tag)
+                sheet.update_cell(celda.row, 2, nuevo_estado)
+            except Exception:
+                sheet.append_row([tag, nuevo_estado])
+            st.cache_data.clear() 
+    except Exception as e: pass
+
+@st.cache_data(ttl=120)
+def obtener_datos_equipo(tag):
+    datos = {}; sheet = get_sheet("datos_equipo")
+    if sheet:
+        data = sheet.get_all_values()
+        for r in data:
+            if len(r) >= 3 and r[0] == tag: datos[r[1]] = r[2]
     return datos
 
 @st.cache_data(ttl=120)
 def obtener_observaciones(tag):
-    try:
-        sheet = get_sheet("observaciones")
-        if sheet:
-            data = sheet.get_all_values()
-            obs = [{"id": r[0], "fecha": r[2], "usuario": r[3], "texto": r[4]} for r in data if len(r) >= 6 and r[1] == tag and r[5] == "ACTIVO"]
-            if obs: return pd.DataFrame(obs).iloc[::-1]
-    except: pass
+    sheet = get_sheet("observaciones")
+    if sheet:
+        data = sheet.get_all_values()
+        obs = [{"id": r[0], "fecha": r[2], "usuario": r[3], "texto": r[4]} for r in data if len(r) >= 6 and r[1] == tag and r[5] == "ACTIVO"]
+        if obs: return pd.DataFrame(obs).iloc[::-1]
     return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
+
+@st.cache_data(ttl=120)
+def obtener_contactos():
+    sheet = get_sheet("contactos")
+    if sheet:
+        data = sheet.get_all_values()
+        contactos = [r[0] for r in data if len(r) > 1 and r[1] == "ACTIVO"]
+        if contactos: return sorted(list(set(contactos)))
+    return ["Lorena Rojas"]
 
 @st.cache_data(ttl=120)
 def obtener_especificaciones(defaults):
@@ -186,25 +221,12 @@ def obtener_especificaciones(defaults):
     return specs
 
 @st.cache_data(ttl=120)
-def obtener_contactos():
-    try:
-        sheet = get_sheet("contactos")
-        if sheet:
-            data = sheet.get_all_values()
-            contactos = [row[0] for row in data if len(row) > 1 and row[1] == "ACTIVO"]
-            if contactos: return sorted(list(set(contactos)))
-    except: pass
-    return ["Lorena Rojas"]
-
-@st.cache_data(ttl=120)
 def buscar_ultimo_registro(tag):
-    try:
-        sheet = get_sheet("intervenciones")
-        if sheet:
-            data = sheet.get_all_values()
-            for row in reversed(data):
-                if len(row) >= 20 and row[0] == tag: return (row[5], row[6], row[9], row[14], row[15], row[7], row[8], row[10], row[11], row[12], row[13], row[16], row[17])
-    except: pass
+    sheet = get_sheet("intervenciones")
+    if sheet:
+        data = sheet.get_all_values()
+        for row in reversed(data):
+            if len(row) >= 20 and row[0] == tag: return (row[5], row[6], row[9], row[14], row[15], row[7], row[8], row[10], row[11], row[12], row[13], row[16], row[17])
     return None
 
 @st.cache_data(ttl=120)
@@ -218,56 +240,10 @@ def obtener_todo_el_historial(tag):
     except: pass
     return pd.DataFrame()
 
-@st.cache_data(ttl=120)
-def obtener_estados_actuales():
-    estados = {}
-    try:
-        sheet = get_sheet("intervenciones")
-        if sheet:
-            data = sheet.get_all_values()
-            for row in data:
-                if len(row) >= 18: estados[row[0]] = row[17]
-    except: pass
-    return estados
-
 def guardar_dato_equipo(tag, clave, valor):
-    try:
-        sheet = get_sheet("datos_equipo")
-        if sheet: sheet.append_row([tag, clave, valor]); st.cache_data.clear()
-    except: pass
-def agregar_observacion(tag, usuario, texto):
-    if not texto.strip(): return
-    fecha_actual = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M")
-    id_obs = str(uuid.uuid4())[:8]
-    try:
-        sheet = get_sheet("observaciones")
-        if sheet: sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"]); st.cache_data.clear()
-    except: pass
-def eliminar_observacion(id_obs):
-    try:
-        sheet = get_sheet("observaciones")
-        if sheet:
-            cell = sheet.find(id_obs)
-            if cell: sheet.update_cell(cell.row, 6, "ELIMINADO"); st.cache_data.clear()
-    except: pass
-def guardar_especificacion_db(modelo, clave, valor):
-    try:
-        sheet = get_sheet("especificaciones")
-        if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
-    except: pass
-def agregar_contacto(nombre):
-    if not nombre.strip(): return
-    try:
-        sheet = get_sheet("contactos")
-        if sheet: sheet.append_row([nombre.strip().title(), "ACTIVO"]); st.cache_data.clear()
-    except: pass
-def eliminar_contacto(nombre):
-    try:
-        sheet = get_sheet("contactos")
-        if sheet:
-            cells = sheet.findall(nombre)
-            for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO"); st.cache_data.clear()
-    except: pass
+    sheet = get_sheet("datos_equipo")
+    if sheet: sheet.append_row([tag, clave, valor]); st.cache_data.clear()
+
 def guardar_registro(data_tuple):
     for intento in range(3):
         try:
@@ -279,8 +255,35 @@ def guardar_registro(data_tuple):
                 st.cache_data.clear(); return True
         except Exception as e: time.sleep(5)
     return False
-# =============================================================================
-# 3. FUNCIONES DE AYUDA Y PLANIFICACIÓN
+
+def agregar_observacion(tag, usuario, texto):
+    if not texto.strip(): return
+    fecha_actual = pd.Timestamp.now().strftime("%d/%m/%Y %H:%M"); id_obs = str(uuid.uuid4())[:8]
+    sheet = get_sheet("observaciones")
+    if sheet: sheet.append_row([id_obs, tag, fecha_actual, usuario.title(), texto.strip(), "ACTIVO"]); st.cache_data.clear()
+
+def eliminar_observacion(id_obs):
+    sheet = get_sheet("observaciones")
+    if sheet:
+        cell = sheet.find(id_obs)
+        if cell: sheet.update_cell(cell.row, 6, "ELIMINADO"); st.cache_data.clear()
+
+def agregar_contacto(nombre):
+    if not nombre.strip(): return
+    sheet = get_sheet("contactos")
+    if sheet: sheet.append_row([nombre.strip().title(), "ACTIVO"]); st.cache_data.clear()
+
+def eliminar_contacto(nombre):
+    sheet = get_sheet("contactos")
+    if sheet:
+        cells = sheet.findall(nombre)
+        for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO"); st.cache_data.clear()
+
+def guardar_especificacion_db(modelo, clave, valor):
+    sheet = get_sheet("especificaciones")
+    if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
+    # =============================================================================
+# 4. FUNCIONES AUXILIARES Y PLANIFICACIÓN
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -304,23 +307,6 @@ def obtener_fecha_hoy_esp():
     ahora = pd.Timestamp.now()
     return f"{ahora.day} de {meses[ahora.month]} de {ahora.year}"
 
-def obtener_quincena_actual():
-    hoy = datetime.date.today()
-    meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-    if hoy.day < 15:
-        mes_plan = meses[hoy.month - 1]
-        inicio = f"15 de {meses[hoy.month - 2 if hoy.month > 1 else 11]}"
-        fin = f"15 de {mes_plan}"
-    else:
-        mes_plan = meses[hoy.month] if hoy.month < 12 else "Enero"
-        inicio = f"15 de {meses[hoy.month - 1]}"
-        fin = f"15 de {mes_plan}"
-    return mes_plan, f"{inicio} al {fin}"
-
-def obtener_mes_actual_abrev():
-    meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-    return meses[datetime.date.today().month - 1]
-
 def cargar_pendientes(usuario):
     archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
     if os.path.exists(archivo):
@@ -336,87 +322,58 @@ def guardar_pendientes(usuario, pendientes):
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
+def obtener_quincena_actual():
+    hoy = datetime.date.today(); meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    if hoy.day < 15: return meses[hoy.month - 1], f"15 de {meses[hoy.month - 2 if hoy.month > 1 else 11]} al 15 de {meses[hoy.month - 1]}"
+    else: return meses[hoy.month] if hoy.month < 12 else "Enero", f"15 de {meses[hoy.month - 1]} al 15 de {meses[hoy.month] if hoy.month < 12 else 'Enero'}"
+
 def generar_planificacion_base():
-    meses = ["15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov", "15c Dic"]
     datos = [
         {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "INSP", "15c Feb": "P1\n20/02 (WK8)", "15c Mar": "INSP", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        {"TAG": "70-GC-014", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "P2\n15/01 (WK3)", "15c Feb": "INSP\nFalta", "15c Mar": "P1", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
-        {"TAG": "50-GC-001", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1\n05/02 (WK6)", "15c Mar": "INSP", "15c Abr": "P3", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        {"TAG": "50-GC-002", "Equipo": "GA 45", "Área": "Planta SX", "15c Ene": "P2\nFalta", "15c Feb": "INSP", "15c Mar": "P1", "15c Abr": "INSP", "15c May": "P3", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
-        {"TAG": "50-GC-003", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "INSP", "15c Feb": "P1\nF/S", "15c Mar": "INSP", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        {"TAG": "50-GC-004", "Equipo": "ZT 37", "Área": "Planta SX", "15c Ene": "P2", "15c Feb": "INSP", "15c Mar": "INSP\nF/S", "15c Abr": "INSP", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
-        {"TAG": "50-CD-001", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4\nFalta", "15c Feb": "INSP", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
-        {"TAG": "50-CD-002", "Equipo": "CD 80+", "Área": "Planta SX", "15c Ene": "P4\nFalta", "15c Feb": "INSP", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "P2", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"},
-        {"TAG": "55-GC-015", "Equipo": "GA 30", "Área": "Planta Borra", "15c Ene": "INSP", "15c Feb": "P1", "15c Mar": "INSP", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        {"TAG": "65-GC-011", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P1", "15c Mar": "INSP", "15c Abr": "P1", "15c May": "INSP", "15c Jun": "P2", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P4"},
-        {"TAG": "65-GC-009", "Equipo": "GA 250", "Área": "Patio Estanques", "15c Ene": "P1\nFalta", "15c Feb": "INSP", "15c Mar": "P4", "15c Abr": "INSP", "15c May": "P1", "15c Jun": "INSP", "15c Jul": "P1", "15c Ago": "INSP", "15c Sep": "P2", "15c Oct": "INSP", "15c Nov": "P1", "15c Dic": "INSP"},
-        {"TAG": "65-CD-011", "Equipo": "CD 630", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P2\nFalta", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "P2", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
-        {"TAG": "65-CD-012", "Equipo": "CD 630", "Área": "Patio Estanques", "15c Ene": "INSP", "15c Feb": "P2\nFalta", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "P2", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
         {"TAG": "35-GC-006", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1\nFalta", "15c Feb": "P1\nF/S", "15c Mar": "P2\nF/S", "15c Abr": "P1", "15c May": "P1", "15c Jun": "P2", "15c Jul": "P1", "15c Ago": "P1", "15c Sep": "P4", "15c Oct": "P1", "15c Nov": "P1", "15c Dic": "P2"},
-        {"TAG": "35-GC-007", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P3", "15c Feb": "P1", "15c Mar": "P1", "15c Abr": "P2", "15c May": "P1", "15c Jun": "P1", "15c Jul": "P2", "15c Ago": "P1", "15c Sep": "P1", "15c Oct": "P4", "15c Nov": "P1", "15c Dic": "P1"},
-        {"TAG": "35-GC-008", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1\nFalta", "15c Feb": "P2", "15c Mar": "P1", "15c Abr": "P1", "15c May": "P2", "15c Jun": "P1", "15c Jul": "P1", "15c Ago": "P4", "15c Sep": "P1", "15c Oct": "P1", "15c Nov": "P2", "15c Dic": "P1"},
-        {"TAG": "20-GC-004", "Equipo": "GA 37", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nFalta", "15c Mar": "P1", "15c Abr": "INSP", "15c May": "P4", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "P1", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "P2", "15c Dic": "INSP"},
-        {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1", "15c Mar": "INSP", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        {"TAG": "20-GC-002", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1\nFalta", "15c Mar": "INSP", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        {"TAG": "20-GC-003", "Equipo": "GA 90", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1", "15c Mar": "INSP", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        {"TAG": "Taller", "Equipo": "GA 18", "Área": "Taller", "15c Ene": "INSP", "15c Feb": "P2", "15c Mar": "INSP", "15c Abr": "INSP", "15c May": "INSP", "15c Jun": "INSP", "15c Jul": "INSP", "15c Ago": "INSP", "15c Sep": "INSP", "15c Oct": "INSP", "15c Nov": "INSP", "15c Dic": "INSP"}
+        {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1", "15c Mar": "INSP", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"}
     ]
     return pd.DataFrame(datos)
 
 @st.cache_data(ttl=60)
 def cargar_planificacion():
-    try:
-        sheet = get_sheet("planificacion")
-        if sheet:
-            data = sheet.get_all_values()
-            if len(data) > 1:
-                df = pd.DataFrame(data[1:], columns=data[0])
-                if "15c Ene" in df.columns: return df
-    except Exception as e: pass
+    sheet = get_sheet("planificacion")
+    if sheet:
+        data = sheet.get_all_values()
+        if len(data) > 1:
+            df = pd.DataFrame(data[1:], columns=data[0])
+            if "15c Ene" in df.columns: return df
     return generar_planificacion_base()
 
 def guardar_planificacion(df):
-    try:
-        sheet = get_sheet("planificacion")
-        if sheet:
-            sheet.clear() 
-            datos_a_guardar = [df.columns.values.tolist()] + df.values.tolist()
-            sheet.append_rows(datos_a_guardar)
-            st.cache_data.clear() 
-    except Exception as e:
-        st.error(f"Error al conectar con la Nube: {e}")
+    sheet = get_sheet("planificacion")
+    if sheet:
+        sheet.clear() 
+        sheet.append_rows([df.columns.values.tolist()] + df.values.tolist()); st.cache_data.clear() 
 
-# =============================================================================
-# ESTRATEGIA VISUAL: COLORES DARK UI ELEGANCE
-# =============================================================================
 def estilo_dinamico_celdas(val):
     if pd.isna(val) or val == "": return ''
     v = str(val).upper()
-    base_css = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
-    if 'F/S' in v or 'FUERA' in v: return base_css + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
-    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND', 'LUNES', 'MARTES', 'MIÉRCOLES', 'MIERCOLES', 'JUEVES']): return base_css + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
+    base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
+    if 'F/S' in v or 'FUERA' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
+    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND']): return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
     import re
-    if re.search(r'(\d{2}/\d{2}|WK\d+|HECHO|OK)', v) and not any(x in v for x in ['FALTA', 'PEND']): return base_css + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
-    if 'P1' in v: return base_css + 'background-color: #0c2d48; color: #66c2ff; font-weight: bold;'
-    if 'P2' in v: return base_css + 'background-color: #4a2c00; color: #ffb04c; font-weight: bold;'
-    if 'P3' in v: return base_css + 'background-color: #301047; color: #d78aff; font-weight: bold;'
-    if 'P4' in v: return base_css + 'background-color: #471015; color: #ff8a93; font-weight: bold;'
-    if 'INSP' in v or v == 'I': return base_css + 'color: #8c9eb5; font-style: italic;'
-    return base_css
+    if re.search(r'(\d{2}/\d{2}|WK\d+|HECHO|OK)', v): return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
+    if 'P1' in v: return base + 'background-color: #0c2d48; color: #66c2ff; font-weight: bold;'
+    if 'P2' in v: return base + 'background-color: #4a2c00; color: #ffb04c; font-weight: bold;'
+    if 'P3' in v: return base + 'background-color: #301047; color: #d78aff; font-weight: bold;'
+    if 'P4' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold;'
+    return base + 'color: #8c9eb5; font-style: italic;'
 
 def estilo_simple_editor(val):
-    if pd.isna(val) or val == "": return ''
     v = str(val).upper()
-    if 'F/S' in v or 'FUERA' in v: return 'background-color: #471015; color: #ff8a93;'
+    if 'F/S' in v: return 'background-color: #471015; color: #ff8a93;'
     import re
-    if re.search(r'(\d{2}/\d{2}|WK\d+|HECHO|OK)', v) and not any(x in v for x in ['FALTA', 'PEND']): return 'background-color: #063f22; color: #6ee7b7;'
-    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND', 'LUNES', 'MARTES', 'MIÉRCOLES', 'MIERCOLES', 'JUEVES']): return 'background-color: #423205; color: #fde047;'
+    if re.search(r'(\d{2}/\d{2}|WK\d+)', v) and not 'FALTA' in v: return 'background-color: #063f22; color: #6ee7b7;'
+    if 'FALTA' in v: return 'background-color: #423205; color: #fde047;'
     if 'P1' in v: return 'background-color: #0c2d48; color: #66c2ff;' 
-    if 'P2' in v: return 'background-color: #4a2c00; color: #ffb04c;'
-    if 'P3' in v: return 'background-color: #301047; color: #d78aff;'
     if 'P4' in v: return 'background-color: #471015; color: #ff8a93;'
-    if 'INSP' in v or v == 'I': return 'color: #8c9eb5;'
-    return ''
+    return 'color: #8c9eb5;'
 
 def estilo_pautas_puras(val):
     v = str(val).upper()
@@ -428,7 +385,7 @@ def estilo_pautas_puras(val):
     return ''
 
 # =============================================================================
-# 4. INICIALIZACIÓN DE ESTADOS (Y FUNCIÓN SELECCIONAR EQUIPO)
+# 5. INICIALIZACIÓN DE ESTADOS
 # =============================================================================
 def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
@@ -455,17 +412,15 @@ default_states = {
     'input_cliente': "Lorena Rojas", 'input_tec1': "Ignacio Morales", 'input_tec2': "emian Sanchez",
     'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
-    'input_reco': "", 'input_estado_eq': "Operativo",
-    'vista_firmas': False
+    'input_reco': "", 'input_estado_eq': "Operativo", 'vista_firmas': False
 }
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
 
-if 'informes_pendientes' not in st.session_state:
-    st.session_state.informes_pendientes = []
+if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 5. PANTALLA 1: SISTEMA DE LOGIN PREMIUM
+# 6. INTERFAZ: LOGIN
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
@@ -487,7 +442,7 @@ if not st.session_state.logged_in:
                     else: st.error("❌ Credenciales inválidas.")
 
 # =============================================================================
-# 6. PANTALLA PRINCIPAL: APLICACIÓN AUTENTICADA
+# 7. INTERFAZ PRINCIPAL
 # =============================================================================
 else:
     with st.sidebar:
@@ -509,7 +464,7 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 6.0 VISTA MATRIZ Y GESTIÓN DUAL ---
+    # --- 7.1 VISTA PLANIFICACIÓN ---
     if st.session_state.vista_actual == "planificacion":
         df_plan = cargar_planificacion()
         if "Área" not in df_plan.columns or "TAG" not in df_plan.columns: df_plan = generar_planificacion_base()
@@ -525,21 +480,18 @@ else:
             </div>
         """, unsafe_allow_html=True)
         
-        tab_faltantes, tab_calendario, tab_matriz = st.tabs(["⚠️ Faltantes (Tickets)", "📆 Mapa Histórico", "📊 Matriz Anual"])
+        tab_faltantes, tab_calendario, tab_matriz = st.tabs(["📝 Gestión de Tickets", "📆 Mapa Histórico", "📊 Matriz Anual"])
 
-        # ==========================================
-        # PESTAÑA 1: FALTANTES DE LA QUINCENA
-        # ==========================================
         with tab_faltantes:
-            st.markdown("### ⚠️ Equipos Pendientes")
-            st.info("Marca con un ticket (✔️) la casilla de la izquierda para los equipos que ya realizaste y dale a Guardar. Se anotarán en verde automáticamente.")
+            st.markdown("### 📝 Gestión de la Quincena Actual")
+            st.info("Marca con un ticket (✔️) la casilla para los equipos que ya realizaste. **Si te equivocas, simplemente quítale el ticket** y volverá a estar pendiente. Luego presiona Guardar.")
             
             c_fec1, c_fec2 = st.columns([1, 4])
             with c_fec1:
-                fecha_rapida = st.date_input("Fecha de ejecución a registrar:", datetime.date.today(), key="fecha_faltantes")
+                fecha_rapida = st.date_input("Fecha a registrar (para nuevos tickets):", datetime.date.today(), key="fecha_faltantes")
             
             if mes_col_actual in df_plan.columns:
-                df_quincena_act = df_plan[df_plan[mes_col_actual].str.strip() != ""]
+                df_quincena_act = df_plan[df_plan[mes_col_actual].str.strip() != ""].copy()
                 
                 import re
                 def es_pendiente(val):
@@ -548,143 +500,101 @@ else:
                     if not re.search(r'(\d{2}/\d{2}|WK\d+|HECHO|OK)', v): return True
                     return False
                 
-                mask = df_quincena_act[mes_col_actual].apply(es_pendiente)
-                df_faltantes = df_quincena_act[mask].copy()
+                def extraer_pauta(txt):
+                    match = re.search(r'(P[1-4]|INSP|I)', str(txt).upper())
+                    return match.group(1) if match else "INSP"
                 
-                if not df_faltantes.empty:
-                    def extraer_pauta(txt):
-                        match = re.search(r'(P[1-4]|INSP|I)', str(txt).upper())
-                        return match.group(1) if match else "INSP"
+                df_quincena_act["Estado_Orig"] = df_quincena_act[mes_col_actual].apply(lambda x: not es_pendiente(x))
+                df_quincena_act["✔️ Listo"] = df_quincena_act["Estado_Orig"]
+                df_quincena_act["Intervención"] = df_quincena_act[mes_col_actual].apply(extraer_pauta)
+                
+                df_mostrar = df_quincena_act.sort_values(by="✔️ Listo", ascending=True)
+                df_mostrar_cols = df_mostrar[['✔️ Listo', 'TAG', 'Equipo', 'Área', 'Intervención', mes_col_actual]]
+                
+                try: df_falta_estilo = df_mostrar_cols.style.map(estilo_pautas_puras, subset=['Intervención']).map(estilo_simple_editor, subset=[mes_col_actual])
+                except AttributeError: df_falta_estilo = df_mostrar_cols.style.applymap(estilo_pautas_puras, subset=['Intervención']).applymap(estilo_simple_editor, subset=[mes_col_actual])
+                
+                configuracion_columnas = {
+                    "✔️ Listo": st.column_config.CheckboxColumn("¿Listo?"),
+                    "TAG": st.column_config.TextColumn("TAG", disabled=True),
+                    "Equipo": st.column_config.TextColumn("Equipo", disabled=True),
+                    "Área": st.column_config.TextColumn("Área", disabled=True),
+                    "Intervención": st.column_config.TextColumn("Intervención", disabled=True),
+                    mes_col_actual: st.column_config.TextColumn("Comentario en Matriz", disabled=True)
+                }
+                
+                edited_faltantes = st.data_editor(df_falta_estilo, hide_index=True, use_container_width=True, column_config=configuracion_columnas, height=550)
+                
+                if st.button("💾 Guardar Cambios en Nube y Matriz", type="primary"):
+                    cambios = 0
+                    str_fecha = f"{fecha_rapida.strftime('%d/%m')} (WK{fecha_rapida.isocalendar()[1]})"
+                    
+                    for _, row in edited_faltantes.iterrows():
+                        tag_act = row["TAG"]
+                        estado_nuevo = row["✔️ Listo"]
+                        estado_viejo = df_quincena_act.loc[df_quincena_act['TAG'] == tag_act, "Estado_Orig"].values[0]
                         
-                    df_faltantes["Intervención"] = df_faltantes[mes_col_actual].apply(extraer_pauta)
-                    df_faltantes.insert(0, "✔️ Terminado", False)
-                    df_mostrar_falta = df_faltantes[['✔️ Terminado', 'TAG', 'Equipo', 'Área', 'Intervención', mes_col_actual]]
+                        if estado_nuevo != estado_viejo:
+                            idx = df_plan.index[df_plan['TAG'] == tag_act].tolist()[0]
+                            pauta = row["Intervención"]
+                            if estado_nuevo == True: df_plan.at[idx, mes_col_actual] = f"{pauta}\n{str_fecha}"
+                            else: df_plan.at[idx, mes_col_actual] = f"{pauta}\nFalta"
+                            cambios += 1
                     
-                    try: df_falta_estilo = df_mostrar_falta.style.map(estilo_pautas_puras, subset=['Intervención']).map(estilo_simple_editor, subset=[mes_col_actual])
-                    except AttributeError: df_falta_estilo = df_mostrar_falta.style.applymap(estilo_pautas_puras, subset=['Intervención']).applymap(estilo_simple_editor, subset=[mes_col_actual])
-                    
-                    configuracion_columnas = {
-                        "✔️ Terminado": st.column_config.CheckboxColumn("¿Listo?", default=False),
-                        "TAG": st.column_config.TextColumn("TAG", disabled=True),
-                        "Equipo": st.column_config.TextColumn("Equipo", disabled=True),
-                        "Área": st.column_config.TextColumn("Área", disabled=True),
-                        "Intervención": st.column_config.TextColumn("Intervención", disabled=True),
-                        mes_col_actual: st.column_config.TextColumn("Comentario Original", disabled=True)
-                    }
-                    
-                    edited_faltantes = st.data_editor(df_falta_estilo, hide_index=True, use_container_width=True, column_config=configuracion_columnas, height=500)
-                    
-                    if st.button("💾 Guardar Equipos Terminados", type="primary"):
-                        terminados = edited_faltantes[edited_faltantes["✔️ Terminado"] == True]
-                        if len(terminados) > 0:
-                            str_fecha = f"{fecha_rapida.strftime('%d/%m')} (WK{fecha_rapida.isocalendar()[1]})"
-                            for _, row in terminados.iterrows():
-                                tag_completado = row["TAG"]
-                                pauta_limpia = row["Intervención"]
-                                idx = df_plan.index[df_plan['TAG'] == tag_completado].tolist()[0]
-                                df_plan.at[idx, mes_col_actual] = f"{pauta_limpia}\n{str_fecha}"
+                    if cambios > 0:
+                        guardar_planificacion(df_plan)
+                        st.success(f"✅ ¡Excelente! Se actualizaron {cambios} equipos en la Matriz Anual.")
+                        time.sleep(2)
+                        st.rerun()
+                    else: st.warning("No realizaste ningún cambio en las casillas.")
 
-                            guardar_planificacion(df_plan)
-                            st.success(f"✅ ¡Excelente! {len(terminados)} equipos completados el {str_fecha}.")
-                            st.rerun()
-                        else:
-                            st.warning("Marca algún equipo con un ticket primero.")
-                else:
-                    st.success("🎉 ¡Impresionante! No hay ningún equipo pendiente para esta quincena.")
-
-        # ==========================================
-        # PESTAÑA 2: MAPA DE CALENDARIO HISTÓRICO
-        # ==========================================
         with tab_calendario:
             st.markdown("### 📆 Mapa Histórico del Mes")
-            st.info("Este calendario lee los registros de la matriz buscando fechas registradas (Ej: 12/03) y dibuja automáticamente las tareas realizadas en este calendario interactivo.")
-            
-            import calendar
-            hoy = datetime.date.today()
-            cal = calendar.Calendar(calendar.MONDAY)
-            semanas_mes = cal.monthdatescalendar(hoy.year, hoy.month)
-            
+            import calendar; hoy = datetime.date.today(); cal = calendar.Calendar(calendar.MONDAY); semanas_mes = cal.monthdatescalendar(hoy.year, hoy.month)
             tareas_por_fecha = {}
             for col in df_plan.columns:
                 if "15c" in col:
                     for idx, row in df_plan.iterrows():
                         val = str(row[col]).upper()
-                        import re
-                        matches = re.findall(r'(\d{2}/\d{2})', val)
+                        import re; matches = re.findall(r'(\d{2}/\d{2})', val)
                         for m in matches:
                             try:
-                                d, m_num = map(int, m.split('/'))
-                                fecha_tarea = datetime.date(hoy.year, m_num, d)
+                                d, m_num = map(int, m.split('/')); fecha_tarea = datetime.date(hoy.year, m_num, d)
                                 if fecha_tarea not in tareas_por_fecha: tareas_por_fecha[fecha_tarea] = []
-                                pauta_match = re.search(r'(P[1-4]|INSP|I)', val)
-                                p_txt = pauta_match.group(1) if pauta_match else "INSP"
+                                p_txt = re.search(r'(P[1-4]|INSP|I)', val).group(1) if re.search(r'(P[1-4]|INSP|I)', val) else "INSP"
                                 tareas_por_fecha[fecha_tarea].append((row['TAG'], p_txt))
                             except: pass
 
             html_cal = '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top:20px;">'
-            dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-            for d in dias_semana: html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
-                
+            for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
             for semana in semanas_mes:
                 for dia in semana:
-                    is_current_month = dia.month == hoy.month
-                    bg_color = "#1a212b" if is_current_month else "#11151c"
-                    border_color = "#00BFFF" if dia == hoy else "#2b3543"
-                    text_color = "white" if is_current_month else "#455065"
-                    badge_hoy = " <span style='font-size:0.6rem; background:#00BFFF; color:black; padding:1px 4px; border-radius:3px;'>HOY</span>" if dia == hoy else ""
-                    
+                    is_current_month = dia.month == hoy.month; bg_color = "#1a212b" if is_current_month else "#11151c"; border_color = "#00BFFF" if dia == hoy else "#2b3543"
                     html_cal += f'<div style="background:{bg_color}; border: 1px solid {border_color}; border-radius: 8px; padding: 5px; min-height: 120px;">'
-                    html_cal += f'<div style="text-align:right; color:{text_color}; font-size:0.9rem; margin-bottom:8px; font-weight:bold; border-bottom:1px solid #2b3543; padding-bottom:2px;">{dia.day}{badge_hoy}</div>'
-                    
+                    html_cal += f'<div style="text-align:right; color:white; font-size:0.9rem; margin-bottom:8px;">{dia.day}</div>'
                     if dia in tareas_por_fecha:
-                        for tag, pauta in tareas_por_fecha[dia]:
-                            pt = pauta.upper()
-                            color_b = "#0c2d48" if "P1" in pt else "#4a2c00" if "P2" in pt else "#301047" if "P3" in pt else "#471015" if "P4" in pt else "transparent"
-                            color_t = "#66c2ff" if "P1" in pt else "#ffb04c" if "P2" in pt else "#d78aff" if "P3" in pt else "#ff8a93" if "P4" in pt else "#8c9eb5"
-                            borde = f"1px solid {color_t}" if color_b != "transparent" else "1px dashed #8c9eb5"
-                            
-                            html_cal += f'<div style="background:#063f22; color:#6ee7b7; border-left:3px solid #10b981; font-size:0.75rem; padding:4px; margin-bottom:4px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;"><b>{tag}</b> <span style="background:{color_b}; color:{color_t}; border:{borde}; padding:1px 4px; border-radius:3px; font-size:0.65rem;">{pt}</span></div>'
+                        for tag, pt in tareas_por_fecha[dia]: html_cal += f'<div style="background:#063f22; color:#6ee7b7; padding:4px; margin-bottom:4px; border-radius:4px; font-size:0.75rem;"><b>{tag}</b> {pt}</div>'
                     html_cal += '</div>'
             html_cal += '</div>'
             st.markdown(html_cal, unsafe_allow_html=True)
 
-        # ==========================================
-        # PESTAÑA 3: LA MATRIZ ANUAL ORIGINAL
-        # ==========================================
         with tab_matriz:
             col_fil1, col_fil2, col_fil3 = st.columns([1, 1, 1.5])
-            with col_fil1:
-                areas_disp = ["Todas"] + sorted(list(df_plan["Área"].unique()))
-                filtro_area = st.selectbox("🏢 Filtrar por Área:", areas_disp, key="filtro_area_matriz")
-            with col_fil2:
-                modo_edicion_matriz = st.toggle("✏️ Edición de Matriz Completa")
-            with col_fil3:
-                st.markdown("<div style='margin-top:30px;'></div>", unsafe_allow_html=True)
-                if modo_edicion_matriz: st.info("Edita cualquier celda del año completo.")
-                
-            df_mostrar = df_plan.copy()
-            if filtro_area != "Todas": df_mostrar = df_mostrar[df_mostrar["Área"] == filtro_area]
-                
+            with col_fil1: filtro_area = st.selectbox("🏢 Filtrar por Área:", ["Todas"] + sorted(list(df_plan["Área"].unique())))
+            with col_fil2: modo_edicion_matriz = st.toggle("✏️ Edición de Matriz Completa")
+            df_mostrar = df_plan.copy() if filtro_area == "Todas" else df_plan[df_plan["Área"] == filtro_area]
             columnas_15cenas = [col for col in df_plan.columns if "15c" in col]
-
             if modo_edicion_matriz:
                 try: df_estilizado_edit = df_mostrar.style.map(estilo_simple_editor, subset=columnas_15cenas)
                 except AttributeError: df_estilizado_edit = df_mostrar.style.applymap(estilo_simple_editor, subset=columnas_15cenas)
-                config_cols = {col: st.column_config.TextColumn(width="medium") for col in columnas_15cenas}
-                df_editado = st.data_editor(df_estilizado_edit, use_container_width=True, hide_index=True, height=700, column_config=config_cols)
-                if st.button("💾 Guardar Matriz en Nube", type="primary", use_container_width=True):
-                    df_final_guardar = df_plan.copy()
-                    df_editado_str = df_editado.astype(str)
-                    df_final_guardar.update(df_editado_str)
-                    guardar_planificacion(df_final_guardar)
-                    st.success("✅ ¡Base de Datos actualizada con éxito!")
-                    st.rerun()
+                df_editado = st.data_editor(df_estilizado_edit, use_container_width=True, hide_index=True, height=700)
+                if st.button("💾 Guardar Matriz", type="primary", use_container_width=True):
+                    df_final_guardar = df_plan.copy(); df_final_guardar.update(df_editado.astype(str)); guardar_planificacion(df_final_guardar); st.success("✅ Guardado!"); st.rerun()
             else:
-                try: df_estilizado_view = df_mostrar.style.map(estilo_dinamico_celdas, subset=columnas_15cenas)
-                except AttributeError: df_estilizado_view = df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas)
-                st.dataframe(df_estilizado_view, use_container_width=True, hide_index=True, height=700)
+                try: st.dataframe(df_mostrar.style.map(estilo_dinamico_celdas, subset=columnas_15cenas), use_container_width=True, hide_index=True, height=700)
+                except AttributeError: st.dataframe(df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas), use_container_width=True, hide_index=True, height=700)
 
-    # --- 6.1 VISTA DE FIRMAS (AGRUPADA POR ÁREAS) ---
+    # --- 7.2 VISTA DE FIRMAS (AGRUPADA POR MACRO-ÁREA) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -695,101 +605,76 @@ else:
         if len(st.session_state.informes_pendientes) == 0:
             st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
-            # 1. MAGIA: Agrupar todos los informes pendientes según su Macro-Área
             areas_agrupadas = {}
             for inf in st.session_state.informes_pendientes:
-                tag = inf['tag']
-                # Obtenemos la macro-área desde el inventario maestro (ej: "Mina", "Área Seca")
-                if tag in inventario_equipos:
-                    macro_area = inventario_equipos[tag][3].title()
-                else:
-                    macro_area = "General"
-                
-                if macro_area not in areas_agrupadas:
-                    areas_agrupadas[macro_area] = []
+                macro_area = inventario_equipos[inf['tag']][3].title() if inf['tag'] in inventario_equipos else "General"
+                if macro_area not in areas_agrupadas: areas_agrupadas[macro_area] = []
                 areas_agrupadas[macro_area].append(inf)
 
-            # 2. DIBUJAR UNA PIZARRA INDEPENDIENTE POR CADA ÁREA
             for macro_area, informes_area in areas_agrupadas.items():
                 st.markdown(f"### 🏢 Informes de {macro_area} ({len(informes_area)} pendientes)")
-                
                 with st.container(border=True):
-                    # Listar los documentos que pertenecen SÓLO a esta área
                     for inf in informes_area:
                         c_exp, c_del = st.columns([12, 1])
                         with c_exp:
-                            with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']})"):
+                            with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']} - {inf['area'].title()})"):
                                 if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
                                     try: pdf_viewer(inf['ruta_prev_pdf'], width=700, height=600)
-                                    except Exception as e: st.error(f"No se pudo desplegar el visor: {e}")
-                                    st.markdown("<br>", unsafe_allow_html=True)
-                                else: st.warning("⚠️ La vista preliminar no está disponible.")
+                                    except Exception as e: st.error(f"Error visor: {e}")
+                                else: st.warning("⚠️ Vista preliminar no disponible.")
                         with c_del:
                             st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-                            key_borrar = f"del_{inf['tag']}_{inf['tupla_db'][5].replace('/','')}_{inf['tipo_plan']}"
-                            if st.button("❌", key=key_borrar, help="Quitar este informe de la bandeja"):
+                            if st.button("❌", key=f"del_{inf['tag']}_{inf['tupla_db'][5].replace('/','')}_{inf['tipo_plan']}", help="Quitar este informe"):
                                 st.session_state.informes_pendientes.remove(inf)
                                 guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
                                 if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
                                 st.rerun()
                     
                     st.markdown("---")
-                    
-                    # Lienzos de firma EXCLUSIVOS para esta área
                     c_tec, c_cli = st.columns(2)
                     with c_tec:
-                        st.markdown(f"#### 🧑‍🔧 Firma del Técnico ({macro_area})")
-                        canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key=f"canvas_tec_{macro_area}")
+                        st.markdown(f"#### 🧑‍🔧 Firma Técnico ({macro_area})")
+                        canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=180, width=400, drawing_mode="freedraw", key=f"tec_{macro_area}")
                     with c_cli:
-                        st.markdown(f"#### 👷 Firma del Cliente ({macro_area})")
-                        canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=200, width=400, drawing_mode="freedraw", key=f"canvas_cli_{macro_area}")
+                        st.markdown(f"#### 👷 Firma Cliente ({macro_area})")
+                        canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=180, width=400, drawing_mode="freedraw", key=f"cli_{macro_area}")
                     
                     st.markdown("<br>", unsafe_allow_html=True)
-                    
-                    # Botón de envío EXCLUSIVO para procesar los documentos de esta área
                     if st.button(f"🚀 Aprobar, Firmar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
-                        
                         tec_ok = canvas_tec.image_data is not None and canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
                         cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
                         
                         if tec_ok and cli_ok:
                             def procesar_imagen_firma(img_data):
                                 img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
-                            
-                            io_tec = procesar_imagen_firma(canvas_tec.image_data)
-                            io_cli = procesar_imagen_firma(canvas_cli.image_data)
+                            io_tec = procesar_imagen_firma(canvas_tec.image_data); io_cli = procesar_imagen_firma(canvas_cli.image_data)
                             
                             informes_finales = []
-                            with st.spinner(f"Inyectando firmas en los documentos de {macro_area}..."):
+                            with st.spinner(f"Procesando documentos de {macro_area}..."):
                                 try:
                                     for inf in informes_area:
                                         doc = DocxTemplate(inf['file_plantilla']); context = inf['context']
                                         context['firma_tecnico'] = InlineImage(doc, io_tec, width=Mm(40)); context['firma_cliente'] = InlineImage(doc, io_cli, width=Mm(40)); doc.render(context); doc.save(inf['ruta_docx']); ruta_pdf_gen = convertir_a_pdf(inf['ruta_docx'])
                                         if ruta_pdf_gen: ruta_final = ruta_pdf_gen; nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
                                         else: ruta_final = inf['ruta_docx']; nombre_final = inf['nombre_archivo_base']
-                                        tupla_lista = list(inf['tupla_db']); tupla_lista[18] = ruta_final; guardado_ok = guardar_registro(tuple(tupla_lista))
-                                        if not guardado_ok: st.error(f"⚠️ El PDF de {inf['tag']} se generó y envió, pero la base de datos superó su límite.")
+                                        tupla_lista = list(inf['tupla_db']); tupla_lista[18] = ruta_final; guardar_registro(tuple(tupla_lista))
                                         informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{macro_area}@@{inf['tag']}@@{nombre_final}"})
                                     
                                     exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
                                     if exito: 
-                                        st.success(f"✅ ¡PERFECTO! Los documentos de {macro_area} se firmaron y enviaron.")
-                                        # Eliminar de la bandeja general SOLO los informes que acabamos de enviar
+                                        st.success(f"✅ ¡Listos y enviados los reportes de {macro_area}!")
                                         for inf_enviado in informes_area:
-                                            if inf_enviado in st.session_state.informes_pendientes:
-                                                st.session_state.informes_pendientes.remove(inf_enviado)
-                                        
+                                            if inf_enviado in st.session_state.informes_pendientes: st.session_state.informes_pendientes.remove(inf_enviado)
                                         guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
                                         time.sleep(2)
                                         if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
                                         st.rerun()
                                     else: st.error(f"Error de red: {mensaje_correo}")
-                                except Exception as e: st.error(f"Error sistémico procesando las firmas: {e}")
-                        else: 
-                            st.warning(f"⚠️ Asegúrate de que ambas pizarras contengan una firma visible para {macro_area}.")
+                                except Exception as e: st.error(f"Error procesando los PDFs: {e}")
+                        else: st.warning(f"⚠️ Asegúrate de firmar ambas pizarras para procesar los documentos de {macro_area}.")
                 st.markdown("<br><br>", unsafe_allow_html=True)
 
-    # --- 6.2 VISTA CATÁLOGO (DASHBOARD CINETICO Y PREMIUM) ---
+    # --- 7.3 VISTA CATÁLOGO ---
     elif st.session_state.vista_actual == "catalogo" and st.session_state.equipo_seleccionado is None:
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(0,124,166,0) 0%, rgba(0,124,166,0.1) 50%, rgba(0,124,166,0) 100%); padding: 20px; border-radius: 15px;">
@@ -814,7 +699,7 @@ else:
             es_secador = "CD" in modelo.upper()
             if filtro_tipo == "Compresores" and es_secador: continue
             if filtro_tipo == "Secadores" and not es_secador: continue
-            if busqueda in tag.lower() or busqueda in area.lower() or busqueda in modelo.lower():
+            if busqueda in tag.lower() or busqueda in area.lower() or busqueda in modelo.lower() or busqueda in ubicacion.lower():
                 estado = estados_db.get(tag, "Operativo")
                 if estado == "Operativo":
                     color_borde = "#00e676"; badge_html = "<div style='background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid #00e676; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-block;'>OPERATIVO</div>"
@@ -825,18 +710,24 @@ else:
                     with st.container(border=True):
                         st.markdown(f"<div style='border-top: 4px solid {color_borde}; padding-top: 10px; text-align: center; margin-top:-10px;'>{badge_html}</div>", unsafe_allow_html=True)
                         st.button(f"{tag}", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
-                        st.markdown(f"<p style='color: #8c9eb5; margin-top: 5px; font-size: 0.85rem; text-align: center;'><strong style='color:#007CA6;'>{modelo}</strong> &bull; {area.title()}</p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='color: #8c9eb5; margin-top: 5px; font-size: 0.85rem; text-align: center;'><strong style='color:#007CA6;'>{modelo}</strong> &bull; {area.title()}<br><small style='color: #556b82;'>{ubicacion.title()}</small></p>", unsafe_allow_html=True)
                 contador += 1
 
-    # --- 6.3 VISTA FORMULARIO Y GENERACIÓN ---
+    # --- 7.4 VISTA FORMULARIO Y GENERACIÓN ---
     elif st.session_state.equipo_seleccionado is not None:
         tag_sel = st.session_state.equipo_seleccionado; mod_d, ser_d, area_d, ubi_d = inventario_equipos[tag_sel]
         c_btn, c_tit = st.columns([1, 4])
         with c_btn: st.button("⬅️ Volver", on_click=volver_catalogo, use_container_width=True)
         with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Serviço: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True); tab1, tab2, tab3, tab4 = st.tabs(["📋 1. Reporte y Diagnóstico", "📚 2. Ficha Técnica", "🔍 3. Bitácora de Observaciones", "👤 4. Gestión de Área"])
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # OBTENER ESPECIFICACIONES ANTES DE LOS TABS PARA EVITAR ERRORES
+        ESPECIFICACIONES = obtener_especificaciones(DEFAULT_SPECS)
+        
+        tab1, tab2, tab3, tab4 = st.tabs(["📋 1. Reporte y Diagnóstico", "📚 2. Ficha Técnica", "🔍 3. Bitácora de Observaciones", "👤 4. Gestión de Área"])
+        
         with tab1:
-            st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área", area_d, disabled=True); ubicacion = c4.text_input("Ubicación", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
+            st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área Específica", area_d, disabled=True); ubicacion = c4.text_input("Macro-Área", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
             
             fecha = c5.text_input("Fecha Ejecución", obtener_fecha_hoy_esp())
             tec1 = c6.text_input("Técnico 1", key="input_tec1"); tec2 = c7.text_input("Técnico 2", key="input_tec2")
@@ -859,44 +750,55 @@ else:
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Evaluación y Diagnóstico Final"); est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True); est_ent = st.text_area("Descripción Condición Final:", key="input_estado", height=100); reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100); st.markdown("<br>", unsafe_allow_html=True)
             
             if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
+                actualizar_estado_equipo_en_nube(tag_sel, est_eq)
                 if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
                 else: file_plantilla = "plantilla/fueradeservicio.docx" if est_eq == "Fuera de servicio" else f"plantilla/{tipo_plan.lower()}.docx" if tipo_plan in ["P1", "P2", "P3"] else "plantilla/inspeccion.docx"
                 context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}; nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"; ruta = os.path.join(RUTA_ONEDRIVE, nombre_archivo); temp_db = float(t_salida_clean) if t_salida_clean.replace('.', '', 1).isdigit() else 0.0; tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
                 with st.spinner("Creando borrador del documento para vista preliminar..."):
                     doc_prev = DocxTemplate(file_plantilla); ctx_prev = context.copy(); ctx_prev['firma_tecnico'] = ""; ctx_prev['firma_cliente'] = ""; doc_prev.render(ctx_prev); os.makedirs(RUTA_ONEDRIVE, exist_ok=True); ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}"); doc_prev.save(ruta_prev_docx); ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
-                st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf})
+                
+                st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf})
                 guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
-                st.success("✅ Datos guardados. Agrega otro equipo o ve a la bandeja para firmar."); st.session_state.equipo_seleccionado = None; st.rerun()
+                st.success(f"✅ Datos guardados. El equipo se anotó como '{est_eq}' en tu Base de Datos y el informe se fue a la Bandeja de {ubi_d.title()}."); st.session_state.equipo_seleccionado = None; st.rerun()
                     
         with tab2:
             st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
-            
-            # 🔥 ESTA ES LA LÍNEA MÁGICA QUE FALTABA 🔥
-            ESPECIFICACIONES = obtener_especificaciones(DEFAULT_SPECS)
-            
             with st.expander("✏️ Agregar o Corregir Datos Faltantes"):
                 with st.form(key=f"form_specs_{tag_sel}"):
-                    c_e1, c_e2 = st.columns(2)
-                    opc_claves = ["N° Parte Filtro Aceite", "N° Parte Filtro Aire", "N° Parte Kit", "N° Parte Separador", "Litros de Aceite", "Tipo de Aceite", "Cant. Filtros Aceite", "Cant. Filtros Aire", "Otro dato nuevo..."]
-                    clave_sel = c_e1.selectbox("¿Qué dato vas a ingresar?", opc_claves)
-                    clave_final = c_e1.text_input("Escribe el nombre del dato:") if clave_sel == "Otro dato nuevo..." else clave_sel
-                    valor_final = c_e2.text_input("Ingresa el valor:")
+                    c_e1, c_e2 = st.columns(2); opc_claves = ["N° Parte Filtro Aceite", "N° Parte Filtro Aire", "N° Parte Kit", "N° Parte Separador", "Litros de Aceite", "Tipo de Aceite", "Cant. Filtros Aceite", "Cant. Filtros Aire", "Otro dato nuevo..."]; clave_sel = c_e1.selectbox("¿Qué dato vas a ingresar?", opc_claves); clave_final = c_e1.text_input("Escribe el nombre del dato:") if clave_sel == "Otro dato nuevo..." else clave_sel; valor_final = c_e2.text_input("Ingresa el valor:")
                     if st.form_submit_button("💾 Guardar en Base de Datos", use_container_width=True):
-                        if clave_final and valor_final: 
-                            guardar_especificacion_db(mod_d, clave_final.strip(), valor_final.strip())
-                            st.success("✅ ¡Dato guardado!")
-                            st.rerun()
-                            
+                        if clave_final and valor_final: guardar_especificacion_db(mod_d, clave_final.strip(), valor_final.strip()); st.success("✅ ¡Dato guardado!"); st.rerun()
             if mod_d in ESPECIFICACIONES:
                 specs = {k: v for k, v in ESPECIFICACIONES[mod_d].items() if k != "Manual"}
                 if specs:
                     cols = st.columns(3)
                     for i, (k, v) in enumerate(specs.items()):
-                        with cols[i % 3]: 
-                            st.markdown(f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
-                
-                st.markdown("<hr>", unsafe_allow_html=True)
-                st.markdown("### 📥 Documentación y Manuales")
+                        with cols[i % 3]: st.markdown(f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
+                st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### 📥 Documentación y Manuales")
                 if "Manual" in ESPECIFICACIONES[mod_d] and os.path.exists(ESPECIFICACIONES[mod_d]["Manual"]):
-                    with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f: 
-                        st.download_button(label=f"📕 Descargar Manual de {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
+                    with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f: st.download_button(label=f"📕 Descargar Manual de {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
+        with tab3:
+            st.markdown(f"### 🔍 Bitácora Permanente del Equipo: {tag_sel}")
+            with st.form(key=f"form_obs_{tag_sel}"):
+                nueva_obs = st.text_area("Escribe una nueva observación:", height=100)
+                if st.form_submit_button("➕ Dejar constancia en la bitácora", use_container_width=True):
+                    if nueva_obs: agregar_observacion(tag_sel, st.session_state.usuario_actual, nueva_obs); st.success("✅ Observación registrada."); st.rerun()
+            st.markdown("---"); df_obs = obtener_observaciones(tag_sel)
+            if not df_obs.empty:
+                for _, row in df_obs.iterrows():
+                    col_obs, col_del = st.columns([11, 1])
+                    with col_obs: st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #FF6600;'><small style='color: #aeb9cc;'><b>👤 Técnico: {row['usuario']}</b> &nbsp;|&nbsp; 📅 Fecha: {row['fecha']}</small><br><span style='color: white; font-size: 1.05em;'>{row['texto']}</span></div>", unsafe_allow_html=True)
+                    with col_del:
+                        if st.button("🗑️", key=f"del_obs_{row['id']}"): eliminar_observacion(row['id']); st.rerun()
+        with tab4:
+            st.markdown(f"### 👤 Información de Contactos y Seguridad del Área: {tag_sel}")
+            with st.expander("✏️ Editar o Agregar Contacto / Dato de Seguridad"):
+                with st.form(key=f"form_area_{tag_sel}"):
+                    c_a1, c_a2 = st.columns(2); opc_area = ["Dueño de Área (Turno 1-3)", "Dueño de Área (Turno 2-4)", "PEA", "Frecuencia Radial", "Supervisor a cargo", "Jefe de Turno", "Otro cargo..."]; clave_sel_area = c_a1.selectbox("¿Qué dato vas a ingresar?", opc_area); clave_final_area = c_a1.text_input("Escribe el nombre del cargo:") if clave_sel_area == "Otro cargo..." else clave_sel_area; valor_final_area = c_a2.text_input("Ingresa la información:")
+                    if st.form_submit_button("💾 Guardar Información", use_container_width=True):
+                        if clave_final_area and valor_final_area: guardar_dato_equipo(tag_sel, clave_final_area.strip(), valor_final_area.strip()); st.success("✅ Dato actualizado!"); st.rerun()
+            datos_equipo = obtener_datos_equipo(tag_sel); cols_area = st.columns(2)
+            for i, (k, v) in enumerate(datos_equipo.items()):
+                with cols_area[i % 2]: st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #FF6600;'><span style='color: #aeb9cc; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
+        st.markdown("<br><hr>", unsafe_allow_html=True); st.markdown("### 📋 Trazabilidad Histórica de Intervenciones"); df_hist = obtener_todo_el_historial(tag_sel)
+        if not df_hist.empty: st.dataframe(df_hist, use_container_width=True)
