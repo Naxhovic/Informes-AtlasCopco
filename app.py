@@ -141,7 +141,9 @@ def get_sheet(sheet_name):
         client = get_gspread_client()
         doc = client.open("BaseDatos")
         try: return doc.worksheet(sheet_name)
-        except gspread.exceptions.WorksheetNotFound: return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
+        except gspread.exceptions.WorksheetNotFound: 
+            # MAGIA: Si no existe, la crea automáticamente con espacio de sobra.
+            return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e: return None
 
 # =============================================================================
@@ -285,7 +287,7 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
     # =============================================================================
-# 4. FUNCIONES AUXILIARES Y PLANIFICACIÓN
+# 4. FUNCIONES AUXILIARES
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -324,71 +326,39 @@ def guardar_pendientes(usuario, pendientes):
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
-def obtener_quincena_actual():
-    hoy = datetime.date.today(); meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-    if hoy.day <= 15: return meses[hoy.month - 1], f"15 de {meses[hoy.month - 2 if hoy.month > 1 else 11]} al 15 de {meses[hoy.month - 1]}"
-    else: return meses[hoy.month] if hoy.month < 12 else "Enero", f"15 de {meses[hoy.month - 1]} al 15 de {meses[hoy.month] if hoy.month < 12 else 'Enero'}"
-
-def generar_planificacion_base():
-    datos = [
-        {"TAG": "70-GC-013", "Equipo": "GA 132", "Área": "Descarga Acido", "15c Ene": "INSP", "15c Feb": "P1\n20/02 (WK8)", "15c Mar": "INSP", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"},
-        {"TAG": "35-GC-006", "Equipo": "GA 250", "Área": "Chancado Sec.", "15c Ene": "P1\nFalta", "15c Feb": "P1\nF/S", "15c Mar": "P2\nF/S", "15c Abr": "P1", "15c May": "P1", "15c Jun": "P2", "15c Jul": "P1", "15c Ago": "P1", "15c Sep": "P4", "15c Oct": "P1", "15c Nov": "P1", "15c Dic": "P2"},
-        {"TAG": "20-GC-001", "Equipo": "GA 75", "Área": "Truck Shop", "15c Ene": "INSP", "15c Feb": "P1", "15c Mar": "INSP", "15c Abr": "P4", "15c May": "INSP", "15c Jun": "P1", "15c Jul": "INSP", "15c Ago": "P2", "15c Sep": "INSP", "15c Oct": "P1", "15c Nov": "INSP", "15c Dic": "P3"}
-    ]
-    return pd.DataFrame(datos)
-
+# =============================================================================
+# 5. INICIALIZACIÓN DE ESTADOS Y MOTOR CMMS (NUEVO)
+# =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
-def cargar_planificacion():
-    sheet = get_sheet("planificacion")
+def cargar_cmms():
+    # Esta función busca la hoja. Si no existe, Google Sheets la crea.
+    sheet = get_sheet("plan_cmms")
+    headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
+    
     if sheet:
         data = sheet.get_all_values()
-        if len(data) > 1:
-            df = pd.DataFrame(data[1:], columns=data[0])
-            if "15c Ene" in df.columns: return df
-    return generar_planificacion_base()
+        if len(data) > 1: 
+            return pd.DataFrame(data[1:], columns=data[0])
+        elif len(data) == 0:
+            # MAGIA: Si la hoja está totalmente en blanco, le inyecta los títulos
+            try: 
+                sheet.append_row(headers)
+                st.cache_data.clear()
+            except: pass
+            return pd.DataFrame(columns=headers)
+        elif len(data) == 1:
+            return pd.DataFrame(columns=data[0])
+            
+    # Si todo falla, devuelve un dataframe vacío para que no se caiga la app
+    return pd.DataFrame(columns=headers)
 
-def guardar_planificacion(df):
-    sheet = get_sheet("planificacion")
+def guardar_cmms(df):
+    sheet = get_sheet("plan_cmms")
     if sheet:
-        sheet.clear() 
-        sheet.append_rows([df.columns.values.tolist()] + df.values.tolist()); st.cache_data.clear() 
+        sheet.clear()
+        sheet.append_rows([df.columns.values.tolist()] + df.values.tolist())
+        st.cache_data.clear()
 
-def estilo_dinamico_celdas(val):
-    if pd.isna(val) or val == "": return ''
-    v = str(val).upper()
-    base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
-    if 'F/S' in v or 'FUERA' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
-    if any(x in v for x in ['FALTA', 'PENDIENTE', 'WK', 'PEND']): return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
-    import re
-    if re.search(r'(\d{2}/\d{2}|WK\d+|HECHO|OK)', v): return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
-    if 'P1' in v: return base + 'background-color: #0c2d48; color: #66c2ff; font-weight: bold;'
-    if 'P2' in v: return base + 'background-color: #4a2c00; color: #ffb04c; font-weight: bold;'
-    if 'P3' in v: return base + 'background-color: #301047; color: #d78aff; font-weight: bold;'
-    if 'P4' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold;'
-    return base + 'color: #8c9eb5; font-style: italic;'
-
-def estilo_simple_editor(val):
-    v = str(val).upper()
-    if 'F/S' in v: return 'background-color: #471015; color: #ff8a93;'
-    import re
-    if re.search(r'(\d{2}/\d{2}|WK\d+)', v) and not 'FALTA' in v: return 'background-color: #063f22; color: #6ee7b7;'
-    if 'FALTA' in v: return 'background-color: #423205; color: #fde047;'
-    if 'P1' in v: return 'background-color: #0c2d48; color: #66c2ff;' 
-    if 'P4' in v: return 'background-color: #471015; color: #ff8a93;'
-    return 'color: #8c9eb5;'
-
-def estilo_pautas_puras(val):
-    v = str(val).upper()
-    if 'P1' == v: return 'background-color: #0c2d48; color: #66c2ff; font-weight: bold; text-align: center; border-radius: 4px; border: 1px solid #1a5c94;'
-    if 'P2' == v: return 'background-color: #4a2c00; color: #ffb04c; font-weight: bold; text-align: center; border-radius: 4px; border: 1px solid #8c5300;'
-    if 'P3' == v: return 'background-color: #301047; color: #d78aff; font-weight: bold; text-align: center; border-radius: 4px; border: 1px solid #622291;'
-    if 'P4' == v: return 'background-color: #471015; color: #ff8a93; font-weight: bold; text-align: center; border-radius: 4px; border: 1px solid #8e202a;'
-    if 'INSP' in v or 'I' == v: return 'background-color: transparent; color: #8c9eb5; font-weight: bold; text-align: center; border: 1px dashed #455065; border-radius: 4px;'
-    return ''
-
-# =============================================================================
-# 5. INICIALIZACIÓN DE ESTADOS
-# =============================================================================
 def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
@@ -455,7 +425,7 @@ else:
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
             
-        if st.button("📅 Planificación Hidrometalurgia", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
+        if st.button("📊 Panel de Planificación (CMMS)", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
             
         if len(st.session_state.informes_pendientes) > 0:
@@ -466,161 +436,95 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.1 VISTA PLANIFICACIÓN ---
+    # --- 7.1 VISTA PLANIFICACIÓN (NUEVO CMMS KANBAN) ---
     if st.session_state.vista_actual == "planificacion":
-        df_plan = cargar_planificacion()
-        if "Área" not in df_plan.columns or "TAG" not in df_plan.columns: df_plan = generar_planificacion_base()
-        df_plan = df_plan.fillna("")
-        
-        mes_plan, rango_fechas = obtener_quincena_actual()
-        mes_col_actual = f"15c {mes_plan[:3]}"
+        df_cmms = cargar_cmms()
+        hoy = datetime.date.today()
+        semana_actual = f"WK{hoy.isocalendar()[1]:02d}"
         
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
-                <h2 style="color: white; margin: 0;">📅 Planificación Operativa</h2>
-                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Ciclo en curso: {rango_fechas}</p>
+                <h2 style="color: white; margin: 0;">📅 Panel de Control CMMS</h2>
+                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Semana en curso: {semana_actual}</p>
             </div>
         """, unsafe_allow_html=True)
         
-        tab_faltantes, tab_calendario, tab_matriz = st.tabs(["📝 Gestión de Tickets", "📆 Mapa y Gestor Histórico", "📊 Matriz Anual"])
-
-        with tab_faltantes:
-            st.markdown("### 📝 Gestión de la Quincena Actual")
-            st.info("Marca con un ticket (✔️) la casilla para los equipos que ya realizaste. **Si te equivocas, simplemente quítale el ticket** y volverá a estar pendiente. Luego presiona Guardar.")
+        # --- PANEL DE INDICADORES (KPIs) ---
+        df_semana = df_cmms[df_cmms["S_Programada"] == semana_actual]
+        total_tareas = len(df_semana)
+        hechas = len(df_semana[df_semana["Estado"] == "Hecho"])
+        fs = len(df_semana[df_semana["Estado"] == "F/S"])
+        cumplimiento = int((hechas / total_tareas * 100)) if total_tareas > 0 else 100
+        
+        c_kpi1, c_kpi2, c_kpi3, c_kpi4 = st.columns(4)
+        c_kpi1.metric(label="📈 Cumplimiento Semanal", value=f"{cumplimiento}%")
+        c_kpi2.metric(label="🎯 Tareas Programadas", value=total_tareas)
+        c_kpi3.metric(label="✅ Tareas Completadas", value=hechas)
+        c_kpi4.metric(label="🚨 Equipos F/S", value=fs)
+        
+        st.markdown("---")
+        tab_gestion, tab_crear = st.tabs(["📋 Tablero Kanban de Mantenimiento", "➕ Programar Nueva Tarea"])
+        
+        # --- TABLERO INTERACTIVO ---
+        with tab_gestion:
+            st.info("Haz doble clic en la columna **Estado Actual** para marcar un equipo como Hecho o Fuera de Servicio. Luego dale a Guardar.")
             
-            c_fec1, c_fec2 = st.columns([1, 4])
-            with c_fec1: fecha_rapida = st.date_input("Fecha a registrar (para nuevos tickets):", datetime.date.today(), key="fecha_faltantes")
+            c_f1, c_f2 = st.columns([1, 3])
+            with c_f1: 
+                opciones_sem = ["Todas"] + sorted(df_cmms["S_Programada"].unique().tolist())
+                filtro_sem = st.selectbox("Filtrar por Semana:", opciones_sem, index=opciones_sem.index(semana_actual) if semana_actual in opciones_sem else 0)
             
-            if mes_col_actual in df_plan.columns:
-                df_quincena_act = df_plan[df_plan[mes_col_actual].str.strip() != ""].copy()
-                
-                import re
-                def es_pendiente(val):
-                    v = str(val).upper()
-                    if 'FALTA' in v or 'PEND' in v: return True
-                    if not re.search(r'(\d{2}/\d{2}|WK\d+|HECHO|OK)', v): return True
-                    return False
-                def extraer_pauta(txt):
-                    match = re.search(r'(P[1-4]|INSP|I)', str(txt).upper())
-                    return match.group(1) if match else "INSP"
-                
-                df_quincena_act["Estado_Orig"] = df_quincena_act[mes_col_actual].apply(lambda x: not es_pendiente(x))
-                df_quincena_act["✔️ Listo"] = df_quincena_act["Estado_Orig"]
-                df_quincena_act["Intervención"] = df_quincena_act[mes_col_actual].apply(extraer_pauta)
-                
-                df_mostrar = df_quincena_act.sort_values(by="✔️ Listo", ascending=True)
-                df_mostrar_cols = df_mostrar[['✔️ Listo', 'TAG', 'Equipo', 'Área', 'Intervención', mes_col_actual]]
-                
-                try: df_falta_estilo = df_mostrar_cols.style.map(estilo_pautas_puras, subset=['Intervención']).map(estilo_simple_editor, subset=[mes_col_actual])
-                except AttributeError: df_falta_estilo = df_mostrar_cols.style.applymap(estilo_pautas_puras, subset=['Intervención']).applymap(estilo_simple_editor, subset=[mes_col_actual])
-                
-                configuracion_columnas = { "✔️ Listo": st.column_config.CheckboxColumn("¿Listo?"), "TAG": st.column_config.TextColumn("TAG", disabled=True), "Equipo": st.column_config.TextColumn("Equipo", disabled=True), "Área": st.column_config.TextColumn("Área", disabled=True), "Intervención": st.column_config.TextColumn("Intervención", disabled=True), mes_col_actual: st.column_config.TextColumn("Comentario en Matriz", disabled=True) }
-                edited_faltantes = st.data_editor(df_falta_estilo, hide_index=True, use_container_width=True, column_config=configuracion_columnas, height=550)
-                
-                if st.button("💾 Guardar Cambios en Nube y Matriz", type="primary"):
-                    cambios = 0; str_fecha = f"{fecha_rapida.strftime('%d/%m')} (WK{fecha_rapida.isocalendar()[1]})"
-                    for _, row in edited_faltantes.iterrows():
-                        tag_act = row["TAG"]; estado_nuevo = row["✔️ Listo"]
-                        estado_viejo = df_quincena_act.loc[df_quincena_act['TAG'] == tag_act, "Estado_Orig"].values[0]
-                        if estado_nuevo != estado_viejo:
-                            idx = df_plan.index[df_plan['TAG'] == tag_act].tolist()[0]; pauta = row["Intervención"]
-                            if estado_nuevo == True: df_plan.at[idx, mes_col_actual] = f"{pauta}\n{str_fecha}"
-                            else: df_plan.at[idx, mes_col_actual] = f"{pauta}\nFalta"
-                            cambios += 1
-                    if cambios > 0:
-                        guardar_planificacion(df_plan); st.success(f"✅ ¡Excelente! Se actualizaron {cambios} equipos en la Matriz Anual.")
-                        time.sleep(2); st.rerun()
-                    else: st.warning("No realizaste ningún cambio en las casillas.")
-
-        with tab_calendario:
-            # MAGIA: Formulario para añadir, mover o borrar eventos en el calendario
-            hoy = datetime.date.today()
-            meses_nombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+            df_mostrar = df_cmms.copy() if filtro_sem == "Todas" else df_cmms[df_cmms["S_Programada"] == filtro_sem]
             
-            c_cal_tit, c_cal_sel = st.columns([2, 1])
-            with c_cal_tit: st.markdown("### 📆 Calendario Interactivo Anual")
-            with c_cal_sel:
-                mes_sel = st.selectbox("📅 Selecciona el mes a visualizar:", meses_nombres, index=hoy.month - 1)
-                mes_idx = meses_nombres.index(mes_sel) + 1
-
-            with st.expander("⚙️ Administrador de Tareas (Agregar, Reprogramar o Borrar)"):
-                with st.form("form_gestor_calendario"):
-                    col_f1, col_f2, col_f3, col_f4 = st.columns([1.5, 2, 1.5, 1.5])
-                    acc = col_f1.selectbox("Acción a realizar:", ["➕ Asignar / Mover", "🗑️ Borrar Fecha"])
-                    tag_mod = col_f2.selectbox("Equipo (TAG):", sorted(df_plan['TAG'].unique()))
-                    f_mod = col_f3.date_input("Fecha:", hoy)
-                    p_mod = col_f4.selectbox("Pauta:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
+            if not df_mostrar.empty:
+                config_columnas = {
+                    "TAG": st.column_config.TextColumn("Equipo", disabled=True),
+                    "S_Programada": st.column_config.TextColumn("Semana Prog.", disabled=True),
+                    "Tipo": st.column_config.TextColumn("Intervención", disabled=True),
+                    "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["Pendiente", "Hecho", "F/S"], required=True),
+                    "S_Realizada": st.column_config.TextColumn("Semana Realizada (Ej: WK10)"),
+                    "Observacion": st.column_config.TextColumn("Comentarios / Desviaciones")
+                }
+                
+                def color_estado(val):
+                    if val == 'Hecho': return 'background-color: #063f22; color: #6ee7b7; font-weight: bold;'
+                    if val == 'Pendiente': return 'background-color: #423205; color: #fde047; font-weight: bold;'
+                    if val == 'F/S': return 'background-color: #471015; color: #ff8a93; font-weight: bold;'
+                    return ''
                     
-                    if st.form_submit_button("🚀 Aplicar Cambios al Calendario", type="primary"):
-                        meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-                        # Regla de Quincenas: Día 1 al 15 = Mes actual. Día 16 en adelante = Mes siguiente.
-                        if f_mod.day <= 15: col_destino = f"15c {meses_abr[f_mod.month - 1]}"
-                        else: col_destino = f"15c {meses_abr[f_mod.month if f_mod.month < 12 else 0]}"
-                            
-                        if col_destino in df_plan.columns:
-                            idx = df_plan.index[df_plan['TAG'] == tag_mod].tolist()[0]
-                            if "Borrar" in acc:
-                                df_plan.at[idx, col_destino] = f"{p_mod}\nFalta"
-                                st.success(f"✅ Tarea eliminada del {f_mod.strftime('%d/%m')} y devuelta a estado 'Falta'.")
-                            else:
-                                str_fecha = f"{f_mod.strftime('%d/%m')} (WK{f_mod.isocalendar()[1]})"
-                                df_plan.at[idx, col_destino] = f"{p_mod}\n{str_fecha}"
-                                st.success(f"✅ Tarea de {tag_mod} asignada correctamente para el {f_mod.strftime('%d/%m')}.")
-                            guardar_planificacion(df_plan)
-                            time.sleep(1.5); st.rerun()
-                        else: st.error("Error crítico: Columna no encontrada en la matriz base.")
-
-            # Dibujar el calendario basado en el MES SELECCIONADO
-            import calendar
-            cal = calendar.Calendar(calendar.MONDAY)
-            semanas_mes = cal.monthdatescalendar(hoy.year, mes_idx)
-            
-            tareas_por_fecha = {}
-            for col in df_plan.columns:
-                if "15c" in col:
-                    for idx, row in df_plan.iterrows():
-                        val = str(row[col]).upper()
-                        import re; matches = re.findall(r'(\d{2}/\d{2})', val)
-                        for m in matches:
-                            try:
-                                d, m_num = map(int, m.split('/'))
-                                fecha_tarea = datetime.date(hoy.year, m_num, d)
-                                if fecha_tarea not in tareas_por_fecha: tareas_por_fecha[fecha_tarea] = []
-                                p_txt = re.search(r'(P[1-4]|INSP|I)', val).group(1) if re.search(r'(P[1-4]|INSP|I)', val) else "INSP"
-                                tareas_por_fecha[fecha_tarea].append((row['TAG'], p_txt))
-                            except: pass
-
-            html_cal = '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top:10px;">'
-            for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
-            for semana in semanas_mes:
-                for dia in semana:
-                    is_current_month = dia.month == mes_idx
-                    bg_color = "#1a212b" if is_current_month else "#11151c"
-                    border_color = "#00BFFF" if dia == hoy else "#2b3543"
-                    html_cal += f'<div style="background:{bg_color}; border: 1px solid {border_color}; border-radius: 8px; padding: 5px; min-height: 120px;">'
-                    html_cal += f'<div style="text-align:right; color:white; font-size:0.9rem; margin-bottom:8px;">{dia.day}</div>'
-                    if dia in tareas_por_fecha:
-                        for tag, pt in tareas_por_fecha[dia]: 
-                            html_cal += f'<div style="background:#063f22; color:#6ee7b7; padding:4px; margin-bottom:4px; border-radius:4px; font-size:0.75rem;"><b>{tag}</b> {pt}</div>'
-                    html_cal += '</div>'
-            html_cal += '</div>'
-            st.markdown(html_cal, unsafe_allow_html=True)
-
-        with tab_matriz:
-            col_fil1, col_fil2, col_fil3 = st.columns([1, 1, 1.5])
-            with col_fil1: filtro_area = st.selectbox("🏢 Filtrar por Área:", ["Todas"] + sorted(list(df_plan["Área"].unique())))
-            with col_fil2: modo_edicion_matriz = st.toggle("✏️ Edición de Matriz Completa")
-            df_mostrar = df_plan.copy() if filtro_area == "Todas" else df_plan[df_plan["Área"] == filtro_area]
-            columnas_15cenas = [col for col in df_plan.columns if "15c" in col]
-            if modo_edicion_matriz:
-                try: df_estilizado_edit = df_mostrar.style.map(estilo_simple_editor, subset=columnas_15cenas)
-                except AttributeError: df_estilizado_edit = df_mostrar.style.applymap(estilo_simple_editor, subset=columnas_15cenas)
-                df_editado = st.data_editor(df_estilizado_edit, use_container_width=True, hide_index=True, height=700)
-                if st.button("💾 Guardar Matriz", type="primary", use_container_width=True):
-                    df_final_guardar = df_plan.copy(); df_final_guardar.update(df_editado.astype(str)); guardar_planificacion(df_final_guardar); st.success("✅ Guardado!"); st.rerun()
+                try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado'])
+                except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado'])
+                
+                df_editado = st.data_editor(df_estilizado, hide_index=True, use_container_width=True, column_config=config_columnas, height=400)
+                
+                if st.button("💾 Guardar Avances en la Nube", type="primary"):
+                    # Compara si algo cambió y actualiza la matriz original
+                    df_cmms.update(df_editado)
+                    # Si algo se marcó como "Hecho" y no tenía semana realizada, se le pone la de hoy
+                    df_cmms.loc[(df_cmms['Estado'] == 'Hecho') & (df_cmms['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
+                    guardar_cmms(df_cmms)
+                    st.success("✅ Tablero sincronizado perfectamente.")
+                    time.sleep(1.5); st.rerun()
             else:
-                try: st.dataframe(df_mostrar.style.map(estilo_dinamico_celdas, subset=columnas_15cenas), use_container_width=True, hide_index=True, height=700)
-                except AttributeError: st.dataframe(df_mostrar.style.applymap(estilo_dinamico_celdas, subset=columnas_15cenas), use_container_width=True, hide_index=True, height=700)
+                st.success(f"🎉 No hay tareas programadas para la semana {filtro_sem}. Ve a la siguiente pestaña para crear una.")
+
+        # --- MOTOR DE PROGRAMACIÓN ---
+        with tab_crear:
+            with st.form("form_nueva_tarea"):
+                st.markdown("### 📅 Programar Nueva Intervención")
+                c1, c2, c3 = st.columns(3)
+                n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
+                n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
+                n_sem = c3.text_input("Semana Programada (Ej: WK12):", value=semana_actual)
+                
+                n_obs = st.text_input("Observación inicial (Opcional):", placeholder="Ej: Se requiere cambio de aceite especial...")
+                
+                if st.form_submit_button("🚀 Añadir a la Planificación", type="primary", use_container_width=True):
+                    nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem.upper(), "Tipo": n_tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": n_obs}])
+                    df_cmms = pd.concat([df_cmms, nueva_fila], ignore_index=True)
+                    guardar_cmms(df_cmms)
+                    st.success(f"✅ ¡Listo! Tarea de {n_tipo} para {n_tag} programada exitosamente.")
+                    time.sleep(1.5); st.rerun()
 
     # --- 7.2 VISTA DE FIRMAS (AGRUPADA POR MACRO-ÁREA) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
