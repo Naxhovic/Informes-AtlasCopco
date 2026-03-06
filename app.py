@@ -276,7 +276,7 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
     # =============================================================================
-# 4. FUNCIONES AUXILIARES
+# 4. FUNCIONES AUXILIARES Y CÁLCULO DE QUINCENAS (NUEVO)
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -314,6 +314,29 @@ def guardar_pendientes(usuario, pendientes):
     try:
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
+
+# --- CEREBRO DE QUINCENAS (EL CÁLCULO EXACTO) ---
+def wk_to_date(year, wk_string):
+    try:
+        wk_num = int(re.sub(r'\D', '', str(wk_string)))
+        return datetime.date.fromisocalendar(year, wk_num, 1) # Devuelve el Lunes
+    except: return None
+
+def calcular_quincena(wk_string, year=2026):
+    d = wk_to_date(year, wk_string)
+    if not d: return "Sin Asignar"
+    meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    # REGLA: Si el lunes es <= 15, pertenece a ese mes. Si es > 15, pertenece al siguiente.
+    if d.day <= 15:
+        return f"15c {meses_abr[d.month - 1]}"
+    else:
+        return f"15c {meses_abr[d.month if d.month < 12 else 0]}"
+
+def formatear_wk(wk_str):
+    # Transforma 'WK9' a 'WK09' para que se ordene bien
+    nums = re.findall(r'\d+', str(wk_str))
+    if nums: return f"WK{int(nums[0]):02d}"
+    return str(wk_str).upper()
 
 # =============================================================================
 # 5. MOTOR CMMS Y MATRIZ (BLINDADO)
@@ -362,12 +385,6 @@ def cargar_cmms():
 def guardar_cmms(df):
     sheet = get_sheet("plan_cmms")
     if sheet: sheet.clear(); sheet.append_rows([df.columns.values.tolist()] + df.values.tolist()); st.cache_data.clear()
-
-def wk_to_date(year, wk_string):
-    try:
-        wk_num = int(re.sub(r'\D', '', str(wk_string)))
-        return datetime.date.fromisocalendar(year, wk_num, 1) # Devuelve el Lunes de esa semana
-    except: return None
 
 def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
@@ -449,22 +466,27 @@ else:
         hoy = datetime.date.today()
         semana_actual = f"WK{hoy.isocalendar()[1]:02d}"
         
+        # Le aplicamos a todos los datos la regla de Quincenas
+        df_cmms['S_Programada'] = df_cmms['S_Programada'].apply(formatear_wk)
+        df_cmms['Quincena_Calc'] = df_cmms['S_Programada'].apply(lambda x: calcular_quincena(x, 2026))
+        quincena_de_hoy = calcular_quincena(semana_actual, 2026)
+        
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
-                <h2 style="color: white; margin: 0;">📅 Panel de Control CMMS Integrado</h2>
-                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Semana en curso: {semana_actual}</p>
+                <h2 style="color: white; margin: 0;">📅 Panel de Control CMMS</h2>
+                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Semana Actual: {semana_actual} &nbsp;|&nbsp; Planificación Activa: {quincena_de_hoy}</p>
             </div>
         """, unsafe_allow_html=True)
         
-        # --- PANEL DE INDICADORES (KPIs) ---
-        df_semana = df_cmms[df_cmms["S_Programada"] == semana_actual]
-        total_tareas = len(df_semana)
-        hechas = len(df_semana[df_semana["Estado"] == "Hecho"])
-        fs = len(df_semana[df_semana["Estado"] == "F/S"])
+        # --- PANEL DE INDICADORES (KPIs de la Quincena) ---
+        df_kpi = df_cmms[df_cmms["Quincena_Calc"] == quincena_de_hoy]
+        total_tareas = len(df_kpi)
+        hechas = len(df_kpi[df_kpi["Estado"] == "Hecho"])
+        fs = len(df_kpi[df_kpi["Estado"] == "F/S"])
         cumplimiento = int((hechas / total_tareas * 100)) if total_tareas > 0 else 100
         
         c_kpi1, c_kpi2, c_kpi3, c_kpi4 = st.columns(4)
-        c_kpi1.metric(label="📈 Cumplimiento Semanal", value=f"{cumplimiento}%")
+        c_kpi1.metric(label="📈 Cumplimiento Quincena", value=f"{cumplimiento}%")
         c_kpi2.metric(label="🎯 Tareas Programadas", value=total_tareas)
         c_kpi3.metric(label="✅ Tareas Completadas", value=hechas)
         c_kpi4.metric(label="🚨 Equipos F/S", value=fs)
@@ -472,7 +494,7 @@ else:
         st.markdown("---")
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz Anual Automática"])
         
-        # --- PESTAÑA 1: TABLERO KANBAN CON MOTOR DE CREACIÓN INCORPORADO ---
+        # --- PESTAÑA 1: TABLERO KANBAN CON MOTOR INCORPORADO ---
         with tab_gestion:
             with st.expander("➕ Programar Nueva Intervención (Añadir al Kanban)", expanded=False):
                 with st.form("form_nueva_tarea"):
@@ -482,21 +504,23 @@ else:
                     n_sem = c3.text_input("Semana Programada (Ej: WK12):", value=semana_actual)
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     if st.form_submit_button("🚀 Inyectar Tarea", type="primary", use_container_width=True):
-                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem.upper(), "Tipo": n_tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": n_obs}])
-                        df_cmms = pd.concat([df_cmms, nueva_fila], ignore_index=True)
-                        guardar_cmms(df_cmms); st.success(f"✅ Tarea añadida exitosamente."); time.sleep(1.5); st.rerun()
+                        n_sem_format = formatear_wk(n_sem)
+                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": n_obs}])
+                        df_cmms_final = pd.concat([df_cmms.drop(columns=['Quincena_Calc']), nueva_fila], ignore_index=True)
+                        guardar_cmms(df_cmms_final); st.success(f"✅ Tarea añadida a {n_sem_format}."); time.sleep(1.5); st.rerun()
 
-            st.info("💡 **Doble clic en las columnas para editar.** Puedes cambiar la semana (mover tarea), el tipo o marcar el estado.")
-            c_f1, c_f2 = st.columns([1, 3])
-            with c_f1: 
-                opciones_sem = ["Todas"] + sorted(df_cmms["S_Programada"].unique().tolist())
-                filtro_sem = st.selectbox("Filtrar por Semana:", opciones_sem, index=opciones_sem.index(semana_actual) if semana_actual in opciones_sem else 0)
+            st.info("💡 **Doble clic en las columnas para editar.** Filtra por quincena para ver todas las semanas (WK) asociadas.")
             
-            df_mostrar = df_cmms.copy() if filtro_sem == "Todas" else df_cmms[df_cmms["S_Programada"] == filtro_sem]
+            c_f1, c_f2 = st.columns([1, 3])
+            orden_quincenas = ["Todas", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov", "15c Dic"]
+            with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
+            
+            df_mostrar = df_cmms.copy() if filtro_quin == "Todas" else df_cmms[df_cmms["Quincena_Calc"] == filtro_quin].copy()
             
             if not df_mostrar.empty:
                 config_columnas = {
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
+                    "Quincena_Calc": None, # La ocultamos en la UI
                     "S_Programada": st.column_config.TextColumn("Semana Prog. (Editable)", disabled=False), 
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
                     "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["Pendiente", "Hecho", "F/S"], required=True),
@@ -513,12 +537,23 @@ else:
                 try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado'])
                 except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado'])
                 
-                df_editado = st.data_editor(df_estilizado, hide_index=True, use_container_width=True, column_config=config_columnas, height=500)
+                df_editado = st.data_editor(df_estilizado, hide_index=True, use_container_width=True, column_config=config_columnas, height=450)
                 
                 if st.button("💾 Guardar Avances en la Nube", type="primary"):
-                    df_cmms.update(df_editado)
-                    df_cmms.loc[(df_cmms['Estado'] == 'Hecho') & (df_cmms['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
-                    guardar_cmms(df_cmms); st.success("✅ Tablero sincronizado perfectamente."); time.sleep(1.5); st.rerun()
+                    # Formatea las semanas por si el usuario escribió "wk9" en vez de "WK09"
+                    df_editado['S_Programada'] = df_editado['S_Programada'].apply(formatear_wk)
+                    
+                    df_cmms_guardar = df_cmms.copy()
+                    df_cmms_guardar.update(df_editado)
+                    df_cmms_guardar.loc[(df_cmms_guardar['Estado'] == 'Hecho') & (df_cmms_guardar['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
+                    
+                    # Quitamos la columna de cálculo temporal antes de guardar
+                    if 'Quincena_Calc' in df_cmms_guardar.columns:
+                        df_cmms_guardar = df_cmms_guardar.drop(columns=['Quincena_Calc'])
+                    
+                    guardar_cmms(df_cmms_guardar); st.success("✅ Tablero sincronizado perfectamente."); time.sleep(1.5); st.rerun()
+            else:
+                st.success(f"🎉 No hay tareas programadas para la planificación de {filtro_quin}.")
 
         # --- PESTAÑA 2: CALENDARIO VISUAL CON COLORES CLÁSICOS ---
         with tab_calendario:
@@ -530,12 +565,11 @@ else:
                 mes_idx = meses_nombres.index(mes_sel) + 1
                 
             cal = calendar.Calendar(calendar.MONDAY)
-            semanas_mes = cal.monthdatescalendar(hoy.year, mes_idx)
+            semanas_mes = cal.monthdatescalendar(2026, mes_idx) # Forzamos 2026 por tu archivo
             
-            # Procesar tareas para mapearlas a las fechas (Día Lunes de cada WK)
             tareas_por_fecha = {}
             for _, row in df_cmms.iterrows():
-                d = wk_to_date(hoy.year, row['S_Programada'])
+                d = wk_to_date(2026, row['S_Programada'])
                 if d:
                     if d not in tareas_por_fecha: tareas_por_fecha[d] = []
                     tareas_por_fecha[d].append({"tag": row['TAG'], "tipo": row['Tipo'], "est": row['Estado']})
@@ -553,8 +587,7 @@ else:
                     
                     if dia in tareas_por_fecha:
                         for t in tareas_por_fecha[dia]:
-                            # Lógica de colores clásicos
-                            c_bg = "transparent"; c_tx = "#8c9eb5"; b_style = "1px dashed #455065" # Default INSP
+                            c_bg = "transparent"; c_tx = "#8c9eb5"; b_style = "1px dashed #455065" 
                             if t['est'] == 'Hecho': c_bg, c_tx, b_style = "#063f22", "#6ee7b7", "1px solid #10b981"
                             elif t['est'] == 'F/S': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #ef4444"
                             elif t['tipo'] == 'P1': c_bg, c_tx, b_style = "#0c2d48", "#66c2ff", "1px solid #1a5c94"
@@ -566,19 +599,15 @@ else:
             html_cal += '</div>'
             st.markdown(html_cal, unsafe_allow_html=True)
 
-        # --- PESTAÑA 3: MATRIZ ANUAL (PIVOT) ---
+        # --- PESTAÑA 3: MATRIZ ANUAL (TODAS LAS SEMANAS DEL AÑO) ---
         with tab_matriz:
             st.markdown("### 📊 Matriz Anual Consolidada")
-            st.info("Esta matriz se genera automáticamente leyendo el tablero Kanban. Si quieres editar un estado, hazlo en la pestaña Kanban.")
+            st.info("Esta matriz lee todas las tareas del Kanban y las despliega desde la WK01 hasta la WK52.")
             
-            # Construir la matriz
             df_pivot_base = df_cmms.copy()
-            # Mostramos Tipo + Estado
             df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado']
-            # Evitar errores si hay dos tareas en la misma semana para el mismo equipo
             df_pivot = df_pivot_base.groupby(['TAG', 'S_Programada'])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
             
-            # Agregar información de Area y Equipo
             lista_info = []
             for t in df_pivot.index:
                 if t in inventario_equipos: eq, _, area, _ = inventario_equipos[t]; lista_info.append({"TAG": t, "Equipo": eq, "Área": area.title()})
@@ -587,9 +616,9 @@ else:
             df_info = pd.DataFrame(lista_info).set_index("TAG")
             df_matriz = pd.concat([df_info, df_pivot], axis=1).reset_index()
             
-            # Ordenar las columnas para que las Semanas salgan en orden (WK01, WK02...)
+            # Ordenar las columnas para que salgan en orden (WK01, WK02...)
             cols_base = ['TAG', 'Equipo', 'Área']
-            cols_wk = sorted([c for c in df_matriz.columns if c.startswith('WK')])
+            cols_wk = sorted([c for c in df_matriz.columns if str(c).startswith('WK')])
             df_matriz = df_matriz[cols_base + cols_wk]
             
             def estilo_matriz_colores(val):
