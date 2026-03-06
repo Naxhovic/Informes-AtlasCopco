@@ -331,25 +331,34 @@ def guardar_pendientes(usuario, pendientes):
 # =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
-    # Esta función busca la hoja. Si no existe, Google Sheets la crea.
-    sheet = get_sheet("plan_cmms")
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
-    
-    if sheet:
-        data = sheet.get_all_values()
-        if len(data) > 1: 
-            return pd.DataFrame(data[1:], columns=data[0])
-        elif len(data) == 0:
-            # MAGIA: Si la hoja está totalmente en blanco, le inyecta los títulos
-            try: 
+    try:
+        sheet = get_sheet("plan_cmms")
+        if sheet:
+            data = sheet.get_all_values()
+            
+            if len(data) > 0:
+                # Convierte los datos a DataFrame
+                df = pd.DataFrame(data[1:], columns=data[0]) if len(data) > 1 else pd.DataFrame(columns=data[0])
+                
+                # VERIFICACIÓN CRÍTICA: ¿Están bien escritos los títulos?
+                if "S_Programada" in df.columns:
+                    return df
+                else:
+                    # Si alguien borró los títulos o la hoja tiene basura, la resetea y la arregla
+                    sheet.clear()
+                    sheet.append_row(headers)
+                    st.cache_data.clear()
+                    return pd.DataFrame(columns=headers)
+            else:
+                # Si la hoja está 100% vacía
                 sheet.append_row(headers)
                 st.cache_data.clear()
-            except: pass
-            return pd.DataFrame(columns=headers)
-        elif len(data) == 1:
-            return pd.DataFrame(columns=data[0])
-            
-    # Si todo falla, devuelve un dataframe vacío para que no se caiga la app
+                return pd.DataFrame(columns=headers)
+    except Exception as e:
+        print(f"Error cargando CMMS: {e}")
+        
+    # Si Google falla, devuelve un dataframe vacío pero con la estructura correcta para que no explote
     return pd.DataFrame(columns=headers)
 
 def guardar_cmms(df):
