@@ -53,7 +53,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (BOTÓN LATERAL BLINDADO)
+# 0.2 ESTILOS PREMIUM (BOTÓN LATERAL BLINDADO E INDESTRUCTIBLE)
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -70,7 +70,7 @@ def aplicar_estilos_premium():
         [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; } 
         [data-testid="stDecoration"] { display: none !important; }
         
-        /* Blindaje del botón lateral para que NUNCA desaparezca */
+        /* Blindaje del botón lateral para que NUNCA desaparezca al cerrar el panel */
         [data-testid="collapsedControl"] {
             display: flex !important; visibility: visible !important; opacity: 1 !important;
             z-index: 999999 !important; background-color: var(--ac-blue) !important; 
@@ -134,10 +134,8 @@ inventario_equipos = {
 def get_gspread_client():
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
     try:
-        # Intenta en Render
         creds_dict = json.loads(os.environ["gcp_json"])
     except:
-        # Falla y busca en Local / Streamlit Cloud
         creds_dict = json.loads(st.secrets["gcp_json"])
     
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
@@ -152,17 +150,27 @@ def get_sheet(sheet_name):
     except Exception as e: return None
 
 # =============================================================================
-# 3. FUNCIONES DE BASE DE DATOS
+# 3. FUNCIONES DE BASE DE DATOS (FUSIÓN PERFECTA DE HOJAS)
 # =============================================================================
 @st.cache_data(ttl=120)
 def obtener_estados_actuales():
     estados = {}
     try:
-        sheet = get_sheet("estados_equipos") 
+        # 1. Base Histórica completa (Lee todos los 21 equipos)
+        sheet_int = get_sheet("intervenciones")
+        if sheet_int:
+            data_int = sheet_int.get_all_values()
+            for row in data_int:
+                if len(row) >= 18:
+                    estados[row[0]] = row[17] # Almacena el estado más reciente del historial
+        
+        # 2. Prioridad de actualización rápida (Sobrescribe con los cambios recientes)
+        sheet = get_sheet("estados_equipos")
         if sheet:
             data = sheet.get_all_values()
             for row in data:
-                if len(row) >= 2: estados[row[0]] = row[1]
+                if len(row) >= 2:
+                    estados[row[0]] = row[1] 
     except: pass
     return estados
 
@@ -170,11 +178,20 @@ def actualizar_estado_equipo_en_nube(tag, nuevo_estado):
     try:
         sheet = get_sheet("estados_equipos")
         if sheet:
-            try:
-                celda = sheet.find(tag)
-                sheet.update_cell(celda.row, 2, nuevo_estado)
-            except Exception:
+            registros = sheet.get_all_values()
+            fila_encontrada = -1
+            
+            # Método blindado (Fuerza Bruta) para encontrar la celda
+            for i, fila in enumerate(registros):
+                if len(fila) > 0 and fila[0] == tag:
+                    fila_encontrada = i + 1
+                    break
+            
+            if fila_encontrada != -1:
+                sheet.update_cell(fila_encontrada, 2, nuevo_estado)
+            else:
                 sheet.append_row([tag, nuevo_estado])
+            
             st.cache_data.clear() 
     except Exception as e: pass
 
@@ -487,8 +504,7 @@ else:
             st.info("Marca con un ticket (✔️) la casilla para los equipos que ya realizaste. **Si te equivocas, simplemente quítale el ticket** y volverá a estar pendiente. Luego presiona Guardar.")
             
             c_fec1, c_fec2 = st.columns([1, 4])
-            with c_fec1:
-                fecha_rapida = st.date_input("Fecha a registrar (para nuevos tickets):", datetime.date.today(), key="fecha_faltantes")
+            with c_fec1: fecha_rapida = st.date_input("Fecha a registrar (para nuevos tickets):", datetime.date.today(), key="fecha_faltantes")
             
             if mes_col_actual in df_plan.columns:
                 df_quincena_act = df_plan[df_plan[mes_col_actual].str.strip() != ""].copy()
@@ -499,7 +515,6 @@ else:
                     if 'FALTA' in v or 'PEND' in v: return True
                     if not re.search(r'(\d{2}/\d{2}|WK\d+|HECHO|OK)', v): return True
                     return False
-                
                 def extraer_pauta(txt):
                     match = re.search(r'(P[1-4]|INSP|I)', str(txt).upper())
                     return match.group(1) if match else "INSP"
@@ -514,38 +529,22 @@ else:
                 try: df_falta_estilo = df_mostrar_cols.style.map(estilo_pautas_puras, subset=['Intervención']).map(estilo_simple_editor, subset=[mes_col_actual])
                 except AttributeError: df_falta_estilo = df_mostrar_cols.style.applymap(estilo_pautas_puras, subset=['Intervención']).applymap(estilo_simple_editor, subset=[mes_col_actual])
                 
-                configuracion_columnas = {
-                    "✔️ Listo": st.column_config.CheckboxColumn("¿Listo?"),
-                    "TAG": st.column_config.TextColumn("TAG", disabled=True),
-                    "Equipo": st.column_config.TextColumn("Equipo", disabled=True),
-                    "Área": st.column_config.TextColumn("Área", disabled=True),
-                    "Intervención": st.column_config.TextColumn("Intervención", disabled=True),
-                    mes_col_actual: st.column_config.TextColumn("Comentario en Matriz", disabled=True)
-                }
-                
+                configuracion_columnas = { "✔️ Listo": st.column_config.CheckboxColumn("¿Listo?"), "TAG": st.column_config.TextColumn("TAG", disabled=True), "Equipo": st.column_config.TextColumn("Equipo", disabled=True), "Área": st.column_config.TextColumn("Área", disabled=True), "Intervención": st.column_config.TextColumn("Intervención", disabled=True), mes_col_actual: st.column_config.TextColumn("Comentario en Matriz", disabled=True) }
                 edited_faltantes = st.data_editor(df_falta_estilo, hide_index=True, use_container_width=True, column_config=configuracion_columnas, height=550)
                 
                 if st.button("💾 Guardar Cambios en Nube y Matriz", type="primary"):
-                    cambios = 0
-                    str_fecha = f"{fecha_rapida.strftime('%d/%m')} (WK{fecha_rapida.isocalendar()[1]})"
-                    
+                    cambios = 0; str_fecha = f"{fecha_rapida.strftime('%d/%m')} (WK{fecha_rapida.isocalendar()[1]})"
                     for _, row in edited_faltantes.iterrows():
-                        tag_act = row["TAG"]
-                        estado_nuevo = row["✔️ Listo"]
+                        tag_act = row["TAG"]; estado_nuevo = row["✔️ Listo"]
                         estado_viejo = df_quincena_act.loc[df_quincena_act['TAG'] == tag_act, "Estado_Orig"].values[0]
-                        
                         if estado_nuevo != estado_viejo:
-                            idx = df_plan.index[df_plan['TAG'] == tag_act].tolist()[0]
-                            pauta = row["Intervención"]
+                            idx = df_plan.index[df_plan['TAG'] == tag_act].tolist()[0]; pauta = row["Intervención"]
                             if estado_nuevo == True: df_plan.at[idx, mes_col_actual] = f"{pauta}\n{str_fecha}"
                             else: df_plan.at[idx, mes_col_actual] = f"{pauta}\nFalta"
                             cambios += 1
-                    
                     if cambios > 0:
-                        guardar_planificacion(df_plan)
-                        st.success(f"✅ ¡Excelente! Se actualizaron {cambios} equipos en la Matriz Anual.")
-                        time.sleep(2)
-                        st.rerun()
+                        guardar_planificacion(df_plan); st.success(f"✅ ¡Excelente! Se actualizaron {cambios} equipos en la Matriz Anual.")
+                        time.sleep(2); st.rerun()
                     else: st.warning("No realizaste ningún cambio en las casillas.")
 
         with tab_calendario:
@@ -721,9 +720,7 @@ else:
         with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Serviço: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # OBTENER ESPECIFICACIONES ANTES DE LOS TABS PARA EVITAR ERRORES
         ESPECIFICACIONES = obtener_especificaciones(DEFAULT_SPECS)
-        
         tab1, tab2, tab3, tab4 = st.tabs(["📋 1. Reporte y Diagnóstico", "📚 2. Ficha Técnica", "🔍 3. Bitácora de Observaciones", "👤 4. Gestión de Área"])
         
         with tab1:
