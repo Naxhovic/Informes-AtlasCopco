@@ -53,7 +53,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (BOTÓN LATERAL BLINDADO E INDESTRUCTIBLE)
+# 0.2 ESTILOS PREMIUM (BOTÓN LATERAL BLINDADO)
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -64,13 +64,10 @@ def aplicar_estilos_premium():
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
         
-        /* 🔥 SOLUCIÓN INFALIBLE DE MENÚ LATERAL 🔥 */
-        /* Hacemos el header transparente para no borrar el botón del menú, pero ocultamos la basura derecha */
         header { background: transparent !important; }
         [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; } 
         [data-testid="stDecoration"] { display: none !important; }
         
-        /* Blindaje del botón lateral para que NUNCA desaparezca al cerrar el panel */
         [data-testid="collapsedControl"] {
             display: flex !important; visibility: visible !important; opacity: 1 !important;
             z-index: 999999 !important; background-color: var(--ac-blue) !important; 
@@ -80,19 +77,17 @@ def aplicar_estilos_premium():
         [data-testid="collapsedControl"]:hover { background-color: var(--bhp-orange) !important; transform: scale(1.05) !important; }
         [data-testid="collapsedControl"] svg { fill: white !important; stroke: white !important; }
         
-        /* 🚫 BLOQUEO DIRECTO A CUALQUIER LINK DE GITHUB Y MARCAS DE AGUA 🚫 */
         a[href*="github.com"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
         [data-testid="viewerBadge"] {display: none !important;}
         div[class^="viewerBadge_container"] {display: none !important;}
         footer {display: none !important;} 
         
-        /* DISEÑO DE BOTONES Y TARJETAS */
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
         [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 12px !important; border: 1px solid #2b3543 !important; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important; }
         [data-testid="stVerticalBlockBorderWrapper"]:hover { transform: translateY(-6px) !important; box-shadow: 0 10px 25px rgba(0, 124, 166, 0.25) !important; border-color: var(--ac-blue) !important; }
-        .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select { border-radius: 6px !important; border: 1px solid #2b3543 !important; background-color: #1e2530 !important; color: white !important; }
-        .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus { border-color: var(--bhp-orange) !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.3) !important; }
+        .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select, .stDateInput>div>div>input { border-radius: 6px !important; border: 1px solid #2b3543 !important; background-color: #1e2530 !important; color: white !important; }
+        .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus, .stDateInput>div>div>input:focus { border-color: var(--bhp-orange) !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.3) !important; }
         .stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #2b3543; }
         .stTabs [aria-selected="true"] { color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; }
         </style>
@@ -130,7 +125,7 @@ inventario_equipos = {
 # =============================================================================
 # 2. CONEXIÓN A GOOGLE SHEETS (HÍBRIDA RENDER / LOCAL)
 # =============================================================================
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def get_gspread_client():
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
     try:
@@ -152,25 +147,21 @@ def get_sheet(sheet_name):
 # =============================================================================
 # 3. FUNCIONES DE BASE DE DATOS (FUSIÓN PERFECTA DE HOJAS)
 # =============================================================================
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=120, show_spinner=False)
 def obtener_estados_actuales():
     estados = {}
     try:
-        # 1. Base Histórica completa (Lee todos los 21 equipos)
         sheet_int = get_sheet("intervenciones")
         if sheet_int:
             data_int = sheet_int.get_all_values()
             for row in data_int:
-                if len(row) >= 18:
-                    estados[row[0]] = row[17] # Almacena el estado más reciente del historial
+                if len(row) >= 18: estados[row[0]] = row[17]
         
-        # 2. Prioridad de actualización rápida (Sobrescribe con los cambios recientes)
         sheet = get_sheet("estados_equipos")
         if sheet:
             data = sheet.get_all_values()
             for row in data:
-                if len(row) >= 2:
-                    estados[row[0]] = row[1] 
+                if len(row) >= 2: estados[row[0]] = row[1] 
     except: pass
     return estados
 
@@ -180,22 +171,16 @@ def actualizar_estado_equipo_en_nube(tag, nuevo_estado):
         if sheet:
             registros = sheet.get_all_values()
             fila_encontrada = -1
-            
-            # Método blindado (Fuerza Bruta) para encontrar la celda
             for i, fila in enumerate(registros):
                 if len(fila) > 0 and fila[0] == tag:
                     fila_encontrada = i + 1
                     break
-            
-            if fila_encontrada != -1:
-                sheet.update_cell(fila_encontrada, 2, nuevo_estado)
-            else:
-                sheet.append_row([tag, nuevo_estado])
-            
+            if fila_encontrada != -1: sheet.update_cell(fila_encontrada, 2, nuevo_estado)
+            else: sheet.append_row([tag, nuevo_estado])
             st.cache_data.clear() 
     except Exception as e: pass
 
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=120, show_spinner=False)
 def obtener_datos_equipo(tag):
     datos = {}; sheet = get_sheet("datos_equipo")
     if sheet:
@@ -204,7 +189,7 @@ def obtener_datos_equipo(tag):
             if len(r) >= 3 and r[0] == tag: datos[r[1]] = r[2]
     return datos
 
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=120, show_spinner=False)
 def obtener_observaciones(tag):
     sheet = get_sheet("observaciones")
     if sheet:
@@ -213,7 +198,7 @@ def obtener_observaciones(tag):
         if obs: return pd.DataFrame(obs).iloc[::-1]
     return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
 
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=120, show_spinner=False)
 def obtener_contactos():
     sheet = get_sheet("contactos")
     if sheet:
@@ -222,7 +207,7 @@ def obtener_contactos():
         if contactos: return sorted(list(set(contactos)))
     return ["Lorena Rojas"]
 
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=120, show_spinner=False)
 def obtener_especificaciones(defaults):
     specs = {k: dict(v) for k, v in defaults.items()}
     try:
@@ -237,7 +222,7 @@ def obtener_especificaciones(defaults):
     except: pass
     return specs
 
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=120, show_spinner=False)
 def buscar_ultimo_registro(tag):
     sheet = get_sheet("intervenciones")
     if sheet:
@@ -246,7 +231,7 @@ def buscar_ultimo_registro(tag):
             if len(row) >= 20 and row[0] == tag: return (row[5], row[6], row[9], row[14], row[15], row[7], row[8], row[10], row[11], row[12], row[13], row[16], row[17])
     return None
 
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=120, show_spinner=False)
 def obtener_todo_el_historial(tag):
     try:
         sheet = get_sheet("intervenciones")
@@ -341,7 +326,7 @@ def guardar_pendientes(usuario, pendientes):
 
 def obtener_quincena_actual():
     hoy = datetime.date.today(); meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-    if hoy.day < 15: return meses[hoy.month - 1], f"15 de {meses[hoy.month - 2 if hoy.month > 1 else 11]} al 15 de {meses[hoy.month - 1]}"
+    if hoy.day <= 15: return meses[hoy.month - 1], f"15 de {meses[hoy.month - 2 if hoy.month > 1 else 11]} al 15 de {meses[hoy.month - 1]}"
     else: return meses[hoy.month] if hoy.month < 12 else "Enero", f"15 de {meses[hoy.month - 1]} al 15 de {meses[hoy.month] if hoy.month < 12 else 'Enero'}"
 
 def generar_planificacion_base():
@@ -352,7 +337,7 @@ def generar_planificacion_base():
     ]
     return pd.DataFrame(datos)
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=60, show_spinner=False)
 def cargar_planificacion():
     sheet = get_sheet("planificacion")
     if sheet:
@@ -497,7 +482,7 @@ else:
             </div>
         """, unsafe_allow_html=True)
         
-        tab_faltantes, tab_calendario, tab_matriz = st.tabs(["📝 Gestión de Tickets", "📆 Mapa Histórico", "📊 Matriz Anual"])
+        tab_faltantes, tab_calendario, tab_matriz = st.tabs(["📝 Gestión de Tickets", "📆 Mapa y Gestor Histórico", "📊 Matriz Anual"])
 
         with tab_faltantes:
             st.markdown("### 📝 Gestión de la Quincena Actual")
@@ -548,8 +533,48 @@ else:
                     else: st.warning("No realizaste ningún cambio en las casillas.")
 
         with tab_calendario:
-            st.markdown("### 📆 Mapa Histórico del Mes")
-            import calendar; hoy = datetime.date.today(); cal = calendar.Calendar(calendar.MONDAY); semanas_mes = cal.monthdatescalendar(hoy.year, hoy.month)
+            # MAGIA: Formulario para añadir, mover o borrar eventos en el calendario
+            hoy = datetime.date.today()
+            meses_nombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+            
+            c_cal_tit, c_cal_sel = st.columns([2, 1])
+            with c_cal_tit: st.markdown("### 📆 Calendario Interactivo Anual")
+            with c_cal_sel:
+                mes_sel = st.selectbox("📅 Selecciona el mes a visualizar:", meses_nombres, index=hoy.month - 1)
+                mes_idx = meses_nombres.index(mes_sel) + 1
+
+            with st.expander("⚙️ Administrador de Tareas (Agregar, Reprogramar o Borrar)"):
+                with st.form("form_gestor_calendario"):
+                    col_f1, col_f2, col_f3, col_f4 = st.columns([1.5, 2, 1.5, 1.5])
+                    acc = col_f1.selectbox("Acción a realizar:", ["➕ Asignar / Mover", "🗑️ Borrar Fecha"])
+                    tag_mod = col_f2.selectbox("Equipo (TAG):", sorted(df_plan['TAG'].unique()))
+                    f_mod = col_f3.date_input("Fecha:", hoy)
+                    p_mod = col_f4.selectbox("Pauta:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
+                    
+                    if st.form_submit_button("🚀 Aplicar Cambios al Calendario", type="primary"):
+                        meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+                        # Regla de Quincenas: Día 1 al 15 = Mes actual. Día 16 en adelante = Mes siguiente.
+                        if f_mod.day <= 15: col_destino = f"15c {meses_abr[f_mod.month - 1]}"
+                        else: col_destino = f"15c {meses_abr[f_mod.month if f_mod.month < 12 else 0]}"
+                            
+                        if col_destino in df_plan.columns:
+                            idx = df_plan.index[df_plan['TAG'] == tag_mod].tolist()[0]
+                            if "Borrar" in acc:
+                                df_plan.at[idx, col_destino] = f"{p_mod}\nFalta"
+                                st.success(f"✅ Tarea eliminada del {f_mod.strftime('%d/%m')} y devuelta a estado 'Falta'.")
+                            else:
+                                str_fecha = f"{f_mod.strftime('%d/%m')} (WK{f_mod.isocalendar()[1]})"
+                                df_plan.at[idx, col_destino] = f"{p_mod}\n{str_fecha}"
+                                st.success(f"✅ Tarea de {tag_mod} asignada correctamente para el {f_mod.strftime('%d/%m')}.")
+                            guardar_planificacion(df_plan)
+                            time.sleep(1.5); st.rerun()
+                        else: st.error("Error crítico: Columna no encontrada en la matriz base.")
+
+            # Dibujar el calendario basado en el MES SELECCIONADO
+            import calendar
+            cal = calendar.Calendar(calendar.MONDAY)
+            semanas_mes = cal.monthdatescalendar(hoy.year, mes_idx)
+            
             tareas_por_fecha = {}
             for col in df_plan.columns:
                 if "15c" in col:
@@ -558,21 +583,25 @@ else:
                         import re; matches = re.findall(r'(\d{2}/\d{2})', val)
                         for m in matches:
                             try:
-                                d, m_num = map(int, m.split('/')); fecha_tarea = datetime.date(hoy.year, m_num, d)
+                                d, m_num = map(int, m.split('/'))
+                                fecha_tarea = datetime.date(hoy.year, m_num, d)
                                 if fecha_tarea not in tareas_por_fecha: tareas_por_fecha[fecha_tarea] = []
                                 p_txt = re.search(r'(P[1-4]|INSP|I)', val).group(1) if re.search(r'(P[1-4]|INSP|I)', val) else "INSP"
                                 tareas_por_fecha[fecha_tarea].append((row['TAG'], p_txt))
                             except: pass
 
-            html_cal = '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top:20px;">'
+            html_cal = '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top:10px;">'
             for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
             for semana in semanas_mes:
                 for dia in semana:
-                    is_current_month = dia.month == hoy.month; bg_color = "#1a212b" if is_current_month else "#11151c"; border_color = "#00BFFF" if dia == hoy else "#2b3543"
+                    is_current_month = dia.month == mes_idx
+                    bg_color = "#1a212b" if is_current_month else "#11151c"
+                    border_color = "#00BFFF" if dia == hoy else "#2b3543"
                     html_cal += f'<div style="background:{bg_color}; border: 1px solid {border_color}; border-radius: 8px; padding: 5px; min-height: 120px;">'
                     html_cal += f'<div style="text-align:right; color:white; font-size:0.9rem; margin-bottom:8px;">{dia.day}</div>'
                     if dia in tareas_por_fecha:
-                        for tag, pt in tareas_por_fecha[dia]: html_cal += f'<div style="background:#063f22; color:#6ee7b7; padding:4px; margin-bottom:4px; border-radius:4px; font-size:0.75rem;"><b>{tag}</b> {pt}</div>'
+                        for tag, pt in tareas_por_fecha[dia]: 
+                            html_cal += f'<div style="background:#063f22; color:#6ee7b7; padding:4px; margin-bottom:4px; border-radius:4px; font-size:0.75rem;"><b>{tag}</b> {pt}</div>'
                     html_cal += '</div>'
             html_cal += '</div>'
             st.markdown(html_cal, unsafe_allow_html=True)
