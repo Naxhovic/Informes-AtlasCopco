@@ -276,7 +276,7 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
     # =============================================================================
-# 4. FUNCIONES AUXILIARES Y CÁLCULO DE QUINCENAS
+# 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO DE QUINCENAS (15 DIC 2025)
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -315,18 +315,33 @@ def guardar_pendientes(usuario, pendientes):
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
-def wk_to_date(year, wk_string):
+# --- EL CEREBRO MINERO ---
+def wk_to_date(wk_string):
+    # La WK01 empieza el Lunes 15 de Diciembre de 2025
     try:
         wk_num = int(re.sub(r'\D', '', str(wk_string)))
-        return datetime.date.fromisocalendar(year, wk_num, 1) 
+        base_date = datetime.date(2025, 12, 15)
+        return base_date + datetime.timedelta(days=(wk_num - 1) * 7)
     except: return None
 
-def calcular_quincena(wk_string, year=2026):
-    d = wk_to_date(year, wk_string)
+def calcular_quincena(wk_string):
+    d = wk_to_date(wk_string)
     if not d: return "Sin Asignar"
     meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    # Regla: Si el Lunes cae 15 o antes -> Quincena de ese mes. Si cae 16 o más -> Quincena del mes siguiente.
     if d.day <= 15: return f"15c {meses_abr[d.month - 1]}"
     else: return f"15c {meses_abr[d.month if d.month < 12 else 0]}"
+
+def get_current_wk():
+    hoy = datetime.date.today()
+    base_date = datetime.date(2025, 12, 15)
+    days_since_monday = hoy.weekday()
+    lunes_actual = hoy - datetime.timedelta(days=days_since_monday)
+    
+    days_diff = (lunes_actual - base_date).days
+    wk_num = (days_diff // 7) + 1
+    if wk_num < 1: return "WK01"
+    return f"WK{wk_num:02d}"
 
 def formatear_wk(wk_str):
     nums = re.findall(r'\d+', str(wk_str))
@@ -334,11 +349,53 @@ def formatear_wk(wk_str):
     return str(wk_str).upper()
 
 # =============================================================================
-# 5. MOTOR CMMS
+# 5. MOTOR CMMS CON DATOS REALES (ÁREA HÚMEDA DESDE 15 DIC 2025)
 # =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
+    
+    # Inyectamos tu Planificación Húmeda real para arrancar
+    datos_reales = [
+        {"TAG": "70-GC-013", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK02", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK04", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK07", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK07", "Observacion": "10/02 OK"},
+        {"TAG": "70-GC-013", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        
+        {"TAG": "70-GC-014", "S_Programada": "WK01", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK02", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK02", "Observacion": "Lista"},
+        {"TAG": "70-GC-014", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": "Falta"},
+        {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        
+        {"TAG": "50-GC-001", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK04", "Observacion": "21/01 OK"},
+        {"TAG": "50-GC-001", "S_Programada": "WK09", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK10", "Tipo": "P3", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        
+        {"TAG": "50-GC-002", "S_Programada": "WK01", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
+        {"TAG": "50-GC-002", "S_Programada": "WK02", "Tipo": "P2", "Estado": "F/S", "S_Realizada": "", "Observacion": "Falta Kit"},
+        {"TAG": "50-GC-002", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK04", "Observacion": "OK"},
+        {"TAG": "50-GC-002", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        
+        {"TAG": "50-GC-003", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
+        {"TAG": "50-GC-003", "S_Programada": "WK07", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": "11/02"},
+        {"TAG": "50-GC-003", "S_Programada": "WK11", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        
+        {"TAG": "55-GC-015", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
+        {"TAG": "55-GC-015", "S_Programada": "WK06", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK06", "Observacion": "04/02 OK"},
+        {"TAG": "55-GC-015", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": ""},
+        
+        {"TAG": "65-GC-011", "S_Programada": "WK01", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
+        {"TAG": "65-GC-011", "S_Programada": "WK05", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK05", "Observacion": "28/01 OK"},
+        {"TAG": "65-GC-011", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK11", "Observacion": ""},
+        
+        {"TAG": "35-GC-006", "S_Programada": "WK01", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
+        {"TAG": "35-GC-006", "S_Programada": "WK02", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": "Falta Kit"},
+        {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": ""}
+    ]
+
     try:
         sheet = get_sheet("plan_cmms")
         if sheet:
@@ -346,11 +403,13 @@ def cargar_cmms():
             if len(data) > 0:
                 df = pd.DataFrame(data[1:], columns=data[0]) if len(data) > 1 else pd.DataFrame(columns=data[0])
                 if "S_Programada" in df.columns: return df
-                sheet.clear(); sheet.append_row(headers); st.cache_data.clear(); return pd.DataFrame(columns=headers)
+                sheet.clear(); df_base = pd.DataFrame(datos_reales, columns=headers)
+                sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
             else:
-                sheet.append_row(headers); st.cache_data.clear(); return pd.DataFrame(columns=headers)
+                df_base = pd.DataFrame(datos_reales, columns=headers)
+                sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
     except Exception as e: print(f"Error cargando CMMS: {e}")
-    return pd.DataFrame(columns=headers)
+    return pd.DataFrame(datos_reales, columns=headers)
 
 def guardar_cmms(df):
     sheet = get_sheet("plan_cmms")
@@ -360,10 +419,8 @@ def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
     if reg:
-        st.session_state.input_cliente = reg[1]
-        st.session_state.input_tec1 = reg[5]; st.session_state.input_tec2 = reg[6]
-        st.session_state.input_estado = reg[3]
-        st.session_state.input_reco = reg[11] if reg[11] else ""
+        st.session_state.input_cliente = reg[1]; st.session_state.input_tec1 = reg[5]; st.session_state.input_tec2 = reg[6]
+        st.session_state.input_estado = reg[3]; st.session_state.input_reco = reg[11] if reg[11] else ""
         st.session_state.input_estado_eq = reg[12] if reg[12] else "Operativo"
         st.session_state.input_h_marcha = int(reg[9]) if reg[9] else 0; st.session_state.input_h_carga = int(reg[10]) if reg[10] else 0
         st.session_state.input_temp = str(reg[2]).replace(',', '.') if reg[2] is not None else "70.0"
@@ -405,9 +462,7 @@ if not st.session_state.logged_in:
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.form_submit_button("Acceder de forma segura", type="primary", use_container_width=True):
                     if u_in in USUARIOS and USUARIOS[u_in] == p_in: 
-                        st.session_state.update({'logged_in': True, 'usuario_actual': u_in})
-                        st.session_state.informes_pendientes = cargar_pendientes(u_in)
-                        st.rerun()
+                        st.session_state.update({'logged_in': True, 'usuario_actual': u_in}); st.session_state.informes_pendientes = cargar_pendientes(u_in); st.rerun()
                     else: st.error("❌ Credenciales inválidas.")
 
 # =============================================================================
@@ -433,12 +488,11 @@ else:
     # --- 7.1 VISTA PLANIFICACIÓN (NUEVO CMMS KANBAN Y MATRIZ) ---
     if st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
-        hoy = datetime.date.today()
-        semana_actual = f"WK{hoy.isocalendar()[1]:02d}"
+        semana_actual = get_current_wk()
         
         df_cmms['S_Programada'] = df_cmms['S_Programada'].apply(formatear_wk)
-        df_cmms['Quincena_Calc'] = df_cmms['S_Programada'].apply(lambda x: calcular_quincena(x, 2026))
-        quincena_de_hoy = calcular_quincena(semana_actual, 2026)
+        df_cmms['Quincena_Calc'] = df_cmms['S_Programada'].apply(calcular_quincena)
+        quincena_de_hoy = calcular_quincena(semana_actual)
         
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
@@ -515,21 +569,28 @@ else:
                     if 'Quincena_Calc' in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=['Quincena_Calc'])
                     guardar_cmms(df_cmms_guardar); st.success("✅ Tablero sincronizado."); time.sleep(1.5); st.rerun()
 
-        # --- PESTAÑA 2: CALENDARIO VISUAL ---
+        # --- PESTAÑA 2: CALENDARIO VISUAL CON AÑOS DINÁMICOS ---
         with tab_calendario:
-            meses_nombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+            # Ahora el calendario permite ver Diciembre 2025 y todo 2026
+            opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
+            
             c_cal_tit, c_cal_sel = st.columns([2, 1])
             with c_cal_tit: st.markdown("### 📆 Calendario Interactivo")
             with c_cal_sel:
-                mes_sel = st.selectbox("📅 Mes a visualizar:", meses_nombres, index=hoy.month - 1)
-                mes_idx = meses_nombres.index(mes_sel) + 1
+                hoy = datetime.date.today()
+                mes_str = f"Diciembre 2025" if hoy.year == 2025 and hoy.month == 12 else f"{opciones_meses_calendario[hoy.month]}" if hoy.year == 2026 else "Enero 2026"
+                mes_sel = st.selectbox("📅 Mes a visualizar:", opciones_meses_calendario, index=opciones_meses_calendario.index(mes_str) if mes_str in opciones_meses_calendario else 1)
+                
+            cal_year = 2025 if "2025" in mes_sel else 2026
+            meses_nombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+            cal_month = meses_nombres.index(mes_sel.split(" ")[0]) + 1
                 
             cal = calendar.Calendar(calendar.MONDAY)
-            semanas_mes = cal.monthdatescalendar(2026, mes_idx) 
+            semanas_mes = cal.monthdatescalendar(cal_year, cal_month) 
             
             tareas_por_fecha = {}
             for _, row in df_cmms.iterrows():
-                d = wk_to_date(2026, row['S_Programada'])
+                d = wk_to_date(row['S_Programada'])
                 if d:
                     if d not in tareas_por_fecha: tareas_por_fecha[d] = []
                     tareas_por_fecha[d].append({"tag": row['TAG'], "tipo": row['Tipo'], "est": row['Estado']})
@@ -539,7 +600,7 @@ else:
             
             for semana in semanas_mes:
                 for dia in semana:
-                    is_current_month = dia.month == mes_idx
+                    is_current_month = dia.month == cal_month
                     bg_color = "#1a212b" if is_current_month else "#11151c"
                     border_color = "#00BFFF" if dia == hoy else "#2b3543"
                     html_cal += f'<div style="background:{bg_color}; border: 1px solid {border_color}; border-radius: 8px; padding: 5px; min-height: 120px;">'
@@ -559,11 +620,10 @@ else:
             html_cal += '</div>'
             st.markdown(html_cal, unsafe_allow_html=True)
 
-        # --- PESTAÑA 3: LA NUEVA MATRIZ CON ZOOM ---
+        # --- PESTAÑA 3: MATRIZ CON ZOOM (QUINCENA VS ANUAL) ---
         with tab_matriz:
             st.markdown("### 📊 Matriz Dinámica de Mantenimiento")
             
-            # Construir la matriz pivote general
             df_pivot_base = df_cmms.copy()
             df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado']
             df_pivot = df_pivot_base.groupby(['TAG', 'S_Programada'])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
@@ -577,18 +637,19 @@ else:
             df_matriz = pd.concat([df_info, df_pivot], axis=1).reset_index()
             
             cols_base = ['TAG', 'Equipo', 'Área']
-            cols_wk = sorted([c for c in df_matriz.columns if str(c).startswith('WK')])
             
-            # Identificar a qué quincena pertenece cada WK de la tabla
-            wk_a_quincena = {wk: calcular_quincena(wk, 2026) for wk in cols_wk}
+            # MAGIA: Forzar que existan TODAS las semanas desde la WK01 hasta la WK52 para la vista anual
+            cols_wk_completas = [f"WK{i:02d}" for i in range(1, 53)]
+            for c in cols_wk_completas:
+                if c not in df_matriz.columns: df_matriz[c] = ""
+            df_matriz = df_matriz[cols_base + cols_wk_completas]
             
-            # --- EL SELECTOR DE VISTA (MAGIA DEL ZOOM) ---
+            wk_a_quincena = {wk: calcular_quincena(wk) for wk in cols_wk_completas}
+            
             c_mat1, c_mat2 = st.columns([1, 2])
-            with c_mat1:
-                vista_matriz = st.radio("Modo de Visualización:", ["📆 Anual (Zoom Out)", "🔍 Por Quincena (Zoom In)"], horizontal=True)
+            with c_mat1: vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual (WK01 a WK52)"], horizontal=True)
             
             cols_finales = cols_base.copy()
-            
             if vista_matriz == "🔍 Por Quincena (Zoom In)":
                 with c_mat2:
                     orden_meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
@@ -596,11 +657,10 @@ else:
                     q_unicas.sort(key=lambda x: orden_meses.index(x.split(" ")[1]) if " " in x and x.split(" ")[1] in orden_meses else 99)
                     quin_seleccionada = st.selectbox("Selecciona la Quincena a enfocar:", q_unicas, index=q_unicas.index(quincena_de_hoy) if quincena_de_hoy in q_unicas else 0)
                 
-                # Ocultar las semanas que no pertenezcan a la quincena elegida
                 wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
                 cols_finales.extend(wks_mostrar)
             else:
-                cols_finales.extend(cols_wk)
+                cols_finales.extend(cols_wk_completas)
                 
             df_matriz_final = df_matriz[cols_finales]
             
