@@ -12,6 +12,8 @@ from PIL import Image
 import io
 import gspread
 import datetime
+import calendar
+import re
 from google.oauth2.service_account import Credentials
 from streamlit_pdf_viewer import pdf_viewer
 
@@ -314,13 +316,11 @@ def guardar_pendientes(usuario, pendientes):
     except: pass
 
 # =============================================================================
-# 5. INICIALIZACIÓN DE ESTADOS Y MOTOR CMMS
+# 5. MOTOR CMMS Y MATRIZ (BLINDADO)
 # =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
-    
-    # Base de datos real extraída de Planificación Húmeda
     datos_reales = [
         {"TAG": "70-GC-013", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
         {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
@@ -351,28 +351,23 @@ def cargar_cmms():
             if len(data) > 0:
                 df = pd.DataFrame(data[1:], columns=data[0]) if len(data) > 1 else pd.DataFrame(columns=data[0])
                 if "S_Programada" in df.columns: return df
-                
-                # Si llega aquí, la hoja está rota o vacía. La formatea y la inyecta.
-                sheet.clear()
-                df_base = pd.DataFrame(datos_reales, columns=headers)
-                sheet.append_rows([headers] + df_base.values.tolist())
-                st.cache_data.clear()
-                return df_base
+                sheet.clear(); df_base = pd.DataFrame(datos_reales, columns=headers)
+                sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
             else:
-                # Hoja sin filas
                 df_base = pd.DataFrame(datos_reales, columns=headers)
-                sheet.append_rows([headers] + df_base.values.tolist())
-                st.cache_data.clear()
-                return df_base
+                sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
     except Exception as e: print(f"Error cargando CMMS: {e}")
     return pd.DataFrame(datos_reales, columns=headers)
 
 def guardar_cmms(df):
     sheet = get_sheet("plan_cmms")
-    if sheet:
-        sheet.clear()
-        sheet.append_rows([df.columns.values.tolist()] + df.values.tolist())
-        st.cache_data.clear()
+    if sheet: sheet.clear(); sheet.append_rows([df.columns.values.tolist()] + df.values.tolist()); st.cache_data.clear()
+
+def wk_to_date(year, wk_string):
+    try:
+        wk_num = int(re.sub(r'\D', '', str(wk_string)))
+        return datetime.date.fromisocalendar(year, wk_num, 1) # Devuelve el Lunes de esa semana
+    except: return None
 
 def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
@@ -448,7 +443,7 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.1 VISTA PLANIFICACIÓN (NUEVO CMMS KANBAN) ---
+    # --- 7.1 VISTA PLANIFICACIÓN (NUEVO CMMS KANBAN Y MATRIZ) ---
     if st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         hoy = datetime.date.today()
@@ -456,11 +451,12 @@ else:
         
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
-                <h2 style="color: white; margin: 0;">📅 Panel de Control CMMS</h2>
+                <h2 style="color: white; margin: 0;">📅 Panel de Control CMMS Integrado</h2>
                 <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Semana en curso: {semana_actual}</p>
             </div>
         """, unsafe_allow_html=True)
         
+        # --- PANEL DE INDICADORES (KPIs) ---
         df_semana = df_cmms[df_cmms["S_Programada"] == semana_actual]
         total_tareas = len(df_semana)
         hechas = len(df_semana[df_semana["Estado"] == "Hecho"])
@@ -474,12 +470,23 @@ else:
         c_kpi4.metric(label="🚨 Equipos F/S", value=fs)
         
         st.markdown("---")
-        tab_gestion, tab_crear = st.tabs(["📋 Tablero Kanban de Mantenimiento", "➕ Programar Nueva Tarea"])
+        tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz Anual Automática"])
         
-        # --- TABLERO INTERACTIVO (TOTALMENTE EDITABLE) ---
+        # --- PESTAÑA 1: TABLERO KANBAN CON MOTOR DE CREACIÓN INCORPORADO ---
         with tab_gestion:
-            st.info("💡 **Tips de Uso:** Haz doble clic en las columnas para editar. Puedes cambiar la semana (mover tarea), el tipo de intervención o marcar el estado. Al terminar, presiona Guardar.")
-            
+            with st.expander("➕ Programar Nueva Intervención (Añadir al Kanban)", expanded=False):
+                with st.form("form_nueva_tarea"):
+                    c1, c2, c3 = st.columns(3)
+                    n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
+                    n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
+                    n_sem = c3.text_input("Semana Programada (Ej: WK12):", value=semana_actual)
+                    n_obs = st.text_input("Observación inicial (Opcional):")
+                    if st.form_submit_button("🚀 Inyectar Tarea", type="primary", use_container_width=True):
+                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem.upper(), "Tipo": n_tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": n_obs}])
+                        df_cmms = pd.concat([df_cmms, nueva_fila], ignore_index=True)
+                        guardar_cmms(df_cmms); st.success(f"✅ Tarea añadida exitosamente."); time.sleep(1.5); st.rerun()
+
+            st.info("💡 **Doble clic en las columnas para editar.** Puedes cambiar la semana (mover tarea), el tipo o marcar el estado.")
             c_f1, c_f2 = st.columns([1, 3])
             with c_f1: 
                 opciones_sem = ["Todas"] + sorted(df_cmms["S_Programada"].unique().tolist())
@@ -488,14 +495,13 @@ else:
             df_mostrar = df_cmms.copy() if filtro_sem == "Todas" else df_cmms[df_cmms["S_Programada"] == filtro_sem]
             
             if not df_mostrar.empty:
-                # LA CLAVE: Hemos habilitado la edición de casi todas las columnas
                 config_columnas = {
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "S_Programada": st.column_config.TextColumn("Semana Prog. (Editable)", disabled=False), 
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
                     "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["Pendiente", "Hecho", "F/S"], required=True),
-                    "S_Realizada": st.column_config.TextColumn("Semana Realizada (Ej: WK10)"),
-                    "Observacion": st.column_config.TextColumn("Comentarios / Desviaciones")
+                    "S_Realizada": st.column_config.TextColumn("Semana Realizada"),
+                    "Observacion": st.column_config.TextColumn("Comentarios")
                 }
                 
                 def color_estado(val):
@@ -512,28 +518,96 @@ else:
                 if st.button("💾 Guardar Avances en la Nube", type="primary"):
                     df_cmms.update(df_editado)
                     df_cmms.loc[(df_cmms['Estado'] == 'Hecho') & (df_cmms['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
-                    guardar_cmms(df_cmms)
-                    st.success("✅ Tablero sincronizado perfectamente.")
-                    time.sleep(1.5); st.rerun()
-            else:
-                st.success(f"🎉 No hay tareas programadas para la semana {filtro_sem}. Ve a la siguiente pestaña para crear una.")
+                    guardar_cmms(df_cmms); st.success("✅ Tablero sincronizado perfectamente."); time.sleep(1.5); st.rerun()
 
-        # --- MOTOR DE PROGRAMACIÓN ---
-        with tab_crear:
-            with st.form("form_nueva_tarea"):
-                st.markdown("### 📅 Programar Nueva Intervención")
-                c1, c2, c3 = st.columns(3)
-                n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
-                n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
-                n_sem = c3.text_input("Semana Programada (Ej: WK12):", value=semana_actual)
-                n_obs = st.text_input("Observación inicial (Opcional):", placeholder="Ej: Se requiere cambio de aceite especial...")
+        # --- PESTAÑA 2: CALENDARIO VISUAL CON COLORES CLÁSICOS ---
+        with tab_calendario:
+            meses_nombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+            c_cal_tit, c_cal_sel = st.columns([2, 1])
+            with c_cal_tit: st.markdown("### 📆 Calendario Interactivo")
+            with c_cal_sel:
+                mes_sel = st.selectbox("📅 Mes a visualizar:", meses_nombres, index=hoy.month - 1)
+                mes_idx = meses_nombres.index(mes_sel) + 1
                 
-                if st.form_submit_button("🚀 Añadir a la Planificación", type="primary", use_container_width=True):
-                    nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem.upper(), "Tipo": n_tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": n_obs}])
-                    df_cmms = pd.concat([df_cmms, nueva_fila], ignore_index=True)
-                    guardar_cmms(df_cmms)
-                    st.success(f"✅ ¡Listo! Tarea de {n_tipo} para {n_tag} programada exitosamente.")
-                    time.sleep(1.5); st.rerun()
+            cal = calendar.Calendar(calendar.MONDAY)
+            semanas_mes = cal.monthdatescalendar(hoy.year, mes_idx)
+            
+            # Procesar tareas para mapearlas a las fechas (Día Lunes de cada WK)
+            tareas_por_fecha = {}
+            for _, row in df_cmms.iterrows():
+                d = wk_to_date(hoy.year, row['S_Programada'])
+                if d:
+                    if d not in tareas_por_fecha: tareas_por_fecha[d] = []
+                    tareas_por_fecha[d].append({"tag": row['TAG'], "tipo": row['Tipo'], "est": row['Estado']})
+            
+            html_cal = '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top:10px;">'
+            for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
+            
+            for semana in semanas_mes:
+                for dia in semana:
+                    is_current_month = dia.month == mes_idx
+                    bg_color = "#1a212b" if is_current_month else "#11151c"
+                    border_color = "#00BFFF" if dia == hoy else "#2b3543"
+                    html_cal += f'<div style="background:{bg_color}; border: 1px solid {border_color}; border-radius: 8px; padding: 5px; min-height: 120px;">'
+                    html_cal += f'<div style="text-align:right; color:white; font-size:0.9rem; margin-bottom:8px;">{dia.day}</div>'
+                    
+                    if dia in tareas_por_fecha:
+                        for t in tareas_por_fecha[dia]:
+                            # Lógica de colores clásicos
+                            c_bg = "transparent"; c_tx = "#8c9eb5"; b_style = "1px dashed #455065" # Default INSP
+                            if t['est'] == 'Hecho': c_bg, c_tx, b_style = "#063f22", "#6ee7b7", "1px solid #10b981"
+                            elif t['est'] == 'F/S': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #ef4444"
+                            elif t['tipo'] == 'P1': c_bg, c_tx, b_style = "#0c2d48", "#66c2ff", "1px solid #1a5c94"
+                            elif t['tipo'] == 'P2': c_bg, c_tx, b_style = "#4a2c00", "#ffb04c", "1px solid #8c5300"
+                            elif t['tipo'] == 'P3': c_bg, c_tx, b_style = "#301047", "#d78aff", "1px solid #622291"
+                            elif t['tipo'] == 'P4': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #8e202a"
+                            html_cal += f'<div style="background:{c_bg}; color:{c_tx}; padding:4px; margin-bottom:4px; border-radius:4px; font-size:0.75rem; border: {b_style};"><b>{t["tag"]}</b> - {t["tipo"]}</div>'
+                    html_cal += '</div>'
+            html_cal += '</div>'
+            st.markdown(html_cal, unsafe_allow_html=True)
+
+        # --- PESTAÑA 3: MATRIZ ANUAL (PIVOT) ---
+        with tab_matriz:
+            st.markdown("### 📊 Matriz Anual Consolidada")
+            st.info("Esta matriz se genera automáticamente leyendo el tablero Kanban. Si quieres editar un estado, hazlo en la pestaña Kanban.")
+            
+            # Construir la matriz
+            df_pivot_base = df_cmms.copy()
+            # Mostramos Tipo + Estado
+            df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado']
+            # Evitar errores si hay dos tareas en la misma semana para el mismo equipo
+            df_pivot = df_pivot_base.groupby(['TAG', 'S_Programada'])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
+            
+            # Agregar información de Area y Equipo
+            lista_info = []
+            for t in df_pivot.index:
+                if t in inventario_equipos: eq, _, area, _ = inventario_equipos[t]; lista_info.append({"TAG": t, "Equipo": eq, "Área": area.title()})
+                else: lista_info.append({"TAG": t, "Equipo": "-", "Área": "-"})
+            
+            df_info = pd.DataFrame(lista_info).set_index("TAG")
+            df_matriz = pd.concat([df_info, df_pivot], axis=1).reset_index()
+            
+            # Ordenar las columnas para que las Semanas salgan en orden (WK01, WK02...)
+            cols_base = ['TAG', 'Equipo', 'Área']
+            cols_wk = sorted([c for c in df_matriz.columns if c.startswith('WK')])
+            df_matriz = df_matriz[cols_base + cols_wk]
+            
+            def estilo_matriz_colores(val):
+                v = str(val).upper()
+                if not v or v == "NAN": return ''
+                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
+                if 'HECHO' in v: return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
+                if 'F/S' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
+                if 'PENDIENTE' in v: 
+                    if 'P1' in v: return base + 'background-color: #0c2d48; color: #66c2ff; font-weight: bold; border-left: 4px solid #eab308;'
+                    if 'P2' in v: return base + 'background-color: #4a2c00; color: #ffb04c; font-weight: bold; border-left: 4px solid #eab308;'
+                    if 'P3' in v: return base + 'background-color: #301047; color: #d78aff; font-weight: bold; border-left: 4px solid #eab308;'
+                    if 'P4' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #eab308;'
+                    return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
+                return base + 'color: #8c9eb5; font-style: italic;'
+                
+            try: st.dataframe(df_matriz.style.map(estilo_matriz_colores, subset=cols_wk), use_container_width=True, hide_index=True, height=700)
+            except AttributeError: st.dataframe(df_matriz.style.applymap(estilo_matriz_colores, subset=cols_wk), use_container_width=True, hide_index=True, height=700)
 
     # --- 7.2 VISTA DE FIRMAS ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
