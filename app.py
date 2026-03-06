@@ -1,4 +1,8 @@
 import streamlit as st
+
+# 🔥 TRUCO 1: Esto debe ser lo primero que lea el código para matar el título de Streamlit
+st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
+
 from docxtpl import DocxTemplate, InlineImage
 from docx.shared import Mm
 import os, subprocess, smtplib, time, json, uuid
@@ -55,16 +59,18 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM
+# 0.2 ESTILOS PREMIUM Y MARCA BLANCA
 # =============================================================================
-st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
-
 def aplicar_estilos_premium():
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap');
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
+        
+        /* 🔥 TRUCO 2: Ocultar todo rastro de carga de Streamlit */
+        [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
+        
         header { background: transparent !important; }
         [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; } 
         [data-testid="stDecoration"] { display: none !important; }
@@ -80,6 +86,7 @@ def aplicar_estilos_premium():
         [data-testid="viewerBadge"] {display: none !important;}
         div[class^="viewerBadge_container"] {display: none !important;}
         footer {display: none !important;} 
+        
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
         [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 12px !important; border: 1px solid #2b3543 !important; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important; }
@@ -317,7 +324,6 @@ def guardar_pendientes(usuario, pendientes):
 
 # --- EL CEREBRO MINERO ---
 def wk_to_date(wk_string):
-    # La WK01 empieza el Lunes 15 de Diciembre de 2025
     try:
         wk_num = int(re.sub(r'\D', '', str(wk_string)))
         base_date = datetime.date(2025, 12, 15)
@@ -328,7 +334,6 @@ def calcular_quincena(wk_string):
     d = wk_to_date(wk_string)
     if not d: return "Sin Asignar"
     meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-    # Regla: Si el Lunes cae 15 o antes -> Quincena de ese mes. Si cae 16 o más -> Quincena del mes siguiente.
     if d.day <= 15: return f"15c {meses_abr[d.month - 1]}"
     else: return f"15c {meses_abr[d.month if d.month < 12 else 0]}"
 
@@ -349,48 +354,39 @@ def formatear_wk(wk_str):
     return str(wk_str).upper()
 
 # =============================================================================
-# 5. MOTOR CMMS CON DATOS REALES (ÁREA HÚMEDA DESDE 15 DIC 2025)
+# 5. MOTOR CMMS CON DATOS REALES
 # =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
-    
-    # Inyectamos tu Planificación Húmeda real para arrancar
     datos_reales = [
         {"TAG": "70-GC-013", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
         {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK02", "Observacion": ""},
         {"TAG": "70-GC-013", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK04", "Observacion": ""},
         {"TAG": "70-GC-013", "S_Programada": "WK07", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK07", "Observacion": "10/02 OK"},
         {"TAG": "70-GC-013", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        
         {"TAG": "70-GC-014", "S_Programada": "WK01", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
         {"TAG": "70-GC-014", "S_Programada": "WK02", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK02", "Observacion": "Lista"},
         {"TAG": "70-GC-014", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": "Falta"},
         {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
         {"TAG": "70-GC-014", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        
         {"TAG": "50-GC-001", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
         {"TAG": "50-GC-001", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK04", "Observacion": "21/01 OK"},
         {"TAG": "50-GC-001", "S_Programada": "WK09", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
         {"TAG": "50-GC-001", "S_Programada": "WK10", "Tipo": "P3", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        
         {"TAG": "50-GC-002", "S_Programada": "WK01", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
         {"TAG": "50-GC-002", "S_Programada": "WK02", "Tipo": "P2", "Estado": "F/S", "S_Realizada": "", "Observacion": "Falta Kit"},
         {"TAG": "50-GC-002", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK04", "Observacion": "OK"},
         {"TAG": "50-GC-002", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        
         {"TAG": "50-GC-003", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
         {"TAG": "50-GC-003", "S_Programada": "WK07", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": "11/02"},
         {"TAG": "50-GC-003", "S_Programada": "WK11", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        
         {"TAG": "55-GC-015", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
         {"TAG": "55-GC-015", "S_Programada": "WK06", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK06", "Observacion": "04/02 OK"},
         {"TAG": "55-GC-015", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": ""},
-        
         {"TAG": "65-GC-011", "S_Programada": "WK01", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
         {"TAG": "65-GC-011", "S_Programada": "WK05", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK05", "Observacion": "28/01 OK"},
         {"TAG": "65-GC-011", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK11", "Observacion": ""},
-        
         {"TAG": "35-GC-006", "S_Programada": "WK01", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
         {"TAG": "35-GC-006", "S_Programada": "WK02", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": "Falta Kit"},
         {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": ""}
@@ -485,7 +481,7 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.1 VISTA PLANIFICACIÓN (NUEVO CMMS KANBAN Y MATRIZ) ---
+    # --- 7.1 VISTA PLANIFICACIÓN (NUEVO CMMS KANBAN Y MATRIZ CONGELADA) ---
     if st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -516,7 +512,6 @@ else:
         st.markdown("---")
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
         
-        # --- PESTAÑA 1: TABLERO KANBAN ---
         with tab_gestion:
             with st.expander("➕ Programar Nueva Intervención (Añadir al Kanban)", expanded=False):
                 with st.form("form_nueva_tarea"):
@@ -532,7 +527,6 @@ else:
                         guardar_cmms(df_cmms_final); st.success(f"✅ Tarea añadida a {n_sem_format}."); time.sleep(1.5); st.rerun()
 
             st.info("💡 **Doble clic en las columnas para editar.** Filtra por quincena para ver todas las semanas (WK) asociadas.")
-            
             c_f1, c_f2 = st.columns([1, 3])
             orden_quincenas = ["Todas", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov", "15c Dic"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
@@ -543,19 +537,17 @@ else:
                 config_columnas = {
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "Quincena_Calc": None, 
-                    "S_Programada": st.column_config.TextColumn("Semana Prog. (Editable)", disabled=False), 
+                    "S_Programada": st.column_config.TextColumn("Semana Prog.", disabled=False), 
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
                     "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["Pendiente", "Hecho", "F/S"], required=True),
                     "S_Realizada": st.column_config.TextColumn("Semana Realizada"),
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
-                
                 def color_estado(val):
                     if val == 'Hecho': return 'background-color: #063f22; color: #6ee7b7; font-weight: bold;'
                     if val == 'Pendiente': return 'background-color: #423205; color: #fde047; font-weight: bold;'
                     if val == 'F/S': return 'background-color: #471015; color: #ff8a93; font-weight: bold;'
                     return ''
-                    
                 try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado'])
                 except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado'])
                 
@@ -569,16 +561,13 @@ else:
                     if 'Quincena_Calc' in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=['Quincena_Calc'])
                     guardar_cmms(df_cmms_guardar); st.success("✅ Tablero sincronizado."); time.sleep(1.5); st.rerun()
 
-        # --- PESTAÑA 2: CALENDARIO VISUAL CON AÑOS DINÁMICOS ---
         with tab_calendario:
-            # Ahora el calendario permite ver Diciembre 2025 y todo 2026
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
-            
             c_cal_tit, c_cal_sel = st.columns([2, 1])
             with c_cal_tit: st.markdown("### 📆 Calendario Interactivo")
             with c_cal_sel:
-                hoy = datetime.date.today()
-                mes_str = f"Diciembre 2025" if hoy.year == 2025 and hoy.month == 12 else f"{opciones_meses_calendario[hoy.month]}" if hoy.year == 2026 else "Enero 2026"
+                hoy_cal = datetime.date.today()
+                mes_str = f"Diciembre 2025" if hoy_cal.year == 2025 and hoy_cal.month == 12 else f"{opciones_meses_calendario[hoy_cal.month]}" if hoy_cal.year == 2026 else "Enero 2026"
                 mes_sel = st.selectbox("📅 Mes a visualizar:", opciones_meses_calendario, index=opciones_meses_calendario.index(mes_str) if mes_str in opciones_meses_calendario else 1)
                 
             cal_year = 2025 if "2025" in mes_sel else 2026
@@ -597,15 +586,13 @@ else:
             
             html_cal = '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top:10px;">'
             for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
-            
             for semana in semanas_mes:
                 for dia in semana:
                     is_current_month = dia.month == cal_month
                     bg_color = "#1a212b" if is_current_month else "#11151c"
-                    border_color = "#00BFFF" if dia == hoy else "#2b3543"
+                    border_color = "#00BFFF" if dia == hoy_cal else "#2b3543"
                     html_cal += f'<div style="background:{bg_color}; border: 1px solid {border_color}; border-radius: 8px; padding: 5px; min-height: 120px;">'
                     html_cal += f'<div style="text-align:right; color:white; font-size:0.9rem; margin-bottom:8px;">{dia.day}</div>'
-                    
                     if dia in tareas_por_fecha:
                         for t in tareas_por_fecha[dia]:
                             c_bg = "transparent"; c_tx = "#8c9eb5"; b_style = "1px dashed #455065" 
@@ -620,9 +607,9 @@ else:
             html_cal += '</div>'
             st.markdown(html_cal, unsafe_allow_html=True)
 
-        # --- PESTAÑA 3: MATRIZ CON ZOOM (QUINCENA VS ANUAL) ---
         with tab_matriz:
             st.markdown("### 📊 Matriz Dinámica de Mantenimiento")
+            st.info("Desplázate hacia la derecha. Los nombres de los equipos se quedarán **congelados** en la pantalla para que nunca pierdas la fila.")
             
             df_pivot_base = df_cmms.copy()
             df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado']
@@ -637,8 +624,6 @@ else:
             df_matriz = pd.concat([df_info, df_pivot], axis=1).reset_index()
             
             cols_base = ['TAG', 'Equipo', 'Área']
-            
-            # MAGIA: Forzar que existan TODAS las semanas desde la WK01 hasta la WK52 para la vista anual
             cols_wk_completas = [f"WK{i:02d}" for i in range(1, 53)]
             for c in cols_wk_completas:
                 if c not in df_matriz.columns: df_matriz[c] = ""
@@ -656,13 +641,15 @@ else:
                     q_unicas = list(set(wk_a_quincena.values()))
                     q_unicas.sort(key=lambda x: orden_meses.index(x.split(" ")[1]) if " " in x and x.split(" ")[1] in orden_meses else 99)
                     quin_seleccionada = st.selectbox("Selecciona la Quincena a enfocar:", q_unicas, index=q_unicas.index(quincena_de_hoy) if quincena_de_hoy in q_unicas else 0)
-                
                 wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
                 cols_finales.extend(wks_mostrar)
             else:
                 cols_finales.extend(cols_wk_completas)
                 
             df_matriz_final = df_matriz[cols_finales]
+            
+            # MAGIA: Transformar TAG, Equipo y Área en el Índice para que se congelen
+            df_matriz_congelada = df_matriz_final.set_index(['TAG', 'Equipo', 'Área'])
             
             def estilo_matriz_colores(val):
                 v = str(val).upper()
@@ -678,8 +665,9 @@ else:
                     return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
                 return base + 'color: #8c9eb5; font-style: italic;'
                 
-            try: st.dataframe(df_matriz_final.style.map(estilo_matriz_colores, subset=[c for c in cols_finales if c.startswith('WK')]), use_container_width=True, hide_index=True, height=600)
-            except AttributeError: st.dataframe(df_matriz_final.style.applymap(estilo_matriz_colores, subset=[c for c in cols_finales if c.startswith('WK')]), use_container_width=True, hide_index=True, height=600)
+            columnas_wk_pintar = [c for c in df_matriz_congelada.columns if c.startswith('WK')]
+            try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
+            except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
 
     # --- 7.2 VISTA DE FIRMAS ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
@@ -788,7 +776,7 @@ else:
                     with st.container(border=True):
                         st.markdown(f"<div style='border-top: 4px solid {color_borde}; padding-top: 10px; text-align: center; margin-top:-10px;'>{badge_html}</div>", unsafe_allow_html=True)
                         st.button(f"{tag}", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
-                        st.markdown(f"<p style='color: #8c9eb5; margin-top: 5px; font-size: 0.85rem; text-align: center;'><strong style='color:#007CA6;'>{modelo}</strong> &bull; {area.title()}<br><small style='color: #556b82;'>{ubicacion.title()}</small></p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='color: #8c9eb5; margin: top: 5px; font-size: 0.85rem; text-align: center;'><strong style='color:#007CA6;'>{modelo}</strong> &bull; {area.title()}<br><small style='color: #556b82;'>{ubicacion.title()}</small></p>", unsafe_allow_html=True)
                 contador += 1
 
     elif st.session_state.equipo_seleccionado is not None:
