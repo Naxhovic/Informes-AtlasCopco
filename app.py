@@ -53,7 +53,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (BOTÓN LATERAL BLINDADO)
+# 0.2 ESTILOS PREMIUM
 # =============================================================================
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
@@ -63,11 +63,9 @@ def aplicar_estilos_premium():
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap');
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
-        
         header { background: transparent !important; }
         [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; } 
         [data-testid="stDecoration"] { display: none !important; }
-        
         [data-testid="collapsedControl"] {
             display: flex !important; visibility: visible !important; opacity: 1 !important;
             z-index: 999999 !important; background-color: var(--ac-blue) !important; 
@@ -76,12 +74,10 @@ def aplicar_estilos_premium():
         }
         [data-testid="collapsedControl"]:hover { background-color: var(--bhp-orange) !important; transform: scale(1.05) !important; }
         [data-testid="collapsedControl"] svg { fill: white !important; stroke: white !important; }
-        
         a[href*="github.com"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
         [data-testid="viewerBadge"] {display: none !important;}
         div[class^="viewerBadge_container"] {display: none !important;}
         footer {display: none !important;} 
-        
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
         [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 12px !important; border: 1px solid #2b3543 !important; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important; }
@@ -123,16 +119,13 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. CONEXIÓN A GOOGLE SHEETS (HÍBRIDA RENDER / LOCAL)
+# 2. CONEXIÓN A GOOGLE SHEETS
 # =============================================================================
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    try:
-        creds_dict = json.loads(os.environ["gcp_json"])
-    except:
-        creds_dict = json.loads(st.secrets["gcp_json"])
-    
+    try: creds_dict = json.loads(os.environ["gcp_json"])
+    except: creds_dict = json.loads(st.secrets["gcp_json"])
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     return gspread.authorize(creds)
 
@@ -141,13 +134,11 @@ def get_sheet(sheet_name):
         client = get_gspread_client()
         doc = client.open("BaseDatos")
         try: return doc.worksheet(sheet_name)
-        except gspread.exceptions.WorksheetNotFound: 
-            # MAGIA: Si no existe, la crea automáticamente con espacio de sobra.
-            return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
+        except gspread.exceptions.WorksheetNotFound: return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e: return None
 
 # =============================================================================
-# 3. FUNCIONES DE BASE DE DATOS (FUSIÓN PERFECTA DE HOJAS)
+# 3. FUNCIONES DE BASE DE DATOS
 # =============================================================================
 @st.cache_data(ttl=120, show_spinner=False)
 def obtener_estados_actuales():
@@ -158,7 +149,6 @@ def obtener_estados_actuales():
             data_int = sheet_int.get_all_values()
             for row in data_int:
                 if len(row) >= 18: estados[row[0]] = row[17]
-        
         sheet = get_sheet("estados_equipos")
         if sheet:
             data = sheet.get_all_values()
@@ -171,12 +161,9 @@ def actualizar_estado_equipo_en_nube(tag, nuevo_estado):
     try:
         sheet = get_sheet("estados_equipos")
         if sheet:
-            registros = sheet.get_all_values()
-            fila_encontrada = -1
+            registros = sheet.get_all_values(); fila_encontrada = -1
             for i, fila in enumerate(registros):
-                if len(fila) > 0 and fila[0] == tag:
-                    fila_encontrada = i + 1
-                    break
+                if len(fila) > 0 and fila[0] == tag: fila_encontrada = i + 1; break
             if fila_encontrada != -1: sheet.update_cell(fila_encontrada, 2, nuevo_estado)
             else: sheet.append_row([tag, nuevo_estado])
             st.cache_data.clear() 
@@ -327,39 +314,58 @@ def guardar_pendientes(usuario, pendientes):
     except: pass
 
 # =============================================================================
-# 5. INICIALIZACIÓN DE ESTADOS Y MOTOR CMMS (NUEVO)
+# 5. INICIALIZACIÓN DE ESTADOS Y MOTOR CMMS
 # =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
+    
+    # Base de datos real extraída de Planificación Húmeda
+    datos_reales = [
+        {"TAG": "70-GC-013", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK09", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
+        {"TAG": "50-GC-002", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-003", "S_Programada": "WK11", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": "F/S WK07"},
+        {"TAG": "50-GC-004", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-CD-001", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-CD-002", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": ""},
+        {"TAG": "55-GC-015", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": ""},
+        {"TAG": "65-GC-011", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK11", "Observacion": ""},
+        {"TAG": "65-GC-009", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK11", "Observacion": ""},
+        {"TAG": "65-CD-011", "S_Programada": "WK08", "Tipo": "P4", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": "Falta kit"},
+        {"TAG": "65-CD-012", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": "Falta kit"},
+        {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": "F/S"},
+        {"TAG": "35-GC-007", "S_Programada": "WK11", "Tipo": "P2", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "35-GC-008", "S_Programada": "WK11", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "20-GC-004", "S_Programada": "WK11", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "20-GC-001", "S_Programada": "WK10", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "20-GC-002", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "20-GC-003", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""}
+    ]
+
     try:
         sheet = get_sheet("plan_cmms")
         if sheet:
             data = sheet.get_all_values()
-            
             if len(data) > 0:
-                # Convierte los datos a DataFrame
                 df = pd.DataFrame(data[1:], columns=data[0]) if len(data) > 1 else pd.DataFrame(columns=data[0])
+                if "S_Programada" in df.columns: return df
                 
-                # VERIFICACIÓN CRÍTICA: ¿Están bien escritos los títulos?
-                if "S_Programada" in df.columns:
-                    return df
-                else:
-                    # Si alguien borró los títulos o la hoja tiene basura, la resetea y la arregla
-                    sheet.clear()
-                    sheet.append_row(headers)
-                    st.cache_data.clear()
-                    return pd.DataFrame(columns=headers)
-            else:
-                # Si la hoja está 100% vacía
-                sheet.append_row(headers)
+                # Si llega aquí, la hoja está rota o vacía. La formatea y la inyecta.
+                sheet.clear()
+                df_base = pd.DataFrame(datos_reales, columns=headers)
+                sheet.append_rows([headers] + df_base.values.tolist())
                 st.cache_data.clear()
-                return pd.DataFrame(columns=headers)
-    except Exception as e:
-        print(f"Error cargando CMMS: {e}")
-        
-    # Si Google falla, devuelve un dataframe vacío pero con la estructura correcta para que no explote
-    return pd.DataFrame(columns=headers)
+                return df_base
+            else:
+                # Hoja sin filas
+                df_base = pd.DataFrame(datos_reales, columns=headers)
+                sheet.append_rows([headers] + df_base.values.tolist())
+                st.cache_data.clear()
+                return df_base
+    except Exception as e: print(f"Error cargando CMMS: {e}")
+    return pd.DataFrame(datos_reales, columns=headers)
 
 def guardar_cmms(df):
     sheet = get_sheet("plan_cmms")
@@ -430,13 +436,10 @@ else:
         st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas Copco</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
         st.markdown("---")
-        
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
-            
         if st.button("📊 Panel de Planificación (CMMS)", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
-            
         if len(st.session_state.informes_pendientes) > 0:
             st.markdown("---")
             st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
@@ -458,7 +461,6 @@ else:
             </div>
         """, unsafe_allow_html=True)
         
-        # --- PANEL DE INDICADORES (KPIs) ---
         df_semana = df_cmms[df_cmms["S_Programada"] == semana_actual]
         total_tareas = len(df_semana)
         hechas = len(df_semana[df_semana["Estado"] == "Hecho"])
@@ -474,9 +476,9 @@ else:
         st.markdown("---")
         tab_gestion, tab_crear = st.tabs(["📋 Tablero Kanban de Mantenimiento", "➕ Programar Nueva Tarea"])
         
-        # --- TABLERO INTERACTIVO ---
+        # --- TABLERO INTERACTIVO (TOTALMENTE EDITABLE) ---
         with tab_gestion:
-            st.info("Haz doble clic en la columna **Estado Actual** para marcar un equipo como Hecho o Fuera de Servicio. Luego dale a Guardar.")
+            st.info("💡 **Tips de Uso:** Haz doble clic en las columnas para editar. Puedes cambiar la semana (mover tarea), el tipo de intervención o marcar el estado. Al terminar, presiona Guardar.")
             
             c_f1, c_f2 = st.columns([1, 3])
             with c_f1: 
@@ -486,10 +488,11 @@ else:
             df_mostrar = df_cmms.copy() if filtro_sem == "Todas" else df_cmms[df_cmms["S_Programada"] == filtro_sem]
             
             if not df_mostrar.empty:
+                # LA CLAVE: Hemos habilitado la edición de casi todas las columnas
                 config_columnas = {
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
-                    "S_Programada": st.column_config.TextColumn("Semana Prog.", disabled=True),
-                    "Tipo": st.column_config.TextColumn("Intervención", disabled=True),
+                    "S_Programada": st.column_config.TextColumn("Semana Prog. (Editable)", disabled=False), 
+                    "Tipo": st.column_config.SelectboxColumn("Intervención", options=["INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
                     "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["Pendiente", "Hecho", "F/S"], required=True),
                     "S_Realizada": st.column_config.TextColumn("Semana Realizada (Ej: WK10)"),
                     "Observacion": st.column_config.TextColumn("Comentarios / Desviaciones")
@@ -504,12 +507,10 @@ else:
                 try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado'])
                 except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado'])
                 
-                df_editado = st.data_editor(df_estilizado, hide_index=True, use_container_width=True, column_config=config_columnas, height=400)
+                df_editado = st.data_editor(df_estilizado, hide_index=True, use_container_width=True, column_config=config_columnas, height=500)
                 
                 if st.button("💾 Guardar Avances en la Nube", type="primary"):
-                    # Compara si algo cambió y actualiza la matriz original
                     df_cmms.update(df_editado)
-                    # Si algo se marcó como "Hecho" y no tenía semana realizada, se le pone la de hoy
                     df_cmms.loc[(df_cmms['Estado'] == 'Hecho') & (df_cmms['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
                     guardar_cmms(df_cmms)
                     st.success("✅ Tablero sincronizado perfectamente.")
@@ -525,7 +526,6 @@ else:
                 n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
                 n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
                 n_sem = c3.text_input("Semana Programada (Ej: WK12):", value=semana_actual)
-                
                 n_obs = st.text_input("Observación inicial (Opcional):", placeholder="Ej: Se requiere cambio de aceite especial...")
                 
                 if st.form_submit_button("🚀 Añadir a la Planificación", type="primary", use_container_width=True):
@@ -535,7 +535,7 @@ else:
                     st.success(f"✅ ¡Listo! Tarea de {n_tipo} para {n_tag} programada exitosamente.")
                     time.sleep(1.5); st.rerun()
 
-    # --- 7.2 VISTA DE FIRMAS (AGRUPADA POR MACRO-ÁREA) ---
+    # --- 7.2 VISTA DE FIRMAS ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -543,8 +543,7 @@ else:
         with c_v2: st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas por Área</h1>", unsafe_allow_html=True)
         st.markdown("---")
         
-        if len(st.session_state.informes_pendientes) == 0:
-            st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
+        if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
             areas_agrupadas = {}
             for inf in st.session_state.informes_pendientes:
@@ -571,8 +570,7 @@ else:
                                 if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
                                 st.rerun()
                     
-                    st.markdown("---")
-                    c_tec, c_cli = st.columns(2)
+                    st.markdown("---"); c_tec, c_cli = st.columns(2)
                     with c_tec:
                         st.markdown(f"#### 🧑‍🔧 Firma Técnico ({macro_area})")
                         canvas_tec = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=180, width=400, drawing_mode="freedraw", key=f"tec_{macro_area}")
@@ -584,13 +582,9 @@ else:
                     if st.button(f"🚀 Aprobar, Firmar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
                         tec_ok = canvas_tec.image_data is not None and canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0
                         cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
-                        
                         if tec_ok and cli_ok:
-                            def procesar_imagen_firma(img_data):
-                                img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
-                            io_tec = procesar_imagen_firma(canvas_tec.image_data); io_cli = procesar_imagen_firma(canvas_cli.image_data)
-                            
-                            informes_finales = []
+                            def procesar_imagen_firma(img_data): img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
+                            io_tec = procesar_imagen_firma(canvas_tec.image_data); io_cli = procesar_imagen_firma(canvas_cli.image_data); informes_finales = []
                             with st.spinner(f"Procesando documentos de {macro_area}..."):
                                 try:
                                     for inf in informes_area:
@@ -600,7 +594,6 @@ else:
                                         else: ruta_final = inf['ruta_docx']; nombre_final = inf['nombre_archivo_base']
                                         tupla_lista = list(inf['tupla_db']); tupla_lista[18] = ruta_final; guardar_registro(tuple(tupla_lista))
                                         informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{macro_area}@@{inf['tag']}@@{nombre_final}"})
-                                    
                                     exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
                                     if exito: 
                                         st.success(f"✅ ¡Listos y enviados los reportes de {macro_area}!")
@@ -615,7 +608,7 @@ else:
                         else: st.warning(f"⚠️ Asegúrate de firmar ambas pizarras para procesar los documentos de {macro_area}.")
                 st.markdown("<br><br>", unsafe_allow_html=True)
 
-    # --- 7.3 VISTA CATÁLOGO ---
+    # --- 7.3 VISTA CATÁLOGO Y 7.4 FICHAS TÉCNICAS ---
     elif st.session_state.vista_actual == "catalogo" and st.session_state.equipo_seleccionado is None:
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(0,124,166,0) 0%, rgba(0,124,166,0.1) 50%, rgba(0,124,166,0) 100%); padding: 20px; border-radius: 15px;">
@@ -642,10 +635,8 @@ else:
             if filtro_tipo == "Secadores" and not es_secador: continue
             if busqueda in tag.lower() or busqueda in area.lower() or busqueda in modelo.lower() or busqueda in ubicacion.lower():
                 estado = estados_db.get(tag, "Operativo")
-                if estado == "Operativo":
-                    color_borde = "#00e676"; badge_html = "<div style='background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid #00e676; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-block;'>OPERATIVO</div>"
-                else:
-                    color_borde = "#ff1744"; badge_html = "<div style='background: rgba(255,23,68,0.15); color: #ff1744; border: 1px solid #ff1744; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-block;'>FUERA DE SERVICIO</div>"
+                if estado == "Operativo": color_borde = "#00e676"; badge_html = "<div style='background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid #00e676; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-block;'>OPERATIVO</div>"
+                else: color_borde = "#ff1744"; badge_html = "<div style='background: rgba(255,23,68,0.15); color: #ff1744; border: 1px solid #ff1744; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-block;'>FUERA DE SERVICIO</div>"
                 
                 with columnas[contador % 4]:
                     with st.container(border=True):
@@ -654,7 +645,6 @@ else:
                         st.markdown(f"<p style='color: #8c9eb5; margin-top: 5px; font-size: 0.85rem; text-align: center;'><strong style='color:#007CA6;'>{modelo}</strong> &bull; {area.title()}<br><small style='color: #556b82;'>{ubicacion.title()}</small></p>", unsafe_allow_html=True)
                 contador += 1
 
-    # --- 7.4 VISTA FORMULARIO Y GENERACIÓN ---
     elif st.session_state.equipo_seleccionado is not None:
         tag_sel = st.session_state.equipo_seleccionado; mod_d, ser_d, area_d, ubi_d = inventario_equipos[tag_sel]
         c_btn, c_tit = st.columns([1, 4])
@@ -667,7 +657,6 @@ else:
         
         with tab1:
             st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área Específica", area_d, disabled=True); ubicacion = c4.text_input("Macro-Área", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
-            
             fecha = c5.text_input("Fecha Ejecución", obtener_fecha_hoy_esp())
             tec1 = c6.text_input("Técnico 1", key="input_tec1"); tec2 = c7.text_input("Técnico 2", key="input_tec2")
             with c8:
@@ -687,7 +676,6 @@ else:
                 else: cli_cont = cli_sel; st.session_state.input_cliente = cli_sel
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Mediciones del Equipo"); c9, c10, c11, c12, c13, c14 = st.columns(6); h_m = c9.number_input("Horas Marcha Totales", step=1, value=int(st.session_state.input_h_marcha), format="%d"); h_c = c10.number_input("Horas en Carga", step=1, value=int(st.session_state.input_h_carga), format="%d"); unidad_p = c11.selectbox("Unidad de Presión", ["Bar", "psi"]); p_c_str = c12.text_input("P. Carga", value=str(st.session_state.input_p_carga)); p_d_str = c13.text_input("P. Descarga", value=str(st.session_state.input_p_descarga)); t_salida_str = c14.text_input("Temp Salida (°C)", value=str(st.session_state.input_temp)); p_c_clean = p_c_str.replace(',', '.'); p_d_clean = p_d_str.replace(',', '.'); t_salida_clean = t_salida_str.replace(',', '.')
             st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Evaluación y Diagnóstico Final"); est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True); est_ent = st.text_area("Descripción Condición Final:", key="input_estado", height=100); reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100); st.markdown("<br>", unsafe_allow_html=True)
-            
             if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
                 actualizar_estado_equipo_en_nube(tag_sel, est_eq)
                 if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
@@ -695,7 +683,6 @@ else:
                 context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}; nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"; ruta = os.path.join(RUTA_ONEDRIVE, nombre_archivo); temp_db = float(t_salida_clean) if t_salida_clean.replace('.', '', 1).isdigit() else 0.0; tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
                 with st.spinner("Creando borrador del documento para vista preliminar..."):
                     doc_prev = DocxTemplate(file_plantilla); ctx_prev = context.copy(); ctx_prev['firma_tecnico'] = ""; ctx_prev['firma_cliente'] = ""; doc_prev.render(ctx_prev); os.makedirs(RUTA_ONEDRIVE, exist_ok=True); ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}"); doc_prev.save(ruta_prev_docx); ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
-                
                 st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf})
                 guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
                 st.success(f"✅ Datos guardados. El equipo se anotó como '{est_eq}' en tu Base de Datos y el informe se fue a la Bandeja de {ubi_d.title()}."); st.session_state.equipo_seleccionado = None; st.rerun()
