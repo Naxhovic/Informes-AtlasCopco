@@ -276,7 +276,7 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
     # =============================================================================
-# 4. FUNCIONES AUXILIARES Y CÁLCULO DE QUINCENAS (NUEVO)
+# 4. FUNCIONES AUXILIARES Y CÁLCULO DE QUINCENAS
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -315,58 +315,30 @@ def guardar_pendientes(usuario, pendientes):
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
-# --- CEREBRO DE QUINCENAS (EL CÁLCULO EXACTO) ---
 def wk_to_date(year, wk_string):
     try:
         wk_num = int(re.sub(r'\D', '', str(wk_string)))
-        return datetime.date.fromisocalendar(year, wk_num, 1) # Devuelve el Lunes
+        return datetime.date.fromisocalendar(year, wk_num, 1) 
     except: return None
 
 def calcular_quincena(wk_string, year=2026):
     d = wk_to_date(year, wk_string)
     if not d: return "Sin Asignar"
     meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-    # REGLA: Si el lunes es <= 15, pertenece a ese mes. Si es > 15, pertenece al siguiente.
-    if d.day <= 15:
-        return f"15c {meses_abr[d.month - 1]}"
-    else:
-        return f"15c {meses_abr[d.month if d.month < 12 else 0]}"
+    if d.day <= 15: return f"15c {meses_abr[d.month - 1]}"
+    else: return f"15c {meses_abr[d.month if d.month < 12 else 0]}"
 
 def formatear_wk(wk_str):
-    # Transforma 'WK9' a 'WK09' para que se ordene bien
     nums = re.findall(r'\d+', str(wk_str))
     if nums: return f"WK{int(nums[0]):02d}"
     return str(wk_str).upper()
 
 # =============================================================================
-# 5. MOTOR CMMS Y MATRIZ (BLINDADO)
+# 5. MOTOR CMMS
 # =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
-    datos_reales = [
-        {"TAG": "70-GC-013", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
-        {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
-        {"TAG": "50-GC-001", "S_Programada": "WK09", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
-        {"TAG": "50-GC-002", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-003", "S_Programada": "WK11", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": "F/S WK07"},
-        {"TAG": "50-GC-004", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-CD-001", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-CD-002", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": ""},
-        {"TAG": "55-GC-015", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": ""},
-        {"TAG": "65-GC-011", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK11", "Observacion": ""},
-        {"TAG": "65-GC-009", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK11", "Observacion": ""},
-        {"TAG": "65-CD-011", "S_Programada": "WK08", "Tipo": "P4", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": "Falta kit"},
-        {"TAG": "65-CD-012", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": "Falta kit"},
-        {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": "F/S"},
-        {"TAG": "35-GC-007", "S_Programada": "WK11", "Tipo": "P2", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "35-GC-008", "S_Programada": "WK11", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "20-GC-004", "S_Programada": "WK11", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "20-GC-001", "S_Programada": "WK10", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "20-GC-002", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "20-GC-003", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""}
-    ]
-
     try:
         sheet = get_sheet("plan_cmms")
         if sheet:
@@ -374,13 +346,11 @@ def cargar_cmms():
             if len(data) > 0:
                 df = pd.DataFrame(data[1:], columns=data[0]) if len(data) > 1 else pd.DataFrame(columns=data[0])
                 if "S_Programada" in df.columns: return df
-                sheet.clear(); df_base = pd.DataFrame(datos_reales, columns=headers)
-                sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
+                sheet.clear(); sheet.append_row(headers); st.cache_data.clear(); return pd.DataFrame(columns=headers)
             else:
-                df_base = pd.DataFrame(datos_reales, columns=headers)
-                sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
+                sheet.append_row(headers); st.cache_data.clear(); return pd.DataFrame(columns=headers)
     except Exception as e: print(f"Error cargando CMMS: {e}")
-    return pd.DataFrame(datos_reales, columns=headers)
+    return pd.DataFrame(columns=headers)
 
 def guardar_cmms(df):
     sheet = get_sheet("plan_cmms")
@@ -466,7 +436,6 @@ else:
         hoy = datetime.date.today()
         semana_actual = f"WK{hoy.isocalendar()[1]:02d}"
         
-        # Le aplicamos a todos los datos la regla de Quincenas
         df_cmms['S_Programada'] = df_cmms['S_Programada'].apply(formatear_wk)
         df_cmms['Quincena_Calc'] = df_cmms['S_Programada'].apply(lambda x: calcular_quincena(x, 2026))
         quincena_de_hoy = calcular_quincena(semana_actual, 2026)
@@ -478,7 +447,6 @@ else:
             </div>
         """, unsafe_allow_html=True)
         
-        # --- PANEL DE INDICADORES (KPIs de la Quincena) ---
         df_kpi = df_cmms[df_cmms["Quincena_Calc"] == quincena_de_hoy]
         total_tareas = len(df_kpi)
         hechas = len(df_kpi[df_kpi["Estado"] == "Hecho"])
@@ -492,9 +460,9 @@ else:
         c_kpi4.metric(label="🚨 Equipos F/S", value=fs)
         
         st.markdown("---")
-        tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz Anual Automática"])
+        tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
         
-        # --- PESTAÑA 1: TABLERO KANBAN CON MOTOR INCORPORADO ---
+        # --- PESTAÑA 1: TABLERO KANBAN ---
         with tab_gestion:
             with st.expander("➕ Programar Nueva Intervención (Añadir al Kanban)", expanded=False):
                 with st.form("form_nueva_tarea"):
@@ -520,7 +488,7 @@ else:
             if not df_mostrar.empty:
                 config_columnas = {
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
-                    "Quincena_Calc": None, # La ocultamos en la UI
+                    "Quincena_Calc": None, 
                     "S_Programada": st.column_config.TextColumn("Semana Prog. (Editable)", disabled=False), 
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
                     "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["Pendiente", "Hecho", "F/S"], required=True),
@@ -540,22 +508,14 @@ else:
                 df_editado = st.data_editor(df_estilizado, hide_index=True, use_container_width=True, column_config=config_columnas, height=450)
                 
                 if st.button("💾 Guardar Avances en la Nube", type="primary"):
-                    # Formatea las semanas por si el usuario escribió "wk9" en vez de "WK09"
                     df_editado['S_Programada'] = df_editado['S_Programada'].apply(formatear_wk)
-                    
                     df_cmms_guardar = df_cmms.copy()
                     df_cmms_guardar.update(df_editado)
                     df_cmms_guardar.loc[(df_cmms_guardar['Estado'] == 'Hecho') & (df_cmms_guardar['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
-                    
-                    # Quitamos la columna de cálculo temporal antes de guardar
-                    if 'Quincena_Calc' in df_cmms_guardar.columns:
-                        df_cmms_guardar = df_cmms_guardar.drop(columns=['Quincena_Calc'])
-                    
-                    guardar_cmms(df_cmms_guardar); st.success("✅ Tablero sincronizado perfectamente."); time.sleep(1.5); st.rerun()
-            else:
-                st.success(f"🎉 No hay tareas programadas para la planificación de {filtro_quin}.")
+                    if 'Quincena_Calc' in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=['Quincena_Calc'])
+                    guardar_cmms(df_cmms_guardar); st.success("✅ Tablero sincronizado."); time.sleep(1.5); st.rerun()
 
-        # --- PESTAÑA 2: CALENDARIO VISUAL CON COLORES CLÁSICOS ---
+        # --- PESTAÑA 2: CALENDARIO VISUAL ---
         with tab_calendario:
             meses_nombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
@@ -565,7 +525,7 @@ else:
                 mes_idx = meses_nombres.index(mes_sel) + 1
                 
             cal = calendar.Calendar(calendar.MONDAY)
-            semanas_mes = cal.monthdatescalendar(2026, mes_idx) # Forzamos 2026 por tu archivo
+            semanas_mes = cal.monthdatescalendar(2026, mes_idx) 
             
             tareas_por_fecha = {}
             for _, row in df_cmms.iterrows():
@@ -599,11 +559,11 @@ else:
             html_cal += '</div>'
             st.markdown(html_cal, unsafe_allow_html=True)
 
-        # --- PESTAÑA 3: MATRIZ ANUAL (TODAS LAS SEMANAS DEL AÑO) ---
+        # --- PESTAÑA 3: LA NUEVA MATRIZ CON ZOOM ---
         with tab_matriz:
-            st.markdown("### 📊 Matriz Anual Consolidada")
-            st.info("Esta matriz lee todas las tareas del Kanban y las despliega desde la WK01 hasta la WK52.")
+            st.markdown("### 📊 Matriz Dinámica de Mantenimiento")
             
+            # Construir la matriz pivote general
             df_pivot_base = df_cmms.copy()
             df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado']
             df_pivot = df_pivot_base.groupby(['TAG', 'S_Programada'])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
@@ -616,10 +576,33 @@ else:
             df_info = pd.DataFrame(lista_info).set_index("TAG")
             df_matriz = pd.concat([df_info, df_pivot], axis=1).reset_index()
             
-            # Ordenar las columnas para que salgan en orden (WK01, WK02...)
             cols_base = ['TAG', 'Equipo', 'Área']
             cols_wk = sorted([c for c in df_matriz.columns if str(c).startswith('WK')])
-            df_matriz = df_matriz[cols_base + cols_wk]
+            
+            # Identificar a qué quincena pertenece cada WK de la tabla
+            wk_a_quincena = {wk: calcular_quincena(wk, 2026) for wk in cols_wk}
+            
+            # --- EL SELECTOR DE VISTA (MAGIA DEL ZOOM) ---
+            c_mat1, c_mat2 = st.columns([1, 2])
+            with c_mat1:
+                vista_matriz = st.radio("Modo de Visualización:", ["📆 Anual (Zoom Out)", "🔍 Por Quincena (Zoom In)"], horizontal=True)
+            
+            cols_finales = cols_base.copy()
+            
+            if vista_matriz == "🔍 Por Quincena (Zoom In)":
+                with c_mat2:
+                    orden_meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+                    q_unicas = list(set(wk_a_quincena.values()))
+                    q_unicas.sort(key=lambda x: orden_meses.index(x.split(" ")[1]) if " " in x and x.split(" ")[1] in orden_meses else 99)
+                    quin_seleccionada = st.selectbox("Selecciona la Quincena a enfocar:", q_unicas, index=q_unicas.index(quincena_de_hoy) if quincena_de_hoy in q_unicas else 0)
+                
+                # Ocultar las semanas que no pertenezcan a la quincena elegida
+                wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
+                cols_finales.extend(wks_mostrar)
+            else:
+                cols_finales.extend(cols_wk)
+                
+            df_matriz_final = df_matriz[cols_finales]
             
             def estilo_matriz_colores(val):
                 v = str(val).upper()
@@ -635,8 +618,8 @@ else:
                     return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
                 return base + 'color: #8c9eb5; font-style: italic;'
                 
-            try: st.dataframe(df_matriz.style.map(estilo_matriz_colores, subset=cols_wk), use_container_width=True, hide_index=True, height=700)
-            except AttributeError: st.dataframe(df_matriz.style.applymap(estilo_matriz_colores, subset=cols_wk), use_container_width=True, hide_index=True, height=700)
+            try: st.dataframe(df_matriz_final.style.map(estilo_matriz_colores, subset=[c for c in cols_finales if c.startswith('WK')]), use_container_width=True, hide_index=True, height=600)
+            except AttributeError: st.dataframe(df_matriz_final.style.applymap(estilo_matriz_colores, subset=[c for c in cols_finales if c.startswith('WK')]), use_container_width=True, hide_index=True, height=600)
 
     # --- 7.2 VISTA DE FIRMAS ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
