@@ -322,7 +322,7 @@ def guardar_pendientes(usuario, pendientes):
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
-# --- EL CEREBRO MINERO AVANZADO ---
+# --- EL CEREBRO MINERO ---
 def wk_to_date(wk_string):
     try:
         wk_num = int(re.sub(r'\D', '', str(wk_string)))
@@ -350,7 +350,7 @@ def formatear_wk(wk_str):
     return str(wk_str).upper()
 
 # =============================================================================
-# 5. MOTOR CMMS CON DATOS REALES E ICONOS VISUALES
+# 5. MOTOR CMMS CON DATOS REALES
 # =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
@@ -492,7 +492,7 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.1 VISTA PLANIFICACIÓN (CMMS KANBAN REACTIVO) ---
+    # --- 7.1 VISTA PLANIFICACIÓN (CMMS KANBAN) ---
     if st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -523,9 +523,9 @@ else:
         st.markdown("---")
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
         
-        # --- PESTAÑA 1: TABLERO KANBAN CON MAGIA REACTIVA ---
+        # --- PESTAÑA 1: TABLERO KANBAN FUSIONADO (FECHA + WK) ---
         with tab_gestion:
-            st.info("💡 **Doble clic en '📆 Día Prog.' para elegir la fecha.** La columna '🎯 WK Prog.' se actualizará en vivo y calculará la semana por ti.")
+            st.info("💡 **El calendario calcula todo.** Selecciona la fecha en '📆 Prog. para (Día)' y verás que automáticamente aparece la 'WK' en la misma celda.")
             c_f1, c_f2 = st.columns([1, 3])
             orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
@@ -547,35 +547,25 @@ else:
                     except: return None
                 
                 df_mostrar['S_Realizada'] = df_mostrar['S_Realizada'].apply(string_to_date)
+                # Ocultaremos S_Programada (WK08) y en su lugar usaremos Día Programado para el Editor
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
+                
                 df_mostrar.insert(0, "🗑️ Quitar", False)
                 
-                # 🔥 LA MAGIA REACTIVA: Leemos el editor en vivo y actualizamos la WK antes de pintar
-                if "kanban_table" in st.session_state:
-                    edits = st.session_state["kanban_table"].get("edited_rows", {})
-                    for idx_str, changes in edits.items():
-                        if "Día Programado" in changes:
-                            val = changes["Día Programado"]
-                            if val is not None:
-                                try:
-                                    if isinstance(val, str): new_date = datetime.datetime.strptime(val[:10], "%Y-%m-%d").date()
-                                    else: new_date = val
-                                    wk_calculada = f"WK{new_date.isocalendar()[1]:02d}"
-                                    df_mostrar.at[int(idx_str), 'S_Programada'] = wk_calculada
-                                except: pass
-
-                columnas_ordenadas = ["🗑️ Quitar", "TAG", "Día Programado", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion", "Quincena_Calc"]
+                # Orden de las columnas visibles
+                columnas_ordenadas = ["🗑️ Quitar", "TAG", "Día Programado", "Tipo", "Estado", "S_Realizada", "Observacion", "Quincena_Calc", "S_Programada"]
                 df_mostrar = df_mostrar[columnas_ordenadas]
                 
+                # 🔥 LA MAGIA VISUAL: format="DD/MM/YYYY [WK]WW" inserta la Semana al lado de la fecha!
                 config_columnas = {
                     "🗑️ Quitar": st.column_config.CheckboxColumn("Quitar", default=False),
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "Quincena_Calc": None, 
-                    "Día Programado": st.column_config.DateColumn("📆 Día Prog.", format="DD/MM/YYYY", disabled=False),
-                    "S_Programada": st.column_config.TextColumn("🎯 WK Prog.", disabled=True),
+                    "S_Programada": None, # La ocultamos porque ya está fusionada visualmente en el calendario
+                    "Día Programado": st.column_config.DateColumn("📆 Prog. para (Día y WK)", format="DD/MM/YYYY - [WK]WW", disabled=False),
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["N/A", "INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
-                    "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["⚪ N/A", "⏳ Pendiente", "✅ Hecho", "🚨 F/S"], required=True),
-                    "S_Realizada": st.column_config.DateColumn("Día de Ejecución", format="DD/MM/YYYY", disabled=False),
+                    "Estado": st.column_config.SelectboxColumn("Estado", options=["⚪ N/A", "⏳ Pendiente", "✅ Hecho", "🚨 F/S"], required=True),
+                    "S_Realizada": st.column_config.DateColumn("Día Ejecución 📅", format="DD/MM/YYYY - [WK]WW", disabled=False),
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
                 def color_estado(val):
@@ -587,10 +577,10 @@ else:
                 try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado'])
                 except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado'])
                 
-                df_editado = st.data_editor(df_estilizado, key="kanban_table", hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
+                df_editado = st.data_editor(df_estilizado, hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
-                    # Verificación final de seguridad
+                    # El backend toma la fecha y la vuelve a transformar a string WK08 para que la base de datos lo entienda
                     df_editado['S_Programada'] = df_editado['Día Programado'].apply(lambda x: f"WK{x.isocalendar()[1]:02d}" if pd.notnull(x) else "")
                     df_editado['S_Realizada'] = df_editado['S_Realizada'].apply(lambda x: x.strftime("%Y-%m-%d") if pd.notnull(x) else "")
                     
@@ -609,47 +599,45 @@ else:
                     for col in ['Quincena_Calc', '🗑️ Quitar', 'Día Programado']:
                         if col in df_cmms_final.columns: df_cmms_final = df_cmms_final.drop(columns=[col])
                     
-                    guardar_cmms(df_cmms_final); st.success(f"✅ ¡Guardado de forma exitosa!"); time.sleep(1.5); st.rerun()
+                    guardar_cmms(df_cmms_final); st.success(f"✅ ¡Guardado!"); time.sleep(1.5); st.rerun()
 
             st.markdown("<br>", unsafe_allow_html=True)
-            with st.expander("➕ Inyectar Tarea Extra (Por si necesitas duplicar pautas)", expanded=False):
-                st.write("*(Si editaste la tabla de arriba, este botón guardará todo automáticamente)*")
-                c1, c2, c3 = st.columns(3)
-                n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
-                n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
-                
-                # Formulario libre para que refresque en vivo
-                n_fecha_prog = c3.date_input("📆 Día a Programar:", value=datetime.date.today())
-                n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}"
-                c3.markdown(f"<div style='margin-top:-15px; margin-bottom:15px; color:#00e676; font-size:0.85rem; font-weight:bold;'>🎯 Se registrará en la {n_sem_format}</div>", unsafe_allow_html=True)
-                
-                n_obs = st.text_input("Observación inicial (Opcional):")
-                
-                if st.button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
-                    df_cmms_guardar = df_cmms.copy()
-                    if not df_editado.empty:
-                        df_editado_clean = df_editado.copy()
-                        df_editado_clean['S_Programada'] = df_editado_clean['Día Programado'].apply(lambda x: f"WK{x.isocalendar()[1]:02d}" if pd.notnull(x) else "")
-                        df_editado_clean['S_Realizada'] = df_editado_clean['S_Realizada'].apply(lambda x: x.strftime("%Y-%m-%d") if pd.notnull(x) else "")
-                        
-                        filas_validas_f = df_editado_clean[
-                            (df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A") & 
-                            (df_editado_clean["Estado"] != "⚪ N/A") & (df_editado_clean["S_Programada"] != "")
-                        ].copy()
-                        filas_validas_f.loc[(filas_validas_f['Estado'] == '✅ Hecho') & (filas_validas_f['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
-                        
-                        if filtro_quin == "Todas": df_cmms_guardar = filas_validas_f
-                        else:
-                            df_cmms_rest_f = df_cmms[df_cmms["Quincena_Calc"] != filtro_quin]
-                            df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
+            with st.expander("➕ Inyectar Tarea Extra (Duplicar pautas)", expanded=False):
+                with st.form("form_nueva_tarea"):
+                    st.write("*(Si editaste la tabla de arriba, este botón guardará todo automáticamente)*")
+                    c1, c2, c3 = st.columns(3)
+                    n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
+                    n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
+                    n_fecha_prog = c3.date_input("📆 Día a Programar:", value=datetime.date.today())
+                    n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}"
+                    c3.markdown(f"<div style='margin-top:-15px; margin-bottom:15px; color:#00e676; font-size:0.85rem; font-weight:bold;'>🎯 Quedará registrada en la {n_sem_format}</div>", unsafe_allow_html=True)
+                    n_obs = st.text_input("Observación inicial (Opcional):")
+                    
+                    if st.form_submit_button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
+                        df_cmms_guardar = df_cmms.copy()
+                        if not df_editado.empty:
+                            df_editado_clean = df_editado.copy()
+                            df_editado_clean['S_Programada'] = df_editado_clean['Día Programado'].apply(lambda x: f"WK{x.isocalendar()[1]:02d}" if pd.notnull(x) else "")
+                            df_editado_clean['S_Realizada'] = df_editado_clean['S_Realizada'].apply(lambda x: x.strftime("%Y-%m-%d") if pd.notnull(x) else "")
+                            
+                            filas_validas_f = df_editado_clean[
+                                (df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A") & 
+                                (df_editado_clean["Estado"] != "⚪ N/A") & (df_editado_clean["S_Programada"] != "")
+                            ].copy()
+                            filas_validas_f.loc[(filas_validas_f['Estado'] == '✅ Hecho') & (filas_validas_f['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
+                            
+                            if filtro_quin == "Todas": df_cmms_guardar = filas_validas_f
+                            else:
+                                df_cmms_rest_f = df_cmms[df_cmms["Quincena_Calc"] != filtro_quin]
+                                df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
 
-                    nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": n_obs}])
-                    
-                    for col in ['Quincena_Calc', '🗑️ Quitar', 'Día Programado']:
-                        if col in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=[col])
-                    
-                    df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
-                    guardar_cmms(df_cmms_final_extra); st.success(f"✅ Se guardaron los cambios y se añadió a {n_sem_format}."); time.sleep(1.5); st.rerun()
+                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": n_obs}])
+                        
+                        for col in ['Quincena_Calc', '🗑️ Quitar', 'Día Programado']:
+                            if col in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=[col])
+                        
+                        df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
+                        guardar_cmms(df_cmms_final_extra); st.success(f"✅ Se guardaron los cambios y se añadió a {n_sem_format}."); time.sleep(1.5); st.rerun()
 
         # --- PESTAÑA 2: CALENDARIO VISUAL EXACTO ---
         with tab_calendario:
@@ -711,7 +699,7 @@ else:
             st.info("Desplázate hacia la derecha. Los nombres de los equipos se quedarán **congelados** en la pantalla para que nunca pierdas la fila.")
             
             df_pivot_base = df_cmms.copy()
-            df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado']
+            df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: x.split(" ")[1] if " " in x else x)
             df_pivot = df_pivot_base.groupby(['TAG', 'S_Programada'])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
             
             lista_info = []
