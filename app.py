@@ -475,7 +475,7 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.1 VISTA PLANIFICACIÓN (NUEVO CMMS KANBAN Y MATRIZ CONGELADA) ---
+    # --- 7.1 VISTA PLANIFICACIÓN ---
     if st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -506,32 +506,19 @@ else:
         st.markdown("---")
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
         
-        # --- PESTAÑA 1: TABLERO KANBAN ---
+        # --- PESTAÑA 1: TABLERO KANBAN CON AUTO-GUARDADO MÁGICO ---
         with tab_gestion:
-            with st.expander("➕ Programar Nueva Intervención", expanded=False):
-                with st.form("form_nueva_tarea"):
-                    c1, c2, c3 = st.columns(3)
-                    n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
-                    n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
-                    n_sem = c3.text_input("Semana Programada (Ej: WK12):", value=semana_actual)
-                    n_obs = st.text_input("Observación inicial (Opcional):")
-                    if st.form_submit_button("🚀 Inyectar Tarea", type="primary", use_container_width=True):
-                        n_sem_format = formatear_wk(n_sem)
-                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": n_obs}])
-                        df_cmms_final = pd.concat([df_cmms.drop(columns=['Quincena_Calc']), nueva_fila], ignore_index=True)
-                        guardar_cmms(df_cmms_final); st.success(f"✅ Tarea añadida a {n_sem_format}."); time.sleep(1.5); st.rerun()
-
-            st.info("💡 **Doble clic para editar.** Si quieres eliminar una tarea duplicada o errónea, marca la casilla '🗑️ Quitar' y presiona Guardar.")
+            st.info("💡 **Doble clic en las celdas para editar.** Si quieres eliminar una tarea, marca la casilla '🗑️ Quitar' y presiona Guardar.")
             c_f1, c_f2 = st.columns([1, 3])
             orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
             
             df_mostrar = df_cmms.copy() if filtro_quin == "Todas" else df_cmms[df_cmms["Quincena_Calc"] == filtro_quin].copy()
             
+            df_editado = pd.DataFrame()
             if not df_mostrar.empty:
-                # 🔥 LA MAGIA DE LA ELIMINACIÓN: Añadimos una columna falsa booleana
+                # 1. LA TABLA
                 df_mostrar.insert(0, "🗑️ Quitar", False)
-                
                 config_columnas = {
                     "🗑️ Quitar": st.column_config.CheckboxColumn("Quitar (Borrar)", default=False),
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
@@ -542,13 +529,11 @@ else:
                     "S_Realizada": st.column_config.TextColumn("Semana Realizada"),
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
-                
                 def color_estado(val):
                     if val == 'Hecho': return 'background-color: #063f22; color: #6ee7b7; font-weight: bold;'
                     if val == 'Pendiente': return 'background-color: #423205; color: #fde047; font-weight: bold;'
                     if val == 'F/S': return 'background-color: #471015; color: #ff8a93; font-weight: bold;'
                     return ''
-                    
                 try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado'])
                 except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado'])
                 
@@ -556,26 +541,52 @@ else:
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
                     df_editado['S_Programada'] = df_editado['S_Programada'].apply(formatear_wk)
-                    
-                    # 1. Separar filas para borrar y filas para actualizar
                     filas_a_borrar = df_editado[df_editado["🗑️ Quitar"] == True].index
                     filas_a_guardar = df_editado[df_editado["🗑️ Quitar"] == False].drop(columns=["🗑️ Quitar"])
                     
                     df_cmms_guardar = df_cmms.copy()
-                    
-                    # 2. Borramos de la base de datos maestra las seleccionadas
-                    if len(filas_a_borrar) > 0:
-                        df_cmms_guardar = df_cmms_guardar.drop(filas_a_borrar)
-                        
-                    # 3. Actualizamos el resto
+                    if len(filas_a_borrar) > 0: df_cmms_guardar = df_cmms_guardar.drop(filas_a_borrar)
                     df_cmms_guardar.update(filas_a_guardar)
                     df_cmms_guardar.loc[(df_cmms_guardar['Estado'] == 'Hecho') & (df_cmms_guardar['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
                     
                     if 'Quincena_Calc' in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=['Quincena_Calc'])
+                    guardar_cmms(df_cmms_guardar); st.success(f"✅ ¡Guardado!"); time.sleep(1.5); st.rerun()
+
+            # 2. EL FORMULARIO (AHORA ABAJO)
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.expander("➕ Programar Nueva Intervención (Añadir al Kanban)", expanded=False):
+                with st.form("form_nueva_tarea"):
+                    st.write("*(Si tenías ediciones sin guardar en la tabla de arriba, este botón las guardará automáticamente por ti)*")
+                    c1, c2, c3 = st.columns(3)
+                    n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
+                    n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
+                    n_sem = c3.text_input("Semana Programada (Ej: WK12 o WK51):", value=semana_actual)
+                    n_obs = st.text_input("Observación inicial (Opcional):")
                     
-                    guardar_cmms(df_cmms_guardar)
-                    st.success(f"✅ ¡Guardado! Se actualizaron los avances y se eliminaron {len(filas_a_borrar)} tareas.")
-                    time.sleep(1.5); st.rerun()
+                    if st.form_submit_button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
+                        df_cmms_guardar = df_cmms.copy()
+                        
+                        # 1. Recuperar datos de la tabla superior si fue editada
+                        if not df_editado.empty:
+                            df_editado_clean = df_editado.copy()
+                            df_editado_clean['S_Programada'] = df_editado_clean['S_Programada'].apply(formatear_wk)
+                            filas_borrar = df_editado_clean[df_editado_clean["🗑️ Quitar"] == True].index
+                            filas_guardar = df_editado_clean[df_editado_clean["🗑️ Quitar"] == False].drop(columns=["🗑️ Quitar"])
+                            
+                            if len(filas_borrar) > 0: df_cmms_guardar = df_cmms_guardar.drop(filas_borrar)
+                            df_cmms_guardar.update(filas_guardar)
+                            df_cmms_guardar.loc[(df_cmms_guardar['Estado'] == 'Hecho') & (df_cmms_guardar['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
+
+                        # 2. Agregar la nueva fila
+                        n_sem_format = formatear_wk(n_sem)
+                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": n_obs}])
+                        
+                        if 'Quincena_Calc' in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=['Quincena_Calc'])
+                        df_cmms_final = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
+                        
+                        guardar_cmms(df_cmms_final)
+                        st.success(f"✅ Se guardaron todos tus cambios y se añadió la nueva tarea a {n_sem_format}.")
+                        time.sleep(1.5); st.rerun()
 
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
