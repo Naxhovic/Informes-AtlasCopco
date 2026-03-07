@@ -240,6 +240,26 @@ def obtener_todo_el_historial(tag):
     except: pass
     return pd.DataFrame()
 
+@st.cache_data(ttl=120, show_spinner=False)
+def obtener_historial_global():
+    # Nueva función para alimentar el Muro de Últimas Intervenciones
+    try:
+        sheet = get_sheet("intervenciones")
+        if sheet:
+            data = sheet.get_all_values()
+            hist = []
+            for r in reversed(data):
+                if len(r) >= 20 and r[0] != "TAG":
+                    hist.append({
+                        "tag": r[0], "modelo": r[1], "area": r[3], 
+                        "fecha": r[5], "tecnico": r[7], "tipo": r[15], 
+                        "estado": r[17]
+                    })
+                    if len(hist) >= 30: break # Limitar a las últimas 30 para rendimiento
+            return hist
+    except: pass
+    return []
+
 def guardar_dato_equipo(tag, clave, valor):
     sheet = get_sheet("datos_equipo")
     if sheet: sheet.append_row([tag, clave, valor]); st.cache_data.clear()
@@ -322,7 +342,6 @@ def guardar_pendientes(usuario, pendientes):
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
-# --- EL CEREBRO MINERO AVANZADO ---
 def wk_to_date(wk_string):
     try:
         wk_num = int(re.sub(r'\D', '', str(wk_string)))
@@ -349,9 +368,6 @@ def formatear_wk(wk_str):
     if nums: return f"WK{int(nums[0]):02d}"
     return str(wk_str).upper()
 
-# =============================================================================
-# 5. MOTOR CMMS CON DATOS REALES E ICONOS VISUALES
-# =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
@@ -387,7 +403,6 @@ def cargar_cmms():
         {"TAG": "35-GC-006", "S_Programada": "WK02", "Tipo": "P1", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": "Falta Kit"},
         {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
     ]
-
     try:
         sheet = get_sheet("plan_cmms")
         if sheet:
@@ -402,13 +417,7 @@ def cargar_cmms():
                             return d.strftime("%Y-%m-%d") if d else ""
                         return val
                     df['S_Realizada'] = df.apply(migrar_fechas, axis=1)
-                    
-                    df['Estado'] = df['Estado'].replace({
-                        'Hecho': '✅ Hecho',
-                        'Pendiente': '⏳ Pendiente',
-                        'F/S': '🚨 F/S',
-                        'N/A': '⚪ N/A'
-                    })
+                    df['Estado'] = df['Estado'].replace({'Hecho': '✅ Hecho', 'Pendiente': '⏳ Pendiente', 'F/S': '🚨 F/S', 'N/A': '⚪ N/A'})
                     return df
                 sheet.clear(); df_base = pd.DataFrame(datos_reales, columns=headers)
                 sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
@@ -483,8 +492,10 @@ else:
         st.markdown("---")
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
-        if st.button("📊 Panel de Planificación (CMMS)", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
+        if st.button("📊 Planificación (CMMS)", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
+        if st.button("📜 Últimas Intervenciones", use_container_width=True, type="primary" if st.session_state.vista_actual == "historial" else "secondary"):
+            st.session_state.vista_actual = "historial"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
         if len(st.session_state.informes_pendientes) > 0:
             st.markdown("---")
             st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
@@ -493,8 +504,39 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
+    # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES (NUEVO MURO CREATIVO) ---
+    if st.session_state.vista_actual == "historial":
+        st.markdown("""
+            <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(255,102,0,0) 0%, rgba(255,102,0,0.15) 50%, rgba(255,102,0,0) 100%); padding: 20px; border-radius: 15px;">
+                <h1 style="color: #FF6600; font-size: 3.5em; font-weight: 800; margin: 0; letter-spacing: -1px; text-transform: uppercase;">Muro de Intervenciones</h1>
+                <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">Registro Histórico en Tiempo Real</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        historial_global = obtener_historial_global()
+        if not historial_global:
+            st.info("Aún no hay reportes firmados y almacenados en la base de datos central.")
+        else:
+            for item in historial_global:
+                # Estilizado creativo dependiendo del estado
+                b_color = "#00e676" if item['estado'] == "Operativo" else "#ff1744"
+                bg_color = "#151a22"
+                icono = "✅" if item['estado'] == "Operativo" else "🚨"
+                
+                with st.container(border=True):
+                    st.markdown(f"""
+                        <div style='border-left: 6px solid {b_color}; padding-left: 15px;'>
+                            <h3 style='margin: 0; color: #007CA6;'>{item['tag']} <span style='color: white; font-size: 0.8em;'>| {item['modelo']}</span></h3>
+                            <p style='margin: 5px 0 10px 0; color: #8c9eb5;'>📅 <b>{item['fecha']}</b> &nbsp;&bull;&nbsp; 🧑‍🔧 Técnico: {item['tecnico']}</p>
+                            <div style='display: flex; gap: 15px; align-items: center;'>
+                                <div style='background: #2b3543; padding: 5px 15px; border-radius: 20px; font-size: 0.85em; font-weight: bold;'>🛠️ Tarea: {item['tipo']}</div>
+                                <div style='background: {b_color}20; color: {b_color}; border: 1px solid {b_color}; padding: 5px 15px; border-radius: 20px; font-size: 0.85em; font-weight: bold;'>{icono} Estado Final: {item['estado']}</div>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
     # --- 7.1 VISTA PLANIFICACIÓN (CMMS KANBAN) ---
-    if st.session_state.vista_actual == "planificacion":
+    elif st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
         df_cmms['S_Programada'] = df_cmms['S_Programada'].apply(formatear_wk)
@@ -524,7 +566,7 @@ else:
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
         
         with tab_gestion:
-            st.info("💡 **El calendario calcula todo.** Selecciona la fecha en '📆 Prog. para (Día)' y verás que automáticamente aparece la 'WK' en la misma celda.")
+            st.info("💡 **El calendario calcula todo.** Selecciona la fecha en '📆 Prog. para' y verás que automáticamente aparece la 'WK' al lado.")
             c_f1, c_f2 = st.columns([1, 3])
             orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
@@ -750,7 +792,7 @@ else:
         
         if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
-            # 🔥 1. SISTEMA GLOBAL DE FIRMA DEL TÉCNICO (SE GUARDA Y NO SE REPITE)
+            # 🔥 1. SISTEMA GLOBAL DE FIRMA DEL TÉCNICO
             with st.expander("🧑‍🔧 Configuración de Mi Firma Fija (Técnico)", expanded=(st.session_state.firma_tec_json is None)):
                 st.info("Dibuja tu firma una sola vez aquí. Se aplicará automáticamente a todos los informes que apruebes.")
                 canvas_tec_global = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=180, width=400, drawing_mode="freedraw", key="canvas_tec_global", initial_drawing=st.session_state.firma_tec_json if st.session_state.firma_tec_json else None)
@@ -801,7 +843,7 @@ else:
                                                     st.download_button("⬇️ Descargar Borrador (Word Editable)", f, file_name=f"Borrador_{inf['nombre_archivo_base']}", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"dl_word_{inf['tag']}_{idx}")
                                         
                                         st.markdown("<br>", unsafe_allow_html=True)
-                                        try: pdf_viewer(inf['ruta_prev_pdf'], width=950, height=900) # 🔥 Visor GIGANTE
+                                        try: pdf_viewer(inf['ruta_prev_pdf'], width=950, height=900)
                                         except Exception as e: st.error(f"Error visor: {e}")
                                     else: st.warning("⚠️ Vista preliminar no disponible.")
                                     
@@ -856,7 +898,7 @@ else:
                                             st.rerun()
 
                         with c_del:
-                            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+                            st.markdown("<div style='margin-top: 35px;'></div>", unsafe_allow_html=True)
                             if st.button("❌", key=f"del_{inf['tag']}_{idx}", help="Quitar este informe de la bandeja"):
                                 st.session_state.informes_pendientes.remove(inf)
                                 guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
@@ -865,19 +907,25 @@ else:
                     
                     st.markdown("---")
                     
-                    # 🔥 3. EXTRACCIÓN DEL NOMBRE REAL DEL CLIENTE
+                    # 🔥 3. EXTRACCIÓN DEL NOMBRE REAL DEL CLIENTE Y CENTRADO PROFESIONAL
                     nombres_clientes = " y ".join(list(set([inf['cli'] for inf in informes_area if inf.get('cli')])))
                     if not nombres_clientes: nombres_clientes = "Cliente a cargo"
                     
-                    st.markdown(f"#### 👷 Firma de Aprobación ({nombres_clientes})")
-                    canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=180, width=400, drawing_mode="freedraw", key=f"cli_{macro_area}")
+                    st.markdown(f"<h3 style='text-align: center; color: #007CA6;'>Firma de Aprobación Final</h3>", unsafe_allow_html=True)
+                    st.markdown(f"<p style='text-align: center; color: #8c9eb5; margin-top: -10px;'><b>Aprobador:</b> {nombres_clientes}</p>", unsafe_allow_html=True)
+                    
+                    _, col_firma, _ = st.columns([1, 2, 1])
+                    with col_firma:
+                        with st.container(border=True):
+                            canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#f0f2f6", height=200, width=450, drawing_mode="freedraw", key=f"cli_{macro_area}")
+                            st.markdown("<p style='text-align: center; font-size: 0.8em; color: gray;'>Coloque su firma en el recuadro superior</p>", unsafe_allow_html=True)
                     
                     st.markdown("<br>", unsafe_allow_html=True)
                     if st.button(f"🚀 Aprobar, Firmar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
                         tec_ok = st.session_state.firma_tec_img is not None
                         cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
                         
-                        if not tec_ok: st.warning("⚠️ Debes guardar primero tu Firma de Técnico en el panel superior.")
+                        if not tec_ok: st.warning("⚠️ Debes guardar primero tu Firma de Técnico en el panel superior de esta pantalla.")
                         elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {nombres_clientes}.")
                         else:
                             def procesar_imagen_firma(img_data): img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
@@ -886,7 +934,6 @@ else:
                             with st.spinner(f"Generando documentos sellados para {macro_area}..."):
                                 try:
                                     for inf in informes_area:
-                                        # Procesamos las imágenes por cada documento para evitar errores de memoria
                                         io_tec_local = procesar_imagen_firma(st.session_state.firma_tec_img)
                                         io_cli_local = procesar_imagen_firma(canvas_cli.image_data)
                                         
