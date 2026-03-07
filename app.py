@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 🔥 TRUCO 1: Esto debe ser lo primero que lea el código para matar el título de Streamlit
+# 🔥 TRUCO MÁGICO: Esto debe ir en la línea 2 para matar el título de "Streamlit" al instante
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
 from docxtpl import DocxTemplate, InlineImage
@@ -59,7 +59,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM Y MARCA BLANCA
+# 0.2 ESTILOS PREMIUM
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -68,7 +68,7 @@ def aplicar_estilos_premium():
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
         
-        /* 🔥 TRUCO 2: Ocultar todo rastro de carga de Streamlit */
+        /* 🔥 BLOQUEO DEL MENSAJE 'RUNNING' DE STREAMLIT */
         [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
         
         header { background: transparent !important; }
@@ -283,7 +283,7 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
     # =============================================================================
-# 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO DE QUINCENAS (15 DIC 2025)
+# 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO (Turno 4x3)
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -322,30 +322,28 @@ def guardar_pendientes(usuario, pendientes):
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
-# --- EL CEREBRO MINERO ---
+# --- EL CEREBRO MINERO (Lectura de semanas hacia atrás) ---
 def wk_to_date(wk_string):
+    # Calcula la fecha exacta del Lunes de esa semana
     try:
         wk_num = int(re.sub(r'\D', '', str(wk_string)))
-        base_date = datetime.date(2025, 12, 15)
-        return base_date + datetime.timedelta(days=(wk_num - 1) * 7)
+        # MAGIA: Si ingresas WK51 o WK52, sabe que es del año 2025. El resto es 2026.
+        if wk_num >= 50:
+            return datetime.date.fromisocalendar(2025, wk_num, 1)
+        return datetime.date.fromisocalendar(2026, wk_num, 1)
     except: return None
 
 def calcular_quincena(wk_string):
     d = wk_to_date(wk_string)
     if not d: return "Sin Asignar"
     meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    # REGLA DE ORO: Del 16 del mes anterior al 15 del mes actual
     if d.day <= 15: return f"15c {meses_abr[d.month - 1]}"
     else: return f"15c {meses_abr[d.month if d.month < 12 else 0]}"
 
 def get_current_wk():
     hoy = datetime.date.today()
-    base_date = datetime.date(2025, 12, 15)
-    days_since_monday = hoy.weekday()
-    lunes_actual = hoy - datetime.timedelta(days=days_since_monday)
-    
-    days_diff = (lunes_actual - base_date).days
-    wk_num = (days_diff // 7) + 1
-    if wk_num < 1: return "WK01"
+    wk_num = hoy.isocalendar()[1]
     return f"WK{wk_num:02d}"
 
 def formatear_wk(wk_str):
@@ -359,13 +357,15 @@ def formatear_wk(wk_str):
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
+    
+    # Hemos sembrado Diciembre (WK51, WK52) y el resto del año para tener el mapa completo
     datos_reales = [
-        {"TAG": "70-GC-013", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK51", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK51", "Observacion": "15 Dic 2025"},
         {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK02", "Observacion": ""},
         {"TAG": "70-GC-013", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK04", "Observacion": ""},
         {"TAG": "70-GC-013", "S_Programada": "WK07", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK07", "Observacion": "10/02 OK"},
         {"TAG": "70-GC-013", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "70-GC-014", "S_Programada": "WK01", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK52", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK52", "Observacion": "22 Dic 2025"},
         {"TAG": "70-GC-014", "S_Programada": "WK02", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK02", "Observacion": "Lista"},
         {"TAG": "70-GC-014", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": "Falta"},
         {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
@@ -518,7 +518,7 @@ else:
                     c1, c2, c3 = st.columns(3)
                     n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
                     n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
-                    n_sem = c3.text_input("Semana Programada (Ej: WK12):", value=semana_actual)
+                    n_sem = c3.text_input("Semana Programada (Ej: WK12 o WK51):", value=semana_actual)
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     if st.form_submit_button("🚀 Inyectar Tarea", type="primary", use_container_width=True):
                         n_sem_format = formatear_wk(n_sem)
@@ -528,7 +528,7 @@ else:
 
             st.info("💡 **Doble clic en las columnas para editar.** Filtra por quincena para ver todas las semanas (WK) asociadas.")
             c_f1, c_f2 = st.columns([1, 3])
-            orden_quincenas = ["Todas", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov", "15c Dic"]
+            orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
             
             df_mostrar = df_cmms.copy() if filtro_quin == "Todas" else df_cmms[df_cmms["Quincena_Calc"] == filtro_quin].copy()
@@ -624,7 +624,9 @@ else:
             df_matriz = pd.concat([df_info, df_pivot], axis=1).reset_index()
             
             cols_base = ['TAG', 'Equipo', 'Área']
-            cols_wk_completas = [f"WK{i:02d}" for i in range(1, 53)]
+            
+            # MAGIA: Incluye las semanas de Diciembre 2025 al principio (WK51 y WK52)
+            cols_wk_completas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
             for c in cols_wk_completas:
                 if c not in df_matriz.columns: df_matriz[c] = ""
             df_matriz = df_matriz[cols_base + cols_wk_completas]
@@ -632,7 +634,7 @@ else:
             wk_a_quincena = {wk: calcular_quincena(wk) for wk in cols_wk_completas}
             
             c_mat1, c_mat2 = st.columns([1, 2])
-            with c_mat1: vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual (WK01 a WK52)"], horizontal=True)
+            with c_mat1: vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual (WK51 a WK52)"], horizontal=True)
             
             cols_finales = cols_base.copy()
             if vista_matriz == "🔍 Por Quincena (Zoom In)":
@@ -641,6 +643,7 @@ else:
                     q_unicas = list(set(wk_a_quincena.values()))
                     q_unicas.sort(key=lambda x: orden_meses.index(x.split(" ")[1]) if " " in x and x.split(" ")[1] in orden_meses else 99)
                     quin_seleccionada = st.selectbox("Selecciona la Quincena a enfocar:", q_unicas, index=q_unicas.index(quincena_de_hoy) if quincena_de_hoy in q_unicas else 0)
+                
                 wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
                 cols_finales.extend(wks_mostrar)
             else:
@@ -648,7 +651,6 @@ else:
                 
             df_matriz_final = df_matriz[cols_finales]
             
-            # MAGIA: Transformar TAG, Equipo y Área en el Índice para que se congelen
             df_matriz_congelada = df_matriz_final.set_index(['TAG', 'Equipo', 'Área'])
             
             def estilo_matriz_colores(val):
@@ -776,7 +778,7 @@ else:
                     with st.container(border=True):
                         st.markdown(f"<div style='border-top: 4px solid {color_borde}; padding-top: 10px; text-align: center; margin-top:-10px;'>{badge_html}</div>", unsafe_allow_html=True)
                         st.button(f"{tag}", key=f"btn_{tag}", on_click=seleccionar_equipo, args=(tag,), use_container_width=True)
-                        st.markdown(f"<p style='color: #8c9eb5; margin: top: 5px; font-size: 0.85rem; text-align: center;'><strong style='color:#007CA6;'>{modelo}</strong> &bull; {area.title()}<br><small style='color: #556b82;'>{ubicacion.title()}</small></p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='color: #8c9eb5; margin-top: 5px; font-size: 0.85rem; text-align: center;'><strong style='color:#007CA6;'>{modelo}</strong> &bull; {area.title()}<br><small style='color: #556b82;'>{ubicacion.title()}</small></p>", unsafe_allow_html=True)
                 contador += 1
 
     elif st.session_state.equipo_seleccionado is not None:
