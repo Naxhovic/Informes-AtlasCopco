@@ -350,42 +350,42 @@ def formatear_wk(wk_str):
     return str(wk_str).upper()
 
 # =============================================================================
-# 5. MOTOR CMMS CON DATOS REALES
+# 5. MOTOR CMMS CON DATOS REALES E ICONOS VISUALES
 # =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
     datos_reales = [
-        {"TAG": "70-GC-013", "S_Programada": "WK51", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK51", "Observacion": "15 Dic 2025"},
-        {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK02", "Observacion": ""},
-        {"TAG": "70-GC-013", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK04", "Observacion": ""},
-        {"TAG": "70-GC-013", "S_Programada": "WK07", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK07", "Observacion": "10/02 OK"},
-        {"TAG": "70-GC-013", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "70-GC-014", "S_Programada": "WK52", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK52", "Observacion": "22 Dic 2025"},
-        {"TAG": "70-GC-014", "S_Programada": "WK02", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK02", "Observacion": "Lista"},
-        {"TAG": "70-GC-014", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": "Falta"},
-        {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
-        {"TAG": "70-GC-014", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-001", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
-        {"TAG": "50-GC-001", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK04", "Observacion": "21/01 OK"},
-        {"TAG": "50-GC-001", "S_Programada": "WK09", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK09", "Observacion": ""},
-        {"TAG": "50-GC-001", "S_Programada": "WK10", "Tipo": "P3", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-002", "S_Programada": "WK01", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
-        {"TAG": "50-GC-002", "S_Programada": "WK02", "Tipo": "P2", "Estado": "F/S", "S_Realizada": "", "Observacion": "Falta Kit"},
-        {"TAG": "50-GC-002", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK04", "Observacion": "OK"},
-        {"TAG": "50-GC-002", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-003", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
-        {"TAG": "50-GC-003", "S_Programada": "WK07", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": "11/02"},
-        {"TAG": "50-GC-003", "S_Programada": "WK11", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "55-GC-015", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
-        {"TAG": "55-GC-015", "S_Programada": "WK06", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK06", "Observacion": "04/02 OK"},
-        {"TAG": "55-GC-015", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": ""},
-        {"TAG": "65-GC-011", "S_Programada": "WK01", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
-        {"TAG": "65-GC-011", "S_Programada": "WK05", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "WK05", "Observacion": "28/01 OK"},
-        {"TAG": "65-GC-011", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK11", "Observacion": ""},
-        {"TAG": "35-GC-006", "S_Programada": "WK01", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "WK01", "Observacion": ""},
-        {"TAG": "35-GC-006", "S_Programada": "WK02", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": "Falta Kit"},
-        {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "WK08", "Observacion": ""}
+        {"TAG": "70-GC-013", "S_Programada": "WK51", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK04", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK07", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-02-10", "Observacion": "10/02 OK"},
+        {"TAG": "70-GC-013", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK52", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2025-12-22", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK02", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2026-01-05", "Observacion": "Lista"},
+        {"TAG": "70-GC-014", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": "Falta"},
+        {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK01", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK04", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-01-21", "Observacion": "21/01 OK"},
+        {"TAG": "50-GC-001", "S_Programada": "WK09", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK10", "Tipo": "P3", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-002", "S_Programada": "WK01", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "50-GC-002", "S_Programada": "WK02", "Tipo": "P2", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": "Falta Kit"},
+        {"TAG": "50-GC-002", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-01-19", "Observacion": "OK"},
+        {"TAG": "50-GC-002", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-003", "S_Programada": "WK01", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "50-GC-003", "S_Programada": "WK07", "Tipo": "P1", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": "11/02"},
+        {"TAG": "50-GC-003", "S_Programada": "WK11", "Tipo": "P1", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "55-GC-015", "S_Programada": "WK01", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "55-GC-015", "S_Programada": "WK06", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-02-04", "Observacion": "04/02 OK"},
+        {"TAG": "55-GC-015", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-02-16", "Observacion": ""},
+        {"TAG": "65-GC-011", "S_Programada": "WK01", "Tipo": "P3", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "65-GC-011", "S_Programada": "WK05", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-01-28", "Observacion": "28/01 OK"},
+        {"TAG": "65-GC-011", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-03-09", "Observacion": ""},
+        {"TAG": "35-GC-006", "S_Programada": "WK01", "Tipo": "P3", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "35-GC-006", "S_Programada": "WK02", "Tipo": "P1", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": "Falta Kit"},
+        {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
     ]
 
     try:
@@ -394,7 +394,23 @@ def cargar_cmms():
             data = sheet.get_all_values()
             if len(data) > 0:
                 df = pd.DataFrame(data[1:], columns=data[0]) if len(data) > 1 else pd.DataFrame(columns=data[0])
-                if "S_Programada" in df.columns: return df
+                if "S_Programada" in df.columns:
+                    def migrar_fechas(row):
+                        val = str(row.get('S_Realizada', ''))
+                        if 'WK' in val.upper():
+                            d = wk_to_date(row['S_Programada'])
+                            return d.strftime("%Y-%m-%d") if d else ""
+                        return val
+                    df['S_Realizada'] = df.apply(migrar_fechas, axis=1)
+                    
+                    # MAGIA: Reemplazo automático a versión con Íconos
+                    df['Estado'] = df['Estado'].replace({
+                        'Hecho': '✅ Hecho',
+                        'Pendiente': '⏳ Pendiente',
+                        'F/S': '🚨 F/S',
+                        'N/A': '⚪ N/A'
+                    })
+                    return df
                 sheet.clear(); df_base = pd.DataFrame(datos_reales, columns=headers)
                 sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
             else:
@@ -477,7 +493,7 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.1 VISTA PLANIFICACIÓN (NUEVO CMMS KANBAN Y MATRIZ CONGELADA) ---
+    # --- 7.1 VISTA PLANIFICACIÓN (CMMS KANBAN Y MATRIZ) ---
     if st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -495,8 +511,8 @@ else:
         
         df_kpi = df_cmms[(df_cmms["Quincena_Calc"] == quincena_de_hoy) & (df_cmms["Tipo"] != "N/A")]
         total_tareas = len(df_kpi)
-        hechas = len(df_kpi[df_kpi["Estado"] == "Hecho"])
-        fs = len(df_kpi[df_kpi["Estado"] == "F/S"])
+        hechas = len(df_kpi[df_kpi["Estado"] == "✅ Hecho"])
+        fs = len(df_kpi[df_kpi["Estado"] == "🚨 F/S"])
         cumplimiento = int((hechas / total_tareas * 100)) if total_tareas > 0 else 100
         
         c_kpi1, c_kpi2, c_kpi3, c_kpi4 = st.columns(4)
@@ -508,42 +524,46 @@ else:
         st.markdown("---")
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
         
-        # --- PESTAÑA 1: TABLERO KANBAN CON MAGIA DE "N/A" (FILL AUTO) ---
+        # --- PESTAÑA 1: TABLERO KANBAN CON ICONOS Y DATE PICKER ---
         with tab_gestion:
-            st.info("💡 **Todos tus equipos están en la lista.** Si un equipo NO tiene mantenimiento, déjalo como `N/A` y se borrará al guardar. Si te equivocaste en uno, marca la casilla `🗑️ Quitar`.")
+            st.info("💡 **Doble clic en las celdas para editar.** Al marcar una tarea como '✅ Hecho', haz doble clic en 'Día de Ejecución' para elegir la fecha exacta. Los equipos sin pauta déjalos en '⚪ N/A'.")
             c_f1, c_f2 = st.columns([1, 3])
             orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
             
             df_mostrar = df_cmms.copy() if filtro_quin == "Todas" else df_cmms[df_cmms["Quincena_Calc"] == filtro_quin].copy()
             
-            # MAGIA 1: Si no es "Todas", forzamos que aparezcan los 21 equipos
             if filtro_quin != "Todas":
                 tags_presentes = df_mostrar['TAG'].tolist()
                 tags_faltantes = [t for t in inventario_equipos.keys() if t not in tags_presentes]
                 if tags_faltantes:
-                    filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": "", "Tipo": "N/A", "Estado": "N/A", "S_Realizada": "", "Observacion": "", "Quincena_Calc": filtro_quin} for t in tags_faltantes])
+                    filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": "", "Tipo": "N/A", "Estado": "⚪ N/A", "S_Realizada": None, "Observacion": "", "Quincena_Calc": filtro_quin} for t in tags_faltantes])
                     df_mostrar = pd.concat([df_mostrar, filas_vacias], ignore_index=True)
                 df_mostrar = df_mostrar.sort_values(by="TAG").reset_index(drop=True)
 
             df_editado = pd.DataFrame()
             if not df_mostrar.empty:
+                def string_to_date(val):
+                    try: return datetime.datetime.strptime(str(val).strip(), "%Y-%m-%d").date()
+                    except: return None
+                df_mostrar['S_Realizada'] = df_mostrar['S_Realizada'].apply(string_to_date)
+                
                 df_mostrar.insert(0, "🗑️ Quitar", False)
                 config_columnas = {
-                    "🗑️ Quitar": st.column_config.CheckboxColumn("Quitar (Borrar)", default=False),
+                    "🗑️ Quitar": st.column_config.CheckboxColumn("Quitar", default=False),
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "Quincena_Calc": None, 
                     "S_Programada": st.column_config.TextColumn("Semana Prog.", disabled=False), 
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["N/A", "INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
-                    "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["N/A", "Pendiente", "Hecho", "F/S"], required=True),
-                    "S_Realizada": st.column_config.TextColumn("Semana Realizada"),
+                    "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["⚪ N/A", "⏳ Pendiente", "✅ Hecho", "🚨 F/S"], required=True),
+                    "S_Realizada": st.column_config.DateColumn("Día de Ejecución 📅", format="DD/MM/YYYY", disabled=False),
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
                 def color_estado(val):
-                    if val == 'Hecho': return 'background-color: #063f22; color: #6ee7b7; font-weight: bold;'
-                    if val == 'Pendiente': return 'background-color: #423205; color: #fde047; font-weight: bold;'
-                    if val == 'F/S': return 'background-color: #471015; color: #ff8a93; font-weight: bold;'
-                    if val == 'N/A': return 'color: #556b82; font-style: italic;'
+                    if val == '✅ Hecho': return 'background-color: #063f22; color: #6ee7b7; font-weight: bold;'
+                    if val == '⏳ Pendiente': return 'background-color: #423205; color: #fde047; font-weight: bold;'
+                    if val == '🚨 F/S': return 'background-color: #471015; color: #ff8a93; font-weight: bold;'
+                    if val == '⚪ N/A': return 'color: #556b82; font-style: italic;'
                     return ''
                 try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado'])
                 except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado'])
@@ -552,70 +572,61 @@ else:
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
                     df_editado['S_Programada'] = df_editado['S_Programada'].apply(formatear_wk)
+                    df_editado['S_Realizada'] = df_editado['S_Realizada'].apply(lambda x: x.strftime("%Y-%m-%d") if pd.notnull(x) else "")
                     
-                    # MAGIA 2: Filtramos los N/A y los que el usuario marcó para Quitar
                     filas_validas = df_editado[
-                        (df_editado["🗑️ Quitar"] == False) & 
-                        (df_editado["Tipo"] != "N/A") & 
-                        (df_editado["Estado"] != "N/A") & 
-                        (df_editado["S_Programada"] != "")
+                        (df_editado["🗑️ Quitar"] == False) & (df_editado["Tipo"] != "N/A") & 
+                        (df_editado["Estado"] != "⚪ N/A") & (df_editado["S_Programada"] != "")
                     ].copy()
                     
-                    filas_validas.loc[(filas_validas['Estado'] == 'Hecho') & (filas_validas['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
+                    # Auto-relleno de fecha si la dejan vacía
+                    filas_validas.loc[(filas_validas['Estado'] == '✅ Hecho') & (filas_validas['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
                     
-                    if filtro_quin == "Todas":
-                        df_cmms_final = filas_validas
+                    if filtro_quin == "Todas": df_cmms_final = filas_validas
                     else:
-                        # Borramos la quincena vieja completa y pegamos la nueva (que ya no tiene los N/A)
                         df_cmms_rest = df_cmms[df_cmms["Quincena_Calc"] != filtro_quin]
                         df_cmms_final = pd.concat([df_cmms_rest, filas_validas], ignore_index=True)
                         
                     if 'Quincena_Calc' in df_cmms_final.columns: df_cmms_final = df_cmms_final.drop(columns=['Quincena_Calc'])
                     if '🗑️ Quitar' in df_cmms_final.columns: df_cmms_final = df_cmms_final.drop(columns=['🗑️ Quitar'])
                     
-                    guardar_cmms(df_cmms_final)
-                    st.success(f"✅ ¡Guardado! La base de datos ha sido actualizada y limpiada.")
-                    time.sleep(1.5); st.rerun()
+                    guardar_cmms(df_cmms_final); st.success(f"✅ ¡Guardado!"); time.sleep(1.5); st.rerun()
 
             st.markdown("<br>", unsafe_allow_html=True)
-            with st.expander("➕ Inyectar Tarea Extra (Por si necesitas duplicar pautas en un mismo equipo)", expanded=False):
+            with st.expander("➕ Inyectar Tarea Extra (Por si necesitas duplicar pautas)", expanded=False):
                 with st.form("form_nueva_tarea"):
                     st.write("*(Si editaste la tabla de arriba, este botón guardará todo automáticamente)*")
                     c1, c2, c3 = st.columns(3)
                     n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
                     n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
-                    n_sem = c3.text_input("Semana Programada (Ej: WK12 o WK51):", value=semana_actual)
+                    n_sem = c3.text_input("Semana Programada (Ej: WK12):", value=semana_actual)
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     
                     if st.form_submit_button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
                         df_cmms_guardar = df_cmms.copy()
-                        
                         if not df_editado.empty:
                             df_editado_clean = df_editado.copy()
                             df_editado_clean['S_Programada'] = df_editado_clean['S_Programada'].apply(formatear_wk)
+                            df_editado_clean['S_Realizada'] = df_editado_clean['S_Realizada'].apply(lambda x: x.strftime("%Y-%m-%d") if pd.notnull(x) else "")
                             filas_validas_f = df_editado_clean[
-                                (df_editado_clean["🗑️ Quitar"] == False) & 
-                                (df_editado_clean["Tipo"] != "N/A") & 
-                                (df_editado_clean["Estado"] != "N/A") & 
-                                (df_editado_clean["S_Programada"] != "")
+                                (df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A") & 
+                                (df_editado_clean["Estado"] != "⚪ N/A") & (df_editado_clean["S_Programada"] != "")
                             ].copy()
-                            filas_validas_f.loc[(filas_validas_f['Estado'] == 'Hecho') & (filas_validas_f['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
-                            
+                            filas_validas_f.loc[(filas_validas_f['Estado'] == '✅ Hecho') & (filas_validas_f['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
                             if filtro_quin == "Todas": df_cmms_guardar = filas_validas_f
                             else:
                                 df_cmms_rest_f = df_cmms[df_cmms["Quincena_Calc"] != filtro_quin]
                                 df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
 
                         n_sem_format = formatear_wk(n_sem)
-                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": n_obs}])
+                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": n_obs}])
                         if 'Quincena_Calc' in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=['Quincena_Calc'])
                         if '🗑️ Quitar' in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=['🗑️ Quitar'])
                         
                         df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
-                        guardar_cmms(df_cmms_final_extra)
-                        st.success(f"✅ Se guardaron todos tus cambios y se añadió la nueva tarea a {n_sem_format}.")
-                        time.sleep(1.5); st.rerun()
+                        guardar_cmms(df_cmms_final_extra); st.success(f"✅ Se guardaron los cambios y se añadió a {n_sem_format}."); time.sleep(1.5); st.rerun()
 
+        # --- PESTAÑA 2: CALENDARIO VISUAL EXACTO ---
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
@@ -634,10 +645,17 @@ else:
             
             tareas_por_fecha = {}
             for _, row in df_cmms.iterrows():
-                d = wk_to_date(row['S_Programada'])
-                if d:
-                    if d not in tareas_por_fecha: tareas_por_fecha[d] = []
-                    tareas_por_fecha[d].append({"tag": row['TAG'], "tipo": row['Tipo'], "est": row['Estado']})
+                d_prog = wk_to_date(row['S_Programada'])
+                d_target = None
+                if row['Estado'] == '✅ Hecho' and str(row['S_Realizada']).strip() != "":
+                    try: d_target = datetime.datetime.strptime(str(row['S_Realizada']).strip(), "%Y-%m-%d").date()
+                    except: d_target = d_prog
+                else:
+                    d_target = d_prog
+                    
+                if d_target:
+                    if d_target not in tareas_por_fecha: tareas_por_fecha[d_target] = []
+                    tareas_por_fecha[d_target].append({"tag": row['TAG'], "tipo": row['Tipo'], "est": row['Estado']})
             
             html_cal = '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top:10px;">'
             for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
@@ -651,8 +669,8 @@ else:
                     if dia in tareas_por_fecha:
                         for t in tareas_por_fecha[dia]:
                             c_bg = "transparent"; c_tx = "#8c9eb5"; b_style = "1px dashed #455065" 
-                            if t['est'] == 'Hecho': c_bg, c_tx, b_style = "#063f22", "#6ee7b7", "1px solid #10b981"
-                            elif t['est'] == 'F/S': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #ef4444"
+                            if t['est'] == '✅ Hecho': c_bg, c_tx, b_style = "#063f22", "#6ee7b7", "1px solid #10b981"
+                            elif t['est'] == '🚨 F/S': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #ef4444"
                             elif t['tipo'] == 'P1': c_bg, c_tx, b_style = "#0c2d48", "#66c2ff", "1px solid #1a5c94"
                             elif t['tipo'] == 'P2': c_bg, c_tx, b_style = "#4a2c00", "#ffb04c", "1px solid #8c5300"
                             elif t['tipo'] == 'P3': c_bg, c_tx, b_style = "#301047", "#d78aff", "1px solid #622291"
@@ -702,7 +720,6 @@ else:
                 cols_finales.extend(cols_wk_completas)
                 
             df_matriz_final = df_matriz[cols_finales]
-            
             df_matriz_congelada = df_matriz_final.set_index(['TAG', 'Equipo', 'Área'])
             
             def estilo_matriz_colores(val):
