@@ -331,6 +331,7 @@ def wk_to_date(wk_string):
     except: return None
 
 def calcular_quincena(wk_string):
+    if pd.isna(wk_string) or str(wk_string).strip() == "": return "Sin Asignar"
     d = wk_to_date(wk_string)
     if not d: return "Sin Asignar"
     meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
@@ -343,6 +344,7 @@ def get_current_wk():
     return f"WK{wk_num:02d}"
 
 def formatear_wk(wk_str):
+    if pd.isna(wk_str) or str(wk_str).strip() == "": return ""
     nums = re.findall(r'\d+', str(wk_str))
     if nums: return f"WK{int(nums[0]):02d}"
     return str(wk_str).upper()
@@ -475,7 +477,7 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.1 VISTA PLANIFICACIÓN ---
+    # --- 7.1 VISTA PLANIFICACIÓN (NUEVO CMMS KANBAN Y MATRIZ CONGELADA) ---
     if st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -491,7 +493,7 @@ else:
             </div>
         """, unsafe_allow_html=True)
         
-        df_kpi = df_cmms[df_cmms["Quincena_Calc"] == quincena_de_hoy]
+        df_kpi = df_cmms[(df_cmms["Quincena_Calc"] == quincena_de_hoy) & (df_cmms["Tipo"] != "N/A")]
         total_tareas = len(df_kpi)
         hechas = len(df_kpi[df_kpi["Estado"] == "Hecho"])
         fs = len(df_kpi[df_kpi["Estado"] == "F/S"])
@@ -506,26 +508,34 @@ else:
         st.markdown("---")
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
         
-        # --- PESTAÑA 1: TABLERO KANBAN CON AUTO-GUARDADO MÁGICO ---
+        # --- PESTAÑA 1: TABLERO KANBAN CON MAGIA DE "N/A" (FILL AUTO) ---
         with tab_gestion:
-            st.info("💡 **Doble clic en las celdas para editar.** Si quieres eliminar una tarea, marca la casilla '🗑️ Quitar' y presiona Guardar.")
+            st.info("💡 **Todos tus equipos están en la lista.** Si un equipo NO tiene mantenimiento, déjalo como `N/A` y se borrará al guardar. Si te equivocaste en uno, marca la casilla `🗑️ Quitar`.")
             c_f1, c_f2 = st.columns([1, 3])
             orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
             
             df_mostrar = df_cmms.copy() if filtro_quin == "Todas" else df_cmms[df_cmms["Quincena_Calc"] == filtro_quin].copy()
             
+            # MAGIA 1: Si no es "Todas", forzamos que aparezcan los 21 equipos
+            if filtro_quin != "Todas":
+                tags_presentes = df_mostrar['TAG'].tolist()
+                tags_faltantes = [t for t in inventario_equipos.keys() if t not in tags_presentes]
+                if tags_faltantes:
+                    filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": "", "Tipo": "N/A", "Estado": "N/A", "S_Realizada": "", "Observacion": "", "Quincena_Calc": filtro_quin} for t in tags_faltantes])
+                    df_mostrar = pd.concat([df_mostrar, filas_vacias], ignore_index=True)
+                df_mostrar = df_mostrar.sort_values(by="TAG").reset_index(drop=True)
+
             df_editado = pd.DataFrame()
             if not df_mostrar.empty:
-                # 1. LA TABLA
                 df_mostrar.insert(0, "🗑️ Quitar", False)
                 config_columnas = {
                     "🗑️ Quitar": st.column_config.CheckboxColumn("Quitar (Borrar)", default=False),
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "Quincena_Calc": None, 
                     "S_Programada": st.column_config.TextColumn("Semana Prog.", disabled=False), 
-                    "Tipo": st.column_config.SelectboxColumn("Intervención", options=["INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
-                    "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["Pendiente", "Hecho", "F/S"], required=True),
+                    "Tipo": st.column_config.SelectboxColumn("Intervención", options=["N/A", "INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
+                    "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["N/A", "Pendiente", "Hecho", "F/S"], required=True),
                     "S_Realizada": st.column_config.TextColumn("Semana Realizada"),
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
@@ -533,30 +543,44 @@ else:
                     if val == 'Hecho': return 'background-color: #063f22; color: #6ee7b7; font-weight: bold;'
                     if val == 'Pendiente': return 'background-color: #423205; color: #fde047; font-weight: bold;'
                     if val == 'F/S': return 'background-color: #471015; color: #ff8a93; font-weight: bold;'
+                    if val == 'N/A': return 'color: #556b82; font-style: italic;'
                     return ''
                 try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado'])
                 except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado'])
                 
-                df_editado = st.data_editor(df_estilizado, hide_index=True, use_container_width=True, column_config=config_columnas, height=450)
+                df_editado = st.data_editor(df_estilizado, hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
                     df_editado['S_Programada'] = df_editado['S_Programada'].apply(formatear_wk)
-                    filas_a_borrar = df_editado[df_editado["🗑️ Quitar"] == True].index
-                    filas_a_guardar = df_editado[df_editado["🗑️ Quitar"] == False].drop(columns=["🗑️ Quitar"])
                     
-                    df_cmms_guardar = df_cmms.copy()
-                    if len(filas_a_borrar) > 0: df_cmms_guardar = df_cmms_guardar.drop(filas_a_borrar)
-                    df_cmms_guardar.update(filas_a_guardar)
-                    df_cmms_guardar.loc[(df_cmms_guardar['Estado'] == 'Hecho') & (df_cmms_guardar['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
+                    # MAGIA 2: Filtramos los N/A y los que el usuario marcó para Quitar
+                    filas_validas = df_editado[
+                        (df_editado["🗑️ Quitar"] == False) & 
+                        (df_editado["Tipo"] != "N/A") & 
+                        (df_editado["Estado"] != "N/A") & 
+                        (df_editado["S_Programada"] != "")
+                    ].copy()
                     
-                    if 'Quincena_Calc' in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=['Quincena_Calc'])
-                    guardar_cmms(df_cmms_guardar); st.success(f"✅ ¡Guardado!"); time.sleep(1.5); st.rerun()
+                    filas_validas.loc[(filas_validas['Estado'] == 'Hecho') & (filas_validas['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
+                    
+                    if filtro_quin == "Todas":
+                        df_cmms_final = filas_validas
+                    else:
+                        # Borramos la quincena vieja completa y pegamos la nueva (que ya no tiene los N/A)
+                        df_cmms_rest = df_cmms[df_cmms["Quincena_Calc"] != filtro_quin]
+                        df_cmms_final = pd.concat([df_cmms_rest, filas_validas], ignore_index=True)
+                        
+                    if 'Quincena_Calc' in df_cmms_final.columns: df_cmms_final = df_cmms_final.drop(columns=['Quincena_Calc'])
+                    if '🗑️ Quitar' in df_cmms_final.columns: df_cmms_final = df_cmms_final.drop(columns=['🗑️ Quitar'])
+                    
+                    guardar_cmms(df_cmms_final)
+                    st.success(f"✅ ¡Guardado! La base de datos ha sido actualizada y limpiada.")
+                    time.sleep(1.5); st.rerun()
 
-            # 2. EL FORMULARIO (AHORA ABAJO)
             st.markdown("<br>", unsafe_allow_html=True)
-            with st.expander("➕ Programar Nueva Intervención (Añadir al Kanban)", expanded=False):
+            with st.expander("➕ Inyectar Tarea Extra (Por si necesitas duplicar pautas en un mismo equipo)", expanded=False):
                 with st.form("form_nueva_tarea"):
-                    st.write("*(Si tenías ediciones sin guardar en la tabla de arriba, este botón las guardará automáticamente por ti)*")
+                    st.write("*(Si editaste la tabla de arriba, este botón guardará todo automáticamente)*")
                     c1, c2, c3 = st.columns(3)
                     n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
                     n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
@@ -566,25 +590,29 @@ else:
                     if st.form_submit_button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
                         df_cmms_guardar = df_cmms.copy()
                         
-                        # 1. Recuperar datos de la tabla superior si fue editada
                         if not df_editado.empty:
                             df_editado_clean = df_editado.copy()
                             df_editado_clean['S_Programada'] = df_editado_clean['S_Programada'].apply(formatear_wk)
-                            filas_borrar = df_editado_clean[df_editado_clean["🗑️ Quitar"] == True].index
-                            filas_guardar = df_editado_clean[df_editado_clean["🗑️ Quitar"] == False].drop(columns=["🗑️ Quitar"])
+                            filas_validas_f = df_editado_clean[
+                                (df_editado_clean["🗑️ Quitar"] == False) & 
+                                (df_editado_clean["Tipo"] != "N/A") & 
+                                (df_editado_clean["Estado"] != "N/A") & 
+                                (df_editado_clean["S_Programada"] != "")
+                            ].copy()
+                            filas_validas_f.loc[(filas_validas_f['Estado'] == 'Hecho') & (filas_validas_f['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
                             
-                            if len(filas_borrar) > 0: df_cmms_guardar = df_cmms_guardar.drop(filas_borrar)
-                            df_cmms_guardar.update(filas_guardar)
-                            df_cmms_guardar.loc[(df_cmms_guardar['Estado'] == 'Hecho') & (df_cmms_guardar['S_Realizada'] == ""), 'S_Realizada'] = semana_actual
+                            if filtro_quin == "Todas": df_cmms_guardar = filas_validas_f
+                            else:
+                                df_cmms_rest_f = df_cmms[df_cmms["Quincena_Calc"] != filtro_quin]
+                                df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
 
-                        # 2. Agregar la nueva fila
                         n_sem_format = formatear_wk(n_sem)
                         nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": n_obs}])
-                        
                         if 'Quincena_Calc' in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=['Quincena_Calc'])
-                        df_cmms_final = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
+                        if '🗑️ Quitar' in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=['🗑️ Quitar'])
                         
-                        guardar_cmms(df_cmms_final)
+                        df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
+                        guardar_cmms(df_cmms_final_extra)
                         st.success(f"✅ Se guardaron todos tus cambios y se añadió la nueva tarea a {n_sem_format}.")
                         time.sleep(1.5); st.rerun()
 
