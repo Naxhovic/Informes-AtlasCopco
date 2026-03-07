@@ -283,7 +283,7 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
     # =============================================================================
-# 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO (Turno 4x3)
+# 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -322,7 +322,6 @@ def guardar_pendientes(usuario, pendientes):
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
-# --- EL CEREBRO MINERO ---
 def wk_to_date(wk_string):
     try:
         wk_num = int(re.sub(r'\D', '', str(wk_string)))
@@ -492,11 +491,10 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.1 VISTA PLANIFICACIÓN (CMMS KANBAN) ---
+    # --- 7.1 VISTA PLANIFICACIÓN ---
     if st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
-        
         df_cmms['S_Programada'] = df_cmms['S_Programada'].apply(formatear_wk)
         df_cmms['Quincena_Calc'] = df_cmms['S_Programada'].apply(calcular_quincena)
         quincena_de_hoy = calcular_quincena(semana_actual)
@@ -523,7 +521,6 @@ else:
         st.markdown("---")
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
         
-        # --- PESTAÑA 1: TABLERO KANBAN FUSIONADO (FECHA + WK) ---
         with tab_gestion:
             st.info("💡 **El calendario calcula todo.** Selecciona la fecha en '📆 Prog. para (Día)' y verás que automáticamente aparece la 'WK' en la misma celda.")
             c_f1, c_f2 = st.columns([1, 3])
@@ -547,21 +544,16 @@ else:
                     except: return None
                 
                 df_mostrar['S_Realizada'] = df_mostrar['S_Realizada'].apply(string_to_date)
-                # Ocultaremos S_Programada (WK08) y en su lugar usaremos Día Programado para el Editor
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
-                
                 df_mostrar.insert(0, "🗑️ Quitar", False)
-                
-                # Orden de las columnas visibles
                 columnas_ordenadas = ["🗑️ Quitar", "TAG", "Día Programado", "Tipo", "Estado", "S_Realizada", "Observacion", "Quincena_Calc", "S_Programada"]
                 df_mostrar = df_mostrar[columnas_ordenadas]
                 
-                # 🔥 LA MAGIA VISUAL: format="DD/MM/YYYY [WK]WW" inserta la Semana al lado de la fecha!
                 config_columnas = {
                     "🗑️ Quitar": st.column_config.CheckboxColumn("Quitar", default=False),
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "Quincena_Calc": None, 
-                    "S_Programada": None, # La ocultamos porque ya está fusionada visualmente en el calendario
+                    "S_Programada": None, 
                     "Día Programado": st.column_config.DateColumn("📆 Prog. para (Día y WK)", format="DD/MM/YYYY - [WK]WW", disabled=False),
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["N/A", "INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
                     "Estado": st.column_config.SelectboxColumn("Estado", options=["⚪ N/A", "⏳ Pendiente", "✅ Hecho", "🚨 F/S"], required=True),
@@ -580,7 +572,6 @@ else:
                 df_editado = st.data_editor(df_estilizado, hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
-                    # El backend toma la fecha y la vuelve a transformar a string WK08 para que la base de datos lo entienda
                     df_editado['S_Programada'] = df_editado['Día Programado'].apply(lambda x: f"WK{x.isocalendar()[1]:02d}" if pd.notnull(x) else "")
                     df_editado['S_Realizada'] = df_editado['S_Realizada'].apply(lambda x: x.strftime("%Y-%m-%d") if pd.notnull(x) else "")
                     
@@ -619,27 +610,23 @@ else:
                             df_editado_clean = df_editado.copy()
                             df_editado_clean['S_Programada'] = df_editado_clean['Día Programado'].apply(lambda x: f"WK{x.isocalendar()[1]:02d}" if pd.notnull(x) else "")
                             df_editado_clean['S_Realizada'] = df_editado_clean['S_Realizada'].apply(lambda x: x.strftime("%Y-%m-%d") if pd.notnull(x) else "")
-                            
                             filas_validas_f = df_editado_clean[
                                 (df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A") & 
                                 (df_editado_clean["Estado"] != "⚪ N/A") & (df_editado_clean["S_Programada"] != "")
                             ].copy()
                             filas_validas_f.loc[(filas_validas_f['Estado'] == '✅ Hecho') & (filas_validas_f['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
-                            
                             if filtro_quin == "Todas": df_cmms_guardar = filas_validas_f
                             else:
                                 df_cmms_rest_f = df_cmms[df_cmms["Quincena_Calc"] != filtro_quin]
                                 df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
 
                         nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": n_obs}])
-                        
                         for col in ['Quincena_Calc', '🗑️ Quitar', 'Día Programado']:
                             if col in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=[col])
                         
                         df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
                         guardar_cmms(df_cmms_final_extra); st.success(f"✅ Se guardaron los cambios y se añadió a {n_sem_format}."); time.sleep(1.5); st.rerun()
 
-        # --- PESTAÑA 2: CALENDARIO VISUAL EXACTO ---
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
@@ -660,13 +647,10 @@ else:
             for _, row in df_cmms.iterrows():
                 d_prog = wk_to_date(row['S_Programada'])
                 d_target = None
-                
                 if row['Estado'] == '✅ Hecho' and str(row['S_Realizada']).strip() != "":
                     try: d_target = datetime.datetime.strptime(str(row['S_Realizada']).strip(), "%Y-%m-%d").date()
                     except: d_target = d_prog
-                else:
-                    d_target = d_prog
-                    
+                else: d_target = d_prog
                 if d_target:
                     if d_target not in tareas_por_fecha: tareas_por_fecha[d_target] = []
                     tareas_por_fecha[d_target].append({"tag": row['TAG'], "tipo": row['Tipo'], "est": row['Estado']})
@@ -773,17 +757,73 @@ else:
             for macro_area, informes_area in areas_agrupadas.items():
                 st.markdown(f"### 🏢 Informes de {macro_area} ({len(informes_area)} pendientes)")
                 with st.container(border=True):
-                    for inf in informes_area:
-                        c_exp, c_del = st.columns([12, 1])
+                    for idx, inf in enumerate(informes_area):
+                        c_exp, c_del = st.columns([11, 1])
                         with c_exp:
-                            with st.expander(f"📄 Ver documento preliminar: {inf['tag']} ({inf['tipo_plan']} - {inf['area'].title()})"):
+                            st.markdown(f"#### 📝 Reporte: {inf['tag']} ({inf['tipo_plan']})")
+                            
+                            # 🔥 PESTAÑAS DE VISOR GIGANTE Y EDICIÓN EN VIVO
+                            tab_ver, tab_editar = st.tabs(["📄 Ver Documento", "✏️ Corregir Datos Faltantes"])
+                            
+                            with tab_ver:
                                 if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
-                                    try: pdf_viewer(inf['ruta_prev_pdf'], width=700, height=600)
+                                    try: pdf_viewer(inf['ruta_prev_pdf'], width=950, height=900)
                                     except Exception as e: st.error(f"Error visor: {e}")
                                 else: st.warning("⚠️ Vista preliminar no disponible.")
+                                
+                            with tab_editar:
+                                st.info("Si olvidaste algún dato o te equivocaste, corrígelo aquí abajo y presiona guardar. El PDF se actualizará automáticamente.")
+                                with st.form(f"edit_form_{inf['tag']}_{idx}"):
+                                    c1, c2, c3 = st.columns(3)
+                                    new_h_m = c1.number_input("Horas Marcha Totales", value=int(inf['context'].get('horas_marcha', 0)), step=1)
+                                    new_h_c = c2.number_input("Horas en Carga", value=int(inf['context'].get('horas_carga', 0)), step=1)
+                                    new_t_s = c3.text_input("Temp Salida (°C)", value=str(inf['context'].get('temp_salida', '0')))
+                                    
+                                    c4, c5 = st.columns(2)
+                                    new_p_c = c4.text_input("P. Carga (con unidad)", value=str(inf['context'].get('p_carga', '')))
+                                    new_p_d = c5.text_input("P. Descarga (con unidad)", value=str(inf['context'].get('p_descarga', '')))
+                                    
+                                    new_est_ent = st.text_area("Descripción Condición Final", value=str(inf['context'].get('estado_entrega', '')))
+                                    new_reco = st.text_area("Recomendaciones / Acciones Pendientes", value=str(inf['context'].get('recomendaciones', '')))
+                                    
+                                    if st.form_submit_button("💾 Guardar Corrección y Regenerar PDF", type="primary"):
+                                        inf['context']['horas_marcha'] = new_h_m
+                                        inf['context']['horas_carga'] = new_h_c
+                                        inf['context']['temp_salida'] = new_t_s
+                                        inf['context']['p_carga'] = new_p_c
+                                        inf['context']['p_descarga'] = new_p_d
+                                        inf['context']['estado_entrega'] = new_est_ent
+                                        inf['context']['recomendaciones'] = new_reco
+                                        
+                                        t_list = list(inf['tupla_db'])
+                                        try: t_list[9] = float(new_t_s.replace(',', '.'))
+                                        except: t_list[9] = 0.0
+                                        t_list[10] = new_p_c
+                                        t_list[11] = new_p_d
+                                        t_list[12] = new_h_m
+                                        t_list[13] = new_h_c
+                                        t_list[14] = new_est_ent
+                                        t_list[16] = new_reco
+                                        inf['tupla_db'] = tuple(t_list)
+                                        
+                                        ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{inf['nombre_archivo_base']}")
+                                        doc_prev = DocxTemplate(inf['file_plantilla'])
+                                        ctx_prev = inf['context'].copy()
+                                        ctx_prev['firma_tecnico'] = ""
+                                        ctx_prev['firma_cliente'] = ""
+                                        doc_prev.render(ctx_prev)
+                                        doc_prev.save(ruta_prev_docx)
+                                        ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
+                                        if ruta_prev_pdf: inf['ruta_prev_pdf'] = ruta_prev_pdf
+                                        
+                                        guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes)
+                                        st.success("✅ ¡Documento corregido exitosamente! Ve a la pestaña 'Ver Documento'.")
+                                        time.sleep(1.5)
+                                        st.rerun()
+
                         with c_del:
-                            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-                            if st.button("❌", key=f"del_{inf['tag']}_{inf['tupla_db'][5].replace('/','')}_{inf['tipo_plan']}", help="Quitar este informe"):
+                            st.markdown("<div style='margin-top: 35px;'></div>", unsafe_allow_html=True)
+                            if st.button("❌", key=f"del_{inf['tag']}_{idx}", help="Quitar este informe de la bandeja"):
                                 st.session_state.informes_pendientes.remove(inf)
                                 guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
                                 if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
