@@ -240,6 +240,7 @@ def obtener_todo_el_historial(tag):
     except: pass
     return pd.DataFrame()
 
+# 🔥 MODIFICACIÓN IMPORTANTE: Agregamos Condición (r[14]) y Recomendación (r[16])
 @st.cache_data(ttl=120, show_spinner=False)
 def obtener_historial_global():
     try:
@@ -252,9 +253,9 @@ def obtener_historial_global():
                     hist.append({
                         "tag": r[0], "modelo": r[1], "area": r[3], 
                         "fecha": r[5], "tecnico": r[7], "tipo": r[15], 
-                        "estado": r[17]
+                        "estado": r[17], "condicion": r[14], "reco": r[16]
                     })
-                    if len(hist) >= 30: break
+                    if len(hist) >= 50: break
             return hist
     except: pass
     return []
@@ -517,7 +518,7 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES (DISEÑO MEJORADO) ---
+    # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES (NUEVO MOTOR DE FECHAS Y NOTAS) ---
     if st.session_state.vista_actual == "historial":
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(255,102,0,0) 0%, rgba(255,102,0,0.15) 50%, rgba(255,102,0,0) 100%); padding: 20px; border-radius: 15px;">
@@ -526,6 +527,34 @@ else:
             </div>
         """, unsafe_allow_html=True)
         
+        # 🔥 MOTOR INTELIGENTE DE FECHAS: Traduce cualquier formato a "Date"
+        def parse_fecha(fecha_str):
+            try:
+                s = str(fecha_str).lower().strip()
+                meses = {"enero":1, "ene":1, "febrero":2, "feb":2, "marzo":3, "mar":3, "abril":4, "abr":4, "mayo":5, "may":5, "junio":6, "jun":6, "julio":7, "jul":7, "agosto":8, "ago":8, "septiembre":9, "sep":9, "sept":9, "octubre":10, "oct":10, "noviembre":11, "nov":11, "diciembre":12, "dic":12}
+                m = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})", s)
+                if m: return datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+                m = re.match(r"(\d{1,2})/(\d{1,2})/(\d{4})", s)
+                if m: return datetime.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+                nums = re.findall(r'\d+', s)
+                words = re.findall(r'[a-z]+', s)
+                if not nums: return datetime.date(1970,1,1)
+                day = int(nums[0])
+                year = int(nums[-1]) if len(nums)>1 else datetime.date.today().year
+                if year < 100: year += 2000
+                month = 1
+                for w in words:
+                    if w in meses:
+                        month = meses[w]; break
+                if day > 31: day, year = year, day
+                return datetime.date(year, month, day)
+            except: return datetime.date(1970, 1, 1)
+
+        def format_fecha(d):
+            meses_nombres = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
+            if d.year == 1970: return "Fecha Desconocida"
+            return f"{d.day} de {meses_nombres[d.month]} de {d.year}"
+
         historial_global = obtener_historial_global()
         if not historial_global:
             st.info("Aún no hay reportes firmados y almacenados en la base de datos central.")
@@ -533,20 +562,29 @@ else:
             historial_unico = []
             vistos = set()
             for item in historial_global:
-                identificador = (item['tag'], item['fecha'])
+                d_obj = parse_fecha(item['fecha'])
+                # Anti-Duplicados: Si el mismo equipo se subió 3 veces hoy, guarda solo el último
+                identificador = (item['tag'], d_obj)
                 if identificador not in vistos:
                     vistos.add(identificador)
+                    item['fecha_obj'] = d_obj
                     historial_unico.append(item)
 
+            # Agrupamos por Objeto Fecha (Así junta los "04 -marzo" con los "4 de marzo")
             historial_agrupado = {}
             for item in historial_unico:
-                f = item['fecha']
-                if f not in historial_agrupado:
-                    historial_agrupado[f] = []
-                historial_agrupado[f].append(item)
+                f_obj = item['fecha_obj']
+                if f_obj not in historial_agrupado: historial_agrupado[f_obj] = []
+                historial_agrupado[f_obj].append(item)
 
-            for fecha, intervenciones in historial_agrupado.items():
-                st.markdown(f"<h3 style='color: white; border-bottom: 2px solid #2b3543; padding-bottom: 5px; margin-top: 15px;'>🗓️ {fecha}</h3>", unsafe_allow_html=True)
+            # Ordenamos cronológicamente (Del más nuevo al más viejo)
+            fechas_ordenadas = sorted(list(historial_agrupado.keys()), reverse=True)
+
+            for d_obj in fechas_ordenadas:
+                fecha_str = format_fecha(d_obj)
+                intervenciones = historial_agrupado[d_obj]
+                
+                st.markdown(f"<h3 style='color: white; border-bottom: 2px solid #2b3543; padding-bottom: 5px; margin-top: 15px;'>🗓️ {fecha_str}</h3>", unsafe_allow_html=True)
                 columnas_muro = st.columns(3) 
                 
                 for idx, item in enumerate(intervenciones):
@@ -554,11 +592,18 @@ else:
                     bg_color = "rgba(0, 230, 118, 0.1)" if item['estado'] == "Operativo" else "rgba(255, 23, 68, 0.1)"
                     icono = "✅" if item['estado'] == "Operativo" else "🚨"
                     
+                    # 🔥 LIMPIEZA DE TEXTOS PARA EVITAR ERRORES DE RENDERIZADO
+                    cond_safe = str(item.get('condicion', '')).replace('\n', ' ').replace("'", '"')
+                    reco_safe = str(item.get('reco', '')).replace('\n', ' ').replace("'", '"')
+                    
+                    cond_html = f"<hr style='margin: 8px 0; border-color: #2b3543;'><p style='margin: 5px 0 0 0; color: #aeb9cc; font-size: 0.8em; line-height: 1.3;'>📝 <b>Condición Final:</b> {cond_safe}</p>" if cond_safe.strip() else ""
+                    reco_html = f"<p style='margin: 5px 0 0 0; color: #aeb9cc; font-size: 0.8em; line-height: 1.3;'>💡 <b>Nota:</b> {reco_safe}</p>" if reco_safe.strip() else ""
+
                     with columnas_muro[idx % 3]:
                         with st.container(border=True):
-                            # 🔥 TEXTO CONTINUO PARA EVITAR ERROR DE STREAMLIT (BLOCK DE CÓDIGO)
                             html_card = (
-                                f"<div style='border-left: 5px solid {b_color}; padding-left: 12px; height: 100%;'>"
+                                f"<div style='border-left: 5px solid {b_color}; padding-left: 12px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;'>"
+                                f"<div>"
                                 f"<div style='display: flex; justify-content: space-between; align-items: flex-start;'>"
                                 f"<h3 style='margin: 0; color: #007CA6; font-size: 1.4em;'>{item['tag']}</h3>"
                                 f"<span style='background: #2b3543; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;'>🛠️ {item['tipo']}</span>"
@@ -566,6 +611,9 @@ else:
                                 f"<p style='margin: 2px 0 10px 0; color: #aeb9cc; font-size: 0.9em;'>{item['modelo']} &bull; {item['area'].title()}</p>"
                                 f"<div style='background: #151a22; padding: 8px; border-radius: 8px; margin-bottom: 5px;'>"
                                 f"<p style='margin: 0; color: #8c9eb5; font-size: 0.85em;'>🧑‍🔧 <b>Técnico:</b> {item['tecnico']}</p>"
+                                f"{cond_html}"
+                                f"{reco_html}"
+                                f"</div>"
                                 f"</div>"
                                 f"<div style='margin-top: 10px; background: {bg_color}; border: 1px solid {b_color}; color: {b_color}; padding: 5px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 0.85em;'>"
                                 f"{icono} {item['estado']}"
