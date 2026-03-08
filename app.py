@@ -353,7 +353,6 @@ def calcular_quincena(wk_string):
     d = wk_to_date(wk_string)
     if not d: return "Sin Asignar"
     meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-    # Logica Minera: Si el lunes de la semana cae después del 15, pertenece al mes siguiente
     if d.day <= 15: return f"15c {meses_abr[d.month - 1]}"
     else: return f"15c {meses_abr[d.month if d.month < 12 else 0]}"
 
@@ -421,7 +420,13 @@ def cargar_cmms():
                             return d.strftime("%Y-%m-%d") if d else ""
                         return val
                     df['S_Realizada'] = df.apply(migrar_fechas, axis=1)
-                    df['Estado'] = df['Estado'].replace({'Hecho': '✅ Hecho', 'Pendiente': '⏳ Pendiente', 'F/S': '🚨 F/S', 'N/A': '⚪ N/A'})
+                    
+                    df['Estado'] = df['Estado'].replace({
+                        'Hecho': '✅ Hecho',
+                        'Pendiente': '⏳ Pendiente',
+                        'F/S': '🚨 F/S',
+                        'N/A': '⚪ N/A'
+                    })
                     return df
                 sheet.clear(); df_base = pd.DataFrame(datos_reales, columns=headers)
                 sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
@@ -578,7 +583,6 @@ else:
             orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
             
-            # 🔥 LÓGICA MINERA DE RESTRICCIÓN DE FECHAS (Corte el día 15)
             min_date_val, max_date_val = None, None
             if filtro_quin != "Todas":
                 meses_map = {"Dic": 12, "Ene": 1, "Feb": 2, "Mar": 3, "Abr": 4, "May": 5, "Jun": 6, "Jul": 7, "Ago": 8, "Sep": 9, "Oct": 10, "Nov": 11}
@@ -587,9 +591,9 @@ else:
                     m_num = meses_map[mes_str]
                     y_num = 2025 if m_num == 12 else 2026
                     
-                    if m_num == 1: # Si es Enero, el inicio es 16 de Diciembre del año anterior
+                    if m_num == 1:
                         min_date_val = datetime.date(y_num - 1, 12, 16)
-                    else: # Cualquier otro mes, inicia el 16 del mes anterior
+                    else:
                         min_date_val = datetime.date(y_num, m_num - 1, 16)
                         
                     max_date_val = datetime.date(y_num, m_num, 15)
@@ -606,7 +610,6 @@ else:
 
             df_editado = pd.DataFrame()
             
-            # Funciones blindadas anti-errores
             def safe_get_wk(x):
                 if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
                 try:
@@ -630,7 +633,6 @@ else:
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
                 df_mostrar.insert(0, "🗑️ Quitar", False)
                 
-                # 🔥 MAGIA REACTIVA
                 if "kanban_table" in st.session_state:
                     edits = st.session_state["kanban_table"].get("edited_rows", {})
                     for idx_str, changes in edits.items():
@@ -730,7 +732,6 @@ else:
                         df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
                         guardar_cmms(df_cmms_final_extra); st.success(f"✅ Se guardaron los cambios y se añadió a {n_sem_format}."); time.sleep(1.5); st.rerun()
 
-        # --- PESTAÑA 2: CALENDARIO VISUAL CON COLUMNA WK DE REFERENCIA ---
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
@@ -791,13 +792,38 @@ else:
             html_cal += '</div>'
             st.markdown(html_cal, unsafe_allow_html=True)
 
+        # --- PESTAÑA 3: MATRIZ DINÁMICA MULTI-VISTA (AHORA CON VISTA POR MESES) ---
         with tab_matriz:
             st.markdown("### 📊 Matriz Dinámica de Mantenimiento")
             st.info("Desplázate hacia la derecha. Los nombres de los equipos se quedarán **congelados** en la pantalla para que nunca pierdas la fila.")
             
-            df_pivot_base = df_cmms.copy()
-            df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: x.split(" ")[1] if " " in x else x)
-            df_pivot = df_pivot_base.groupby(['TAG', 'S_Programada'])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
+            df_pivot_base = df_cmms[df_cmms['Tipo'] != 'N/A'].copy()
+            df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: str(x).split(" ")[1] if " " in str(x) else str(x))
+            
+            c_mat1, c_mat2 = st.columns([1.5, 2])
+            with c_mat1: 
+                # 🔥 AÑADIMOS LA TERCERA VISTA AL SELECTOR
+                vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual (Semanas WK)", "📅 Anual (Por Meses)"], horizontal=True)
+            
+            # Función para traducir el código "15c Abr" al formato de tu Excel "abr-26"
+            def map_mes(q):
+                if q == "15c Dic": return "dic-25"
+                meses = {"Ene":"ene", "Feb":"feb", "Mar":"mar", "Abr":"abr", "May":"may", "Jun":"jun", "Jul":"jul", "Ago":"ago", "Sep":"sept", "Oct":"oct", "Nov":"nov"}
+                for k, v in meses.items():
+                    if k in str(q): return f"{v}-26"
+                return str(q)
+
+            df_pivot_base['Mes_Vista'] = df_pivot_base['Quincena_Calc'].apply(map_mes)
+            
+            if vista_matriz == "📅 Anual (Por Meses)":
+                col_pivot = 'Mes_Vista'
+                cols_todas = ["dic-25", "ene-26", "feb-26", "mar-26", "abr-26", "may-26", "jun-26", "jul-26", "ago-26", "sept-26", "oct-26", "nov-26"]
+            else:
+                col_pivot = 'S_Programada'
+                semanas_brutas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
+                cols_todas = list(dict.fromkeys(semanas_brutas))
+                
+            df_pivot = df_pivot_base.groupby(['TAG', col_pivot])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
             
             lista_info = []
             for t in df_pivot.index:
@@ -809,20 +835,15 @@ else:
             
             cols_base = ['TAG', 'Equipo', 'Área']
             
-            semanas_brutas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
-            cols_wk_completas = list(dict.fromkeys(semanas_brutas)) 
-            
-            for c in cols_wk_completas:
+            # Inyectar columnas vacías si en ese mes/semana no hay nada programado
+            for c in cols_todas:
                 if c not in df_matriz.columns: df_matriz[c] = ""
-            df_matriz = df_matriz[cols_base + cols_wk_completas]
-            
-            wk_a_quincena = {wk: calcular_quincena(wk) for wk in cols_wk_completas}
-            
-            c_mat1, c_mat2 = st.columns([1, 2])
-            with c_mat1: vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual Completo"], horizontal=True)
+                
+            df_matriz = df_matriz[cols_base + cols_todas]
             
             cols_finales = cols_base.copy()
             if vista_matriz == "🔍 Por Quincena (Zoom In)":
+                wk_a_quincena = {wk: calcular_quincena(wk) for wk in cols_todas}
                 with c_mat2:
                     orden_meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
                     q_unicas = list(set(wk_a_quincena.values()))
@@ -831,7 +852,7 @@ else:
                 wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
                 cols_finales.extend(wks_mostrar)
             else:
-                cols_finales.extend(cols_wk_completas)
+                cols_finales.extend(cols_todas)
                 
             df_matriz_final = df_matriz[cols_finales]
             df_matriz_congelada = df_matriz_final.set_index(['TAG', 'Equipo', 'Área'])
@@ -839,7 +860,8 @@ else:
             def estilo_matriz_colores(val):
                 v = str(val).upper()
                 if not v or v == "NAN": return ''
-                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
+                # Reducimos un poco el texto en la vista mensual para que se vea más condensado y pro
+                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; font-size: 0.85em; '
                 if 'HECHO' in v: return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
                 if 'F/S' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
                 if 'PENDIENTE' in v: 
@@ -850,10 +872,10 @@ else:
                     return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
                 return base + 'color: #8c9eb5; font-style: italic;'
                 
-            columnas_wk_pintar = [c for c in df_matriz_congelada.columns if c.startswith('WK')]
-            if len(columnas_wk_pintar) > 0:
-                try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
-                except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
+            columnas_pintar = [c for c in cols_finales if c not in cols_base]
+            if len(columnas_pintar) > 0:
+                try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
+                except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
