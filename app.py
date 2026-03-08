@@ -432,7 +432,15 @@ def cargar_cmms():
 
 def guardar_cmms(df):
     sheet = get_sheet("plan_cmms")
-    if sheet: sheet.clear(); sheet.append_rows([df.columns.values.tolist()] + df.values.tolist()); st.cache_data.clear()
+    if sheet:
+        # 🔥 FILTRO SANITIZADOR ANTI-JSON ERROR: Limpiamos todos los valores nulos (NaT, NaN) antes de enviar a Google
+        df_clean = df.copy()
+        df_clean = df_clean.fillna("").astype(str)
+        df_clean = df_clean.replace(["nan", "NaN", "NaT", "None", "<NA>"], "")
+        
+        sheet.clear()
+        sheet.append_rows([df_clean.columns.values.tolist()] + df_clean.values.tolist())
+        st.cache_data.clear()
 
 def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
@@ -571,11 +579,9 @@ else:
         c_kpi3.metric(label="✅ Tareas Completadas", value=hechas)
         c_kpi4.metric(label="🚨 Equipos F/S", value=fs)
 
-        # 🔥 BOTÓN SECRETO DE INYECCIÓN MASIVA (ABRIL - DICIEMBRE)
         with st.expander("🚨 BOTÓN SECRETO: Cargar Planificación Anual de Excel (Abr - Dic)"):
             st.warning("He leído la foto de tu Excel. Este botón inyectará las 180 pautas desde Abril hasta Diciembre a tu Base de Datos en la nube. **¡No borrará ni tocará nada de Marzo!** Úsalo solo 1 vez y luego podrás ocultarlo.")
             if st.button("🚀 INYECTAR DATOS DEL EXCEL AHORA", type="primary"):
-                # Traducción exacta de la imagen de tu Excel
                 plan_masivo = {
                     "70-GC-013": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
                     "70-GC-014": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
@@ -599,10 +605,7 @@ else:
                     "20-GC-003": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"]
                 }
                 
-                # Asignación de semanas correspondientes a cada mes
-                # (Abril, Mayo, Junio, Julio, Agosto, Septiembre, Octubre, Noviembre, Diciembre)
                 semanas = ["WK15", "WK19", "WK24", "WK28", "WK33", "WK37", "WK41", "WK46", "WK50"]
-
                 nuevas_filas = []
                 existentes = set(zip(df_cmms['TAG'], df_cmms['S_Programada']))
                 
@@ -665,6 +668,13 @@ else:
 
             df_editado = pd.DataFrame()
             
+            def safe_get_wk(x):
+                if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
+                try:
+                    if isinstance(x, str): x = datetime.datetime.strptime(x[:10], "%Y-%m-%d").date()
+                    return f"WK{x.isocalendar()[1]:02d}"
+                except: return ""
+
             def safe_date_str(x):
                 if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
                 try:
@@ -759,6 +769,7 @@ else:
                     if min_date_val and max_date_val:
                         if not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
                         
+                    # 🔥 CALENDARIO BLOQUEADO, PERO SIN EL TEXTO VERDE ABAJO
                     n_fecha_prog = c3.date_input("📆 Día a Programar:", value=default_d, min_value=min_date_val, max_value=max_date_val)
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     
@@ -862,7 +873,29 @@ else:
             
             df_pivot_base = df_cmms[df_cmms['Tipo'] != 'N/A'].copy()
             df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: str(x).split(" ")[1] if " " in str(x) else str(x))
-            df_pivot = df_pivot_base.groupby(['TAG', 'S_Programada'])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
+            
+            c_mat1, c_mat2 = st.columns([1.5, 2])
+            with c_mat1: 
+                vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual (Semanas WK)", "📅 Anual (Por Meses)"], horizontal=True)
+            
+            def map_mes(q):
+                if q == "15c Dic": return "dic-25"
+                meses = {"Ene":"ene", "Feb":"feb", "Mar":"mar", "Abr":"abr", "May":"may", "Jun":"jun", "Jul":"jul", "Ago":"ago", "Sep":"sept", "Oct":"oct", "Nov":"nov"}
+                for k, v in meses.items():
+                    if k in str(q): return f"{v}-26"
+                return str(q)
+
+            df_pivot_base['Mes_Vista'] = df_pivot_base['Quincena_Calc'].apply(map_mes)
+            
+            if vista_matriz == "📅 Anual (Por Meses)":
+                col_pivot = 'Mes_Vista'
+                cols_todas = ["dic-25", "ene-26", "feb-26", "mar-26", "abr-26", "may-26", "jun-26", "jul-26", "ago-26", "sept-26", "oct-26", "nov-26"]
+            else:
+                col_pivot = 'S_Programada'
+                semanas_brutas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
+                cols_todas = list(dict.fromkeys(semanas_brutas))
+                
+            df_pivot = df_pivot_base.groupby(['TAG', col_pivot])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
             
             lista_info = []
             for t in df_pivot.index:
@@ -874,20 +907,14 @@ else:
             
             cols_base = ['TAG', 'Equipo', 'Área']
             
-            semanas_brutas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
-            cols_wk_completas = list(dict.fromkeys(semanas_brutas)) 
-            
-            for c in cols_wk_completas:
+            for c in cols_todas:
                 if c not in df_matriz.columns: df_matriz[c] = ""
-            df_matriz = df_matriz[cols_base + cols_wk_completas]
-            
-            wk_a_quincena = {wk: calcular_quincena(wk) for wk in cols_wk_completas}
-            
-            c_mat1, c_mat2 = st.columns([1, 2])
-            with c_mat1: vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual Completo"], horizontal=True)
+                
+            df_matriz = df_matriz[cols_base + cols_todas]
             
             cols_finales = cols_base.copy()
             if vista_matriz == "🔍 Por Quincena (Zoom In)":
+                wk_a_quincena = {wk: calcular_quincena(wk) for wk in cols_todas}
                 with c_mat2:
                     orden_meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
                     q_unicas = list(set(wk_a_quincena.values()))
@@ -896,7 +923,7 @@ else:
                 wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
                 cols_finales.extend(wks_mostrar)
             else:
-                cols_finales.extend(cols_wk_completas)
+                cols_finales.extend(cols_todas)
                 
             df_matriz_final = df_matriz[cols_finales]
             df_matriz_congelada = df_matriz_final.set_index(['TAG', 'Equipo', 'Área'])
@@ -915,10 +942,10 @@ else:
                     return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
                 return base + 'color: #8c9eb5; font-style: italic;'
                 
-            columnas_wk_pintar = [c for c in df_matriz_congelada.columns if c.startswith('WK')]
-            if len(columnas_wk_pintar) > 0:
-                try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
-                except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
+            columnas_pintar = [c for c in cols_finales if c not in cols_base]
+            if len(columnas_pintar) > 0:
+                try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
+                except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
