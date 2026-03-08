@@ -589,7 +589,6 @@ else:
             orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
             
-            # 🔥 LÓGICA DE RESTRICCIÓN DE FECHAS EN EL CALENDARIO MINERO
             min_date_val, max_date_val = None, None
             if filtro_quin != "Todas":
                 meses_map = {"Dic": 12, "Ene": 1, "Feb": 2, "Mar": 3, "Abr": 4, "May": 5, "Jun": 6, "Jul": 7, "Ago": 8, "Sep": 9, "Oct": 10, "Nov": 11}
@@ -617,7 +616,6 @@ else:
 
             df_editado = pd.DataFrame()
             
-            # 🔥 FUNCIONES DE SEGURIDAD PARA FECHAS
             def safe_date_str(x):
                 if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
                 try:
@@ -680,7 +678,7 @@ else:
                         if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
                             if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
                             return f"WK{d.isocalendar()[1]:02d}"
-                        return row['S_Programada']  # Conserva el texto "WK11" original
+                        return row['S_Programada']
                         
                     df_editado['S_Programada'] = df_editado.apply(get_final_wk, axis=1)
                     df_editado['S_Realizada'] = df_editado['S_Realizada'].apply(safe_date_str)
@@ -710,14 +708,12 @@ else:
                     n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
                     n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
                     
-                    # El campo de Fecha por defecto ahora respeta la quincena filtrada
                     default_d = datetime.date.today()
                     if min_date_val and max_date_val:
                         if not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
                         
                     n_fecha_prog = c3.date_input("📆 Día a Programar:", value=default_d, min_value=min_date_val, max_value=max_date_val)
-                    n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}"
-                    c3.markdown(f"<div style='margin-top:-15px; margin-bottom:15px; color:#00e676; font-size:0.85rem; font-weight:bold;'>🎯 Quedará registrada en la {n_sem_format}</div>", unsafe_allow_html=True)
+                    # 🔥 SE ELIMINÓ EL TEXTO EN VERDE AQUÍ, PERO SE MANTIENE LA DELIMITACIÓN ARRIBA
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     
                     if st.form_submit_button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
@@ -745,6 +741,8 @@ else:
                                 df_cmms_rest_f = df_cmms[df_cmms["Quincena_Calc"] != filtro_quin]
                                 df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
 
+                        # Calcular la semana para la nueva fila
+                        n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}"
                         nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": n_obs}])
                         for col in ['Quincena_Calc', '🗑️ Quitar', 'Día Programado']:
                             if col in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=[col])
