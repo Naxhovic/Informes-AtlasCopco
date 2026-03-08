@@ -420,13 +420,7 @@ def cargar_cmms():
                             return d.strftime("%Y-%m-%d") if d else ""
                         return val
                     df['S_Realizada'] = df.apply(migrar_fechas, axis=1)
-                    
-                    df['Estado'] = df['Estado'].replace({
-                        'Hecho': '✅ Hecho',
-                        'Pendiente': '⏳ Pendiente',
-                        'F/S': '🚨 F/S',
-                        'N/A': '⚪ N/A'
-                    })
+                    df['Estado'] = df['Estado'].replace({'Hecho': '✅ Hecho', 'Pendiente': '⏳ Pendiente', 'F/S': '🚨 F/S', 'N/A': '⚪ N/A'})
                     return df
                 sheet.clear(); df_base = pd.DataFrame(datos_reales, columns=headers)
                 sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
@@ -583,6 +577,18 @@ else:
             orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
             
+            # 🔥 LÓGICA DE RESTRICCIÓN DE FECHAS EN EL CALENDARIO
+            min_date_val, max_date_val = None, None
+            if filtro_quin != "Todas":
+                meses_map = {"Dic": 12, "Ene": 1, "Feb": 2, "Mar": 3, "Abr": 4, "May": 5, "Jun": 6, "Jul": 7, "Ago": 8, "Sep": 9, "Oct": 10, "Nov": 11}
+                mes_str = filtro_quin.split(" ")[1]
+                if mes_str in meses_map:
+                    m_num = meses_map[mes_str]
+                    y_num = 2025 if m_num == 12 else 2026
+                    min_date_val = datetime.date(y_num, m_num, 1)
+                    _, last_day = calendar.monthrange(y_num, m_num)
+                    max_date_val = datetime.date(y_num, m_num, last_day)
+
             df_mostrar = df_cmms.copy() if filtro_quin == "Todas" else df_cmms[df_cmms["Quincena_Calc"] == filtro_quin].copy()
             
             if filtro_quin != "Todas":
@@ -595,7 +601,7 @@ else:
 
             df_editado = pd.DataFrame()
             
-            # 🔥 FUNCIONES DE SEGURIDAD PARA FECHAS BLINDADAS
+            # Funciones de seguridad para fechas blindadas
             def safe_get_wk(x):
                 if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
                 try:
@@ -621,12 +627,13 @@ else:
                 columnas_ordenadas = ["🗑️ Quitar", "TAG", "Día Programado", "Tipo", "Estado", "S_Realizada", "Observacion", "Quincena_Calc", "S_Programada"]
                 df_mostrar = df_mostrar[columnas_ordenadas]
                 
+                # Aquí inyectamos min_value y max_value para bloquear el calendario
                 config_columnas = {
                     "🗑️ Quitar": st.column_config.CheckboxColumn("Quitar", default=False),
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "Quincena_Calc": None, 
                     "S_Programada": None, 
-                    "Día Programado": st.column_config.DateColumn("📆 Prog. para (Día y WK)", format="DD/MM/YYYY - [WK]WW", disabled=False),
+                    "Día Programado": st.column_config.DateColumn("📆 Prog. para (Día y WK)", format="DD/MM/YYYY - [WK]WW", min_value=min_date_val, max_value=max_date_val, disabled=False),
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["N/A", "INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
                     "Estado": st.column_config.SelectboxColumn("Estado", options=["⚪ N/A", "⏳ Pendiente", "✅ Hecho", "🚨 F/S"], required=True),
                     "S_Realizada": st.column_config.DateColumn("Día Ejecución 📅", format="DD/MM/YYYY - [WK]WW", disabled=False),
@@ -644,7 +651,6 @@ else:
                 df_editado = st.data_editor(df_estilizado, hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
-                    # 🔥 Aplicando el filtro blindado a las columnas antes de guardar
                     df_editado['S_Programada'] = df_editado['Día Programado'].apply(safe_get_wk)
                     df_editado['S_Realizada'] = df_editado['S_Realizada'].apply(safe_date_str)
                     
@@ -672,7 +678,13 @@ else:
                     c1, c2, c3 = st.columns(3)
                     n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
                     n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
-                    n_fecha_prog = c3.date_input("📆 Día a Programar:", value=datetime.date.today())
+                    
+                    # 🔥 Bloquear también la fecha en este formulario
+                    default_d = datetime.date.today()
+                    if min_date_val and max_date_val:
+                        if not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
+                        
+                    n_fecha_prog = c3.date_input("📆 Día a Programar:", value=default_d, min_value=min_date_val, max_value=max_date_val)
                     n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}"
                     c3.markdown(f"<div style='margin-top:-15px; margin-bottom:15px; color:#00e676; font-size:0.85rem; font-weight:bold;'>🎯 Quedará registrada en la {n_sem_format}</div>", unsafe_allow_html=True)
                     n_obs = st.text_input("Observación inicial (Opcional):")
@@ -681,10 +693,8 @@ else:
                         df_cmms_guardar = df_cmms.copy()
                         if not df_editado.empty:
                             df_editado_clean = df_editado.copy()
-                            # 🔥 Aplicando el filtro blindado a las columnas antes de guardar
                             df_editado_clean['S_Programada'] = df_editado_clean['Día Programado'].apply(safe_get_wk)
                             df_editado_clean['S_Realizada'] = df_editado_clean['S_Realizada'].apply(safe_date_str)
-                            
                             filas_validas_f = df_editado_clean[
                                 (df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A") & 
                                 (df_editado_clean["Estado"] != "⚪ N/A") & (df_editado_clean["S_Programada"] != "")
@@ -702,7 +712,6 @@ else:
                         df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
                         guardar_cmms(df_cmms_final_extra); st.success(f"✅ Se guardaron los cambios y se añadió a {n_sem_format}."); time.sleep(1.5); st.rerun()
 
-        # --- PESTAÑA 2: CALENDARIO VISUAL CON COLUMNA WK DE REFERENCIA ---
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
