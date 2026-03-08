@@ -353,6 +353,7 @@ def calcular_quincena(wk_string):
     d = wk_to_date(wk_string)
     if not d: return "Sin Asignar"
     meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    # Logica Minera: Si el lunes de la semana cae después del 15, pertenece al mes siguiente
     if d.day <= 15: return f"15c {meses_abr[d.month - 1]}"
     else: return f"15c {meses_abr[d.month if d.month < 12 else 0]}"
 
@@ -572,12 +573,12 @@ else:
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
         
         with tab_gestion:
-            st.info("💡 **El calendario calcula todo.** Selecciona la fecha en '📆 Prog. para (Día)' y verás que automáticamente aparece la 'WK' al lado.")
+            st.info("💡 **Fechas Restringidas:** El calendario solo te permitirá seleccionar días correspondientes al mes minero seleccionado (Del 16 al 15).")
             c_f1, c_f2 = st.columns([1, 3])
             orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
             
-            # 🔥 LÓGICA DE RESTRICCIÓN DE FECHAS EN EL CALENDARIO
+            # 🔥 LÓGICA MINERA DE RESTRICCIÓN DE FECHAS (Corte el día 15)
             min_date_val, max_date_val = None, None
             if filtro_quin != "Todas":
                 meses_map = {"Dic": 12, "Ene": 1, "Feb": 2, "Mar": 3, "Abr": 4, "May": 5, "Jun": 6, "Jul": 7, "Ago": 8, "Sep": 9, "Oct": 10, "Nov": 11}
@@ -585,9 +586,13 @@ else:
                 if mes_str in meses_map:
                     m_num = meses_map[mes_str]
                     y_num = 2025 if m_num == 12 else 2026
-                    min_date_val = datetime.date(y_num, m_num, 1)
-                    _, last_day = calendar.monthrange(y_num, m_num)
-                    max_date_val = datetime.date(y_num, m_num, last_day)
+                    
+                    if m_num == 1: # Si es Enero, el inicio es 16 de Diciembre del año anterior
+                        min_date_val = datetime.date(y_num - 1, 12, 16)
+                    else: # Cualquier otro mes, inicia el 16 del mes anterior
+                        min_date_val = datetime.date(y_num, m_num - 1, 16)
+                        
+                    max_date_val = datetime.date(y_num, m_num, 15)
 
             df_mostrar = df_cmms.copy() if filtro_quin == "Todas" else df_cmms[df_cmms["Quincena_Calc"] == filtro_quin].copy()
             
@@ -601,7 +606,7 @@ else:
 
             df_editado = pd.DataFrame()
             
-            # Funciones de seguridad para fechas blindadas
+            # Funciones blindadas anti-errores
             def safe_get_wk(x):
                 if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
                 try:
@@ -624,19 +629,33 @@ else:
                 df_mostrar['S_Realizada'] = df_mostrar['S_Realizada'].apply(string_to_date)
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
                 df_mostrar.insert(0, "🗑️ Quitar", False)
-                columnas_ordenadas = ["🗑️ Quitar", "TAG", "Día Programado", "Tipo", "Estado", "S_Realizada", "Observacion", "Quincena_Calc", "S_Programada"]
+                
+                # 🔥 MAGIA REACTIVA
+                if "kanban_table" in st.session_state:
+                    edits = st.session_state["kanban_table"].get("edited_rows", {})
+                    for idx_str, changes in edits.items():
+                        if "Día Programado" in changes:
+                            val = changes["Día Programado"]
+                            if val is not None:
+                                try:
+                                    if isinstance(val, str): new_date = datetime.datetime.strptime(val[:10], "%Y-%m-%d").date()
+                                    else: new_date = val
+                                    wk_calculada = f"WK{new_date.isocalendar()[1]:02d}"
+                                    df_mostrar.at[int(idx_str), 'S_Programada'] = wk_calculada
+                                except: pass
+
+                columnas_ordenadas = ["🗑️ Quitar", "TAG", "Día Programado", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion", "Quincena_Calc"]
                 df_mostrar = df_mostrar[columnas_ordenadas]
                 
-                # Aquí inyectamos min_value y max_value para bloquear el calendario
                 config_columnas = {
                     "🗑️ Quitar": st.column_config.CheckboxColumn("Quitar", default=False),
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "Quincena_Calc": None, 
-                    "S_Programada": None, 
-                    "Día Programado": st.column_config.DateColumn("📆 Prog. para (Día y WK)", format="DD/MM/YYYY - [WK]WW", min_value=min_date_val, max_value=max_date_val, disabled=False),
+                    "Día Programado": st.column_config.DateColumn("📆 Día Prog.", format="DD/MM/YYYY", min_value=min_date_val, max_value=max_date_val, disabled=False),
+                    "S_Programada": st.column_config.TextColumn("🎯 WK Prog.", disabled=True),
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["N/A", "INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
-                    "Estado": st.column_config.SelectboxColumn("Estado", options=["⚪ N/A", "⏳ Pendiente", "✅ Hecho", "🚨 F/S"], required=True),
-                    "S_Realizada": st.column_config.DateColumn("Día Ejecución 📅", format="DD/MM/YYYY - [WK]WW", disabled=False),
+                    "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["⚪ N/A", "⏳ Pendiente", "✅ Hecho", "🚨 F/S"], required=True),
+                    "S_Realizada": st.column_config.DateColumn("Día Ejecución 📅", format="DD/MM/YYYY", disabled=False),
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
                 def color_estado(val):
@@ -648,7 +667,7 @@ else:
                 try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado'])
                 except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado'])
                 
-                df_editado = st.data_editor(df_estilizado, hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
+                df_editado = st.data_editor(df_estilizado, key="kanban_table", hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
                     df_editado['S_Programada'] = df_editado['Día Programado'].apply(safe_get_wk)
@@ -679,7 +698,6 @@ else:
                     n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
                     n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
                     
-                    # 🔥 Bloquear también la fecha en este formulario
                     default_d = datetime.date.today()
                     if min_date_val and max_date_val:
                         if not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
@@ -712,6 +730,7 @@ else:
                         df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
                         guardar_cmms(df_cmms_final_extra); st.success(f"✅ Se guardaron los cambios y se añadió a {n_sem_format}."); time.sleep(1.5); st.rerun()
 
+        # --- PESTAÑA 2: CALENDARIO VISUAL CON COLUMNA WK DE REFERENCIA ---
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
