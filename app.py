@@ -242,7 +242,6 @@ def obtener_todo_el_historial(tag):
 
 @st.cache_data(ttl=120, show_spinner=False)
 def obtener_historial_global():
-    # Nueva función para alimentar el Muro de Últimas Intervenciones
     try:
         sheet = get_sheet("intervenciones")
         if sheet:
@@ -255,7 +254,7 @@ def obtener_historial_global():
                         "fecha": r[5], "tecnico": r[7], "tipo": r[15], 
                         "estado": r[17]
                     })
-                    if len(hist) >= 30: break # Limitar a las últimas 30 para rendimiento
+                    if len(hist) >= 30: break
             return hist
     except: pass
     return []
@@ -303,7 +302,7 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
     # =============================================================================
-# 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO (Turno 4x3)
+# 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -368,6 +367,9 @@ def formatear_wk(wk_str):
     if nums: return f"WK{int(nums[0]):02d}"
     return str(wk_str).upper()
 
+# =============================================================================
+# 5. MOTOR CMMS CON DATOS REALES
+# =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
@@ -490,12 +492,16 @@ else:
         st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas Copco</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
         st.markdown("---")
+        
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
+        
         if st.button("📊 Planificación (CMMS)", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
+        
         if st.button("📜 Últimas Intervenciones", use_container_width=True, type="primary" if st.session_state.vista_actual == "historial" else "secondary"):
             st.session_state.vista_actual = "historial"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
+            
         if len(st.session_state.informes_pendientes) > 0:
             st.markdown("---")
             st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
@@ -504,7 +510,7 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES (NUEVO MURO CREATIVO) ---
+    # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES ---
     if st.session_state.vista_actual == "historial":
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(255,102,0,0) 0%, rgba(255,102,0,0.15) 50%, rgba(255,102,0,0) 100%); padding: 20px; border-radius: 15px;">
@@ -518,7 +524,6 @@ else:
             st.info("Aún no hay reportes firmados y almacenados en la base de datos central.")
         else:
             for item in historial_global:
-                # Estilizado creativo dependiendo del estado
                 b_color = "#00e676" if item['estado'] == "Operativo" else "#ff1744"
                 bg_color = "#151a22"
                 icono = "✅" if item['estado'] == "Operativo" else "🚨"
@@ -566,7 +571,7 @@ else:
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
         
         with tab_gestion:
-            st.info("💡 **El calendario calcula todo.** Selecciona la fecha en '📆 Prog. para' y verás que automáticamente aparece la 'WK' al lado.")
+            st.info("💡 **El calendario calcula todo.** Selecciona la fecha en '📆 Prog. para (Día)' y verás que automáticamente aparece la 'WK' en la misma celda.")
             c_f1, c_f2 = st.columns([1, 3])
             orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
@@ -671,6 +676,7 @@ else:
                         df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
                         guardar_cmms(df_cmms_final_extra); st.success(f"✅ Se guardaron los cambios y se añadió a {n_sem_format}."); time.sleep(1.5); st.rerun()
 
+        # --- PESTAÑA 2: CALENDARIO VISUAL (AHORA CON COLUMNA WK) ---
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
@@ -699,9 +705,22 @@ else:
                     if d_target not in tareas_por_fecha: tareas_por_fecha[d_target] = []
                     tareas_por_fecha[d_target].append({"tag": row['TAG'], "tipo": row['Tipo'], "est": row['Estado']})
             
-            html_cal = '<div style="display:grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top:10px;">'
-            for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
+            # 🔥 REDISEÑO DEL CALENDARIO: Ahora con 8 columnas (incluye WK a la izquierda)
+            html_cal = '<div style="display:grid; grid-template-columns: 60px repeat(7, 1fr); gap: 10px; margin-top:10px;">'
+            
+            # Cabeceras
+            html_cal += '<div style="text-align:center; color:#FF6600; font-weight:900; font-size:0.9rem;">REF</div>'
+            for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: 
+                html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
+                
             for semana in semanas_mes:
+                # Calcular la WK de esta semana
+                wk_num = semana[0].isocalendar()[1]
+                if cal_year == 2025 and semana[0].month == 12: wk_num = semana[0].isocalendar()[1] # Diciembre 2025 (WK51, WK52)
+                
+                # Renderizar la Etiqueta WK
+                html_cal += f'<div style="display:flex; align-items:center; justify-content:center; background:#2b3543; border-radius:8px; border-left: 4px solid #FF6600; color:white; font-weight:bold; font-size:0.9rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">WK{wk_num:02d}</div>'
+                
                 for dia in semana:
                     is_current_month = dia.month == cal_month
                     bg_color = "#1a212b" if is_current_month else "#11151c"
@@ -792,7 +811,6 @@ else:
         
         if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
-            # 🔥 1. SISTEMA GLOBAL DE FIRMA DEL TÉCNICO
             with st.expander("🧑‍🔧 Configuración de Mi Firma Fija (Técnico)", expanded=(st.session_state.firma_tec_json is None)):
                 st.info("Dibuja tu firma una sola vez aquí. Se aplicará automáticamente a todos los informes que apruebes.")
                 canvas_tec_global = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=180, width=400, drawing_mode="freedraw", key="canvas_tec_global", initial_drawing=st.session_state.firma_tec_json if st.session_state.firma_tec_json else None)
@@ -826,12 +844,10 @@ else:
                         c_exp, c_del = st.columns([11, 1])
                         with c_exp:
                             with st.expander(f"📝 Revisar Documento: {inf['tag']} ({inf['tipo_plan']})"):
-                                # 🔥 2. PESTAÑAS: VISOR (CON DESCARGAS) Y EDITOR EN VIVO
                                 tab_ver, tab_editar = st.tabs(["📄 Ver y Descargar Borrador", "✏️ Corregir Datos Faltantes / Erróneos"])
                                 
                                 with tab_ver:
                                     if inf.get('ruta_prev_pdf') and os.path.exists(inf['ruta_prev_pdf']):
-                                        # BOTONES DE DESCARGA
                                         c_dl1, c_dl2 = st.columns(2)
                                         with c_dl1:
                                             with open(inf['ruta_prev_pdf'], "rb") as f:
@@ -907,7 +923,6 @@ else:
                     
                     st.markdown("---")
                     
-                    # 🔥 3. EXTRACCIÓN DEL NOMBRE REAL DEL CLIENTE Y CENTRADO PROFESIONAL
                     nombres_clientes = " y ".join(list(set([inf['cli'] for inf in informes_area if inf.get('cli')])))
                     if not nombres_clientes: nombres_clientes = "Cliente a cargo"
                     
