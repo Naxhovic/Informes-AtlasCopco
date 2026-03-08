@@ -124,7 +124,7 @@ inventario_equipos = {
     "55-GC-015": ["GA 30", "API501440", "planta borra", "Área Húmeda"],
     "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "Área Húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "Área Húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "Área Húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "Área Húmeda"],
     "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "Área Húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "Área Húmeda"],
-    "Taller": ["GA 18", "API335343", "Taller", "Taller Central"]
+    "Taller": ["GA 18", "API335343", "Taller", "Laboratorio"] # 🔥 Cambio: Laboratorio
 }
 
 # =============================================================================
@@ -240,7 +240,6 @@ def obtener_todo_el_historial(tag):
     except: pass
     return pd.DataFrame()
 
-# 🔥 MODIFICACIÓN IMPORTANTE: Agregamos Condición (r[14]) y Recomendación (r[16])
 @st.cache_data(ttl=120, show_spinner=False)
 def obtener_historial_global():
     try:
@@ -349,13 +348,14 @@ def wk_to_date(wk_string):
         return datetime.date.fromisocalendar(2026, wk_num, 1)
     except: return None
 
-def calcular_quincena(wk_string):
+# 🔥 Cambio: Cálculo directo a nombre del mes
+def calcular_mes_minero(wk_string):
     if pd.isna(wk_string) or str(wk_string).strip() == "": return "Sin Asignar"
     d = wk_to_date(wk_string)
     if not d: return "Sin Asignar"
-    meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-    if d.day <= 15: return f"15c {meses_abr[d.month - 1]}"
-    else: return f"15c {meses_abr[d.month if d.month < 12 else 0]}"
+    meses_full = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    if d.day <= 15: return meses_full[d.month - 1]
+    else: return meses_full[d.month if d.month < 12 else 0]
 
 def get_current_wk():
     hoy = datetime.date.today()
@@ -382,7 +382,7 @@ def cargar_cmms():
         {"TAG": "70-GC-013", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
         {"TAG": "70-GC-014", "S_Programada": "WK52", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2025-12-22", "Observacion": ""},
         {"TAG": "70-GC-014", "S_Programada": "WK02", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2026-01-05", "Observacion": "Lista"},
-        {"TAG": "70-GC-014", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": "Falta"},
+        {"TAG": "70-GC-014", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": ""}, # 🔥 Cambio: Comentario borrado
         {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
         {"TAG": "70-GC-014", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
         {"TAG": "50-GC-001", "S_Programada": "WK01", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
@@ -518,7 +518,7 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES (NUEVO MOTOR DE FECHAS Y NOTAS) ---
+    # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES ---
     if st.session_state.vista_actual == "historial":
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(255,102,0,0) 0%, rgba(255,102,0,0.15) 50%, rgba(255,102,0,0) 100%); padding: 20px; border-radius: 15px;">
@@ -527,7 +527,6 @@ else:
             </div>
         """, unsafe_allow_html=True)
         
-        # 🔥 MOTOR INTELIGENTE DE FECHAS: Traduce cualquier formato a "Date"
         def parse_fecha(fecha_str):
             try:
                 s = str(fecha_str).lower().strip()
@@ -563,21 +562,18 @@ else:
             vistos = set()
             for item in historial_global:
                 d_obj = parse_fecha(item['fecha'])
-                # Anti-Duplicados: Si el mismo equipo se subió 3 veces hoy, guarda solo el último
                 identificador = (item['tag'], d_obj)
                 if identificador not in vistos:
                     vistos.add(identificador)
                     item['fecha_obj'] = d_obj
                     historial_unico.append(item)
 
-            # Agrupamos por Objeto Fecha (Así junta los "04 -marzo" con los "4 de marzo")
             historial_agrupado = {}
             for item in historial_unico:
                 f_obj = item['fecha_obj']
                 if f_obj not in historial_agrupado: historial_agrupado[f_obj] = []
                 historial_agrupado[f_obj].append(item)
 
-            # Ordenamos cronológicamente (Del más nuevo al más viejo)
             fechas_ordenadas = sorted(list(historial_agrupado.keys()), reverse=True)
 
             for d_obj in fechas_ordenadas:
@@ -592,7 +588,6 @@ else:
                     bg_color = "rgba(0, 230, 118, 0.1)" if item['estado'] == "Operativo" else "rgba(255, 23, 68, 0.1)"
                     icono = "✅" if item['estado'] == "Operativo" else "🚨"
                     
-                    # 🔥 LIMPIEZA DE TEXTOS PARA EVITAR ERRORES DE RENDERIZADO
                     cond_safe = str(item.get('condicion', '')).replace('\n', ' ').replace("'", '"')
                     reco_safe = str(item.get('reco', '')).replace('\n', ' ').replace("'", '"')
                     
@@ -627,17 +622,18 @@ else:
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
         df_cmms['S_Programada'] = df_cmms['S_Programada'].apply(formatear_wk)
-        df_cmms['Quincena_Calc'] = df_cmms['S_Programada'].apply(calcular_quincena)
-        quincena_de_hoy = calcular_quincena(semana_actual)
+        
+        df_cmms['Mes_Calc'] = df_cmms['S_Programada'].apply(calcular_mes_minero)
+        mes_de_hoy_full = calcular_mes_minero(semana_actual)
         
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
                 <h2 style="color: white; margin: 0;">📅 Panel de Control CMMS</h2>
-                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Semana Actual: {semana_actual} &nbsp;|&nbsp; Planificación Activa: {quincena_de_hoy}</p>
+                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Semana Actual: {semana_actual} &nbsp;|&nbsp; Planificación Activa: {mes_de_hoy_full}</p>
             </div>
         """, unsafe_allow_html=True)
         
-        df_kpi = df_cmms[(df_cmms["Quincena_Calc"] == quincena_de_hoy) & (df_cmms["Tipo"] != "N/A")]
+        df_kpi = df_cmms[(df_cmms["Mes_Calc"] == mes_de_hoy_full) & (df_cmms["Tipo"] != "N/A")]
         total_tareas = len(df_kpi)
         hechas = len(df_kpi[df_kpi["Estado"] == "✅ Hecho"])
         fs = len(df_kpi[df_kpi["Estado"] == "🚨 F/S"])
@@ -647,95 +643,43 @@ else:
         cumplimiento = int((hechas / total_evaluable * 100)) if total_evaluable > 0 else (100 if hechas > 0 else 0)
         
         c_kpi1, c_kpi2, c_kpi3, c_kpi4 = st.columns(4)
-        c_kpi1.metric(label="📈 Cumplimiento Quincena", value=f"{cumplimiento}%")
+        c_kpi1.metric(label="📈 Cumplimiento Mes", value=f"{cumplimiento}%")
         c_kpi2.metric(label="🎯 Tareas Programadas", value=total_tareas)
         c_kpi3.metric(label="✅ Tareas Completadas", value=hechas)
         c_kpi4.metric(label="🚨 Equipos F/S", value=fs)
-
-        with st.expander("🚨 BOTÓN SECRETO: Cargar Planificación Anual de Excel (Abr - Dic)"):
-            st.warning("He leído la foto de tu Excel. Este botón inyectará las 180 pautas desde Abril hasta Diciembre a tu Base de Datos en la nube. **¡No borrará ni tocará nada de Marzo!** Úsalo solo 1 vez y luego podrás ocultarlo.")
-            if st.button("🚀 INYECTAR DATOS DEL EXCEL AHORA", type="primary"):
-                plan_masivo = {
-                    "70-GC-013": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
-                    "70-GC-014": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
-                    "50-GC-001": ["P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
-                    "50-GC-002": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
-                    "50-GC-003": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
-                    "50-GC-004": ["INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
-                    "50-CD-001": ["INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP"],
-                    "50-CD-002": ["INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP"],
-                    "55-GC-015": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
-                    "65-GC-011": ["P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4"],
-                    "65-GC-009": ["INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
-                    "65-CD-011": ["INSP", "P2", "INSP", "INSP", "P2", "INSP", "INSP", "P2", "INSP"],
-                    "65-CD-012": ["INSP", "P2", "INSP", "INSP", "P2", "INSP", "INSP", "P2", "INSP"],
-                    "35-GC-006": ["P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2"],
-                    "35-GC-007": ["P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1"],
-                    "35-GC-008": ["P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1"],
-                    "20-GC-004": ["INSP", "P4", "INSP", "INSP", "P1", "INSP", "INSP", "P2", "INSP"],
-                    "20-GC-001": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
-                    "20-GC-002": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
-                    "20-GC-003": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"]
-                }
-                
-                semanas = ["WK15", "WK19", "WK24", "WK28", "WK33", "WK37", "WK41", "WK46", "WK50"]
-                nuevas_filas = []
-                existentes = set(zip(df_cmms['TAG'], df_cmms['S_Programada']))
-                
-                for eq, tareas in plan_masivo.items():
-                    for i, tipo in enumerate(tareas):
-                        wk_asignada = semanas[i]
-                        if (eq, wk_asignada) not in existentes:
-                            nuevas_filas.append({
-                                "TAG": eq,
-                                "S_Programada": wk_asignada,
-                                "Tipo": tipo,
-                                "Estado": "⏳ Pendiente",
-                                "S_Realizada": "",
-                                "Observacion": ""
-                            })
-
-                if nuevas_filas:
-                    df_nuevas = pd.DataFrame(nuevas_filas)
-                    df_cmms_final = pd.concat([df_cmms, df_nuevas], ignore_index=True)
-                    guardar_cmms(df_cmms_final)
-                    st.success(f"✅ ¡Éxito! Se inyectaron {len(nuevas_filas)} tareas nuevas a tu Base de Datos.")
-                    time.sleep(2)
-                    st.rerun()
-                else:
-                    st.info("👍 Todos los datos de tu Excel ya estaban cargados en el sistema.")
         
         st.markdown("---")
-        tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
+        
+        # 🔥 CAMBIO 4: Pestaña de Matriz Eliminada.
+        tab_gestion, tab_calendario = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo"])
         
         with tab_gestion:
-            st.info("💡 **Fechas Restringidas:** El calendario solo te permitirá seleccionar días correspondientes a la quincena minera seleccionada (Del 16 al 15).")
+            st.info("💡 **Fechas Restringidas:** El calendario solo te permitirá seleccionar días correspondientes al mes minero seleccionado (Del 16 al 15).")
             c_f1, c_f2 = st.columns([1, 3])
-            orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
-            with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
+            
+            # 🔥 CAMBIO 3: Filtro limpio usando nombres de Meses
+            orden_meses_full = ["Todas", "Diciembre", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre"]
+            with c_f1: filtro_mes = st.selectbox("Filtrar por Mes:", orden_meses_full, index=orden_meses_full.index(mes_de_hoy_full) if mes_de_hoy_full in orden_meses_full else 0)
             
             min_date_val, max_date_val = None, None
-            if filtro_quin != "Todas":
-                meses_map = {"Dic": 12, "Ene": 1, "Feb": 2, "Mar": 3, "Abr": 4, "May": 5, "Jun": 6, "Jul": 7, "Ago": 8, "Sep": 9, "Oct": 10, "Nov": 11}
-                mes_str = filtro_quin.split(" ")[1]
-                if mes_str in meses_map:
-                    m_num = meses_map[mes_str]
+            if filtro_mes != "Todas":
+                meses_map_full = {"Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12}
+                if filtro_mes in meses_map_full:
+                    m_num = meses_map_full[filtro_mes]
                     y_num = 2025 if m_num == 12 else 2026
-                    
                     if m_num == 1:
                         min_date_val = datetime.date(y_num - 1, 12, 16)
                     else:
                         min_date_val = datetime.date(y_num, m_num - 1, 16)
-                        
                     max_date_val = datetime.date(y_num, m_num, 15)
 
-            df_mostrar = df_cmms.copy() if filtro_quin == "Todas" else df_cmms[df_cmms["Quincena_Calc"] == filtro_quin].copy()
+            df_mostrar = df_cmms.copy() if filtro_mes == "Todas" else df_cmms[df_cmms["Mes_Calc"] == filtro_mes].copy()
             
-            if filtro_quin != "Todas":
+            if filtro_mes != "Todas":
                 tags_presentes = df_mostrar['TAG'].tolist()
                 tags_faltantes = [t for t in inventario_equipos.keys() if t not in tags_presentes]
                 if tags_faltantes:
-                    filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": "", "Tipo": "N/A", "Estado": "⚪ N/A", "S_Realizada": None, "Observacion": "", "Quincena_Calc": filtro_quin} for t in tags_faltantes])
+                    filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": "", "Tipo": "N/A", "Estado": "⚪ N/A", "S_Realizada": None, "Observacion": "", "Mes_Calc": filtro_mes} for t in tags_faltantes])
                     df_mostrar = pd.concat([df_mostrar, filas_vacias], ignore_index=True)
                 df_mostrar = df_mostrar.sort_values(by="TAG").reset_index(drop=True)
 
@@ -770,13 +714,13 @@ else:
                                     df_mostrar.at[int(idx_str), 'S_Programada'] = wk_calculada
                                 except: pass
 
-                columnas_ordenadas = ["🗑️ Quitar", "TAG", "Día Programado", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion", "Quincena_Calc"]
+                columnas_ordenadas = ["🗑️ Quitar", "TAG", "Día Programado", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion", "Mes_Calc"]
                 df_mostrar = df_mostrar[columnas_ordenadas]
                 
                 config_columnas = {
                     "🗑️ Quitar": st.column_config.CheckboxColumn("Quitar", default=False),
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
-                    "Quincena_Calc": None, 
+                    "Mes_Calc": None, 
                     "Día Programado": st.column_config.DateColumn("📆 Día Prog.", format="DD/MM/YYYY", min_value=min_date_val, max_value=max_date_val, disabled=False),
                     "S_Programada": st.column_config.TextColumn("🎯 WK Prog.", disabled=True),
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["N/A", "INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
@@ -813,12 +757,12 @@ else:
                     
                     filas_validas.loc[(filas_validas['Estado'] == '✅ Hecho') & (filas_validas['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
                     
-                    if filtro_quin == "Todas": df_cmms_final = filas_validas
+                    if filtro_mes == "Todas": df_cmms_final = filas_validas
                     else:
-                        df_cmms_rest = df_cmms[df_cmms["Quincena_Calc"] != filtro_quin]
+                        df_cmms_rest = df_cmms[df_cmms["Mes_Calc"] != filtro_mes]
                         df_cmms_final = pd.concat([df_cmms_rest, filas_validas], ignore_index=True)
                         
-                    for col in ['Quincena_Calc', '🗑️ Quitar', 'Día Programado']:
+                    for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
                         if col in df_cmms_final.columns: df_cmms_final = df_cmms_final.drop(columns=[col])
                     
                     guardar_cmms(df_cmms_final); st.success(f"✅ ¡Guardado!"); time.sleep(1.5); st.rerun()
@@ -836,6 +780,7 @@ else:
                         if not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
                         
                     n_fecha_prog = c3.date_input("📆 Día a Programar:", value=default_d, min_value=min_date_val, max_value=max_date_val)
+                    # 🔥 CAMBIO 5: Se eliminó completamente el texto verde que mostraba la WK.
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     
                     if st.form_submit_button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
@@ -858,20 +803,19 @@ else:
                                 (df_editado_clean["Estado"] != "⚪ N/A") & (df_editado_clean["S_Programada"] != "")
                             ].copy()
                             filas_validas_f.loc[(filas_validas_f['Estado'] == '✅ Hecho') & (filas_validas_f['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
-                            if filtro_quin == "Todas": df_cmms_guardar = filas_validas_f
+                            if filtro_mes == "Todas": df_cmms_guardar = filas_validas_f
                             else:
-                                df_cmms_rest_f = df_cmms[df_cmms["Quincena_Calc"] != filtro_quin]
+                                df_cmms_rest_f = df_cmms[df_cmms["Mes_Calc"] != filtro_mes]
                                 df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
 
                         n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}"
                         nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": n_obs}])
-                        for col in ['Quincena_Calc', '🗑️ Quitar', 'Día Programado']:
+                        for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
                             if col in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=[col])
                         
                         df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
-                        guardar_cmms(df_cmms_final_extra); st.success(f"✅ Se guardaron los cambios y se añadió a {n_sem_format}."); time.sleep(1.5); st.rerun()
+                        guardar_cmms(df_cmms_final_extra); st.success("✅ Guardado."); time.sleep(1.5); st.rerun()
 
-        # --- PESTAÑA 2: CALENDARIO VISUAL CON COLUMNA WK DE REFERENCIA ---
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
@@ -882,8 +826,8 @@ else:
                 mes_sel = st.selectbox("📅 Mes a visualizar:", opciones_meses_calendario, index=opciones_meses_calendario.index(mes_str) if mes_str in opciones_meses_calendario else 1)
                 
             cal_year = 2025 if "2025" in mes_sel else 2026
-            meses_nombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-            cal_month = meses_nombres.index(mes_sel.split(" ")[0]) + 1
+            meses_nombres_cal = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+            cal_month = meses_nombres_cal.index(mes_sel.split(" ")[0]) + 1
                 
             cal = calendar.Calendar(calendar.MONDAY)
             semanas_mes = cal.monthdatescalendar(cal_year, cal_month) 
@@ -901,7 +845,6 @@ else:
                     tareas_por_fecha[d_target].append({"tag": row['TAG'], "tipo": row['Tipo'], "est": row['Estado']})
             
             html_cal = '<div style="display:grid; grid-template-columns: 65px repeat(7, 1fr); gap: 10px; margin-top:10px;">'
-            
             html_cal += '<div style="text-align:center; color:#FF6600; font-weight:900; font-size:0.8rem; margin-top: 10px;">REF</div>'
             for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: 
                 html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
@@ -931,88 +874,6 @@ else:
                     html_cal += '</div>'
             html_cal += '</div>'
             st.markdown(html_cal, unsafe_allow_html=True)
-
-        with tab_matriz:
-            st.markdown("### 📊 Matriz Dinámica de Mantenimiento")
-            st.info("Desplázate hacia la derecha. Los nombres de los equipos se quedarán **congelados** en la pantalla para que nunca pierdas la fila.")
-            
-            df_pivot_base = df_cmms[df_cmms['Tipo'] != 'N/A'].copy()
-            df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: str(x).split(" ")[1] if " " in str(x) else str(x))
-            
-            c_mat1, c_mat2 = st.columns([1.5, 2])
-            with c_mat1: 
-                vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual (Semanas WK)", "📅 Anual (Por Meses)"], horizontal=True)
-            
-            def map_mes(q):
-                if q == "15c Dic": return "dic-25"
-                meses = {"Ene":"ene", "Feb":"feb", "Mar":"mar", "Abr":"abr", "May":"may", "Jun":"jun", "Jul":"jul", "Ago":"ago", "Sep":"sept", "Oct":"oct", "Nov":"nov"}
-                for k, v in meses.items():
-                    if k in str(q): return f"{v}-26"
-                return str(q)
-
-            df_pivot_base['Mes_Vista'] = df_pivot_base['Quincena_Calc'].apply(map_mes)
-            
-            if vista_matriz == "📅 Anual (Por Meses)":
-                col_pivot = 'Mes_Vista'
-                cols_todas = ["dic-25", "ene-26", "feb-26", "mar-26", "abr-26", "may-26", "jun-26", "jul-26", "ago-26", "sept-26", "oct-26", "nov-26"]
-            else:
-                col_pivot = 'S_Programada'
-                semanas_brutas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
-                cols_todas = list(dict.fromkeys(semanas_brutas))
-                
-            df_pivot = df_pivot_base.groupby(['TAG', col_pivot])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
-            
-            lista_info = []
-            for t in df_pivot.index:
-                if t in inventario_equipos: eq, _, area, _ = inventario_equipos[t]; lista_info.append({"TAG": t, "Equipo": eq, "Área": area.title()})
-                else: lista_info.append({"TAG": t, "Equipo": "-", "Área": "-"})
-            
-            df_info = pd.DataFrame(lista_info).set_index("TAG")
-            df_matriz = pd.concat([df_info, df_pivot], axis=1).reset_index()
-            
-            cols_base = ['TAG', 'Equipo', 'Área']
-            
-            for c in cols_todas:
-                if c not in df_matriz.columns: df_matriz[c] = ""
-                
-            df_matriz = df_matriz[cols_base + cols_todas]
-            
-            cols_finales = cols_base.copy()
-            if vista_matriz == "🔍 Por Quincena (Zoom In)":
-                wk_a_quincena = {wk: calcular_quincena(wk) for wk in cols_todas}
-                with c_mat2:
-                    orden_meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-                    q_unicas = list(set(wk_a_quincena.values()))
-                    q_unicas.sort(key=lambda x: orden_meses.index(x.split(" ")[1]) if " " in x and x.split(" ")[1] in orden_meses else 99)
-                    quin_seleccionada = st.selectbox("Selecciona la Quincena a enfocar:", q_unicas, index=q_unicas.index(quincena_de_hoy) if quincena_de_hoy in q_unicas else 0)
-                wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
-                cols_finales.extend(wks_mostrar)
-            else:
-                cols_finales.extend(cols_todas)
-                
-            df_matriz_final = df_matriz[cols_finales]
-            df_matriz_congelada = df_matriz_final.set_index(['TAG', 'Equipo', 'Área'])
-            
-            def estilo_matriz_colores(val):
-                v = str(val).upper()
-                if not v or v == "NAN": return ''
-                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
-                if 'HECHO' in v: return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
-                if 'F/S' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
-                if 'PENDIENTE' in v: 
-                    if 'P1' in v: return base + 'background-color: #0c2d48; color: #66c2ff; font-weight: bold; border-left: 4px solid #eab308;'
-                    if 'P2' in v: return base + 'background-color: #4a2c00; color: #ffb04c; font-weight: bold; border-left: 4px solid #eab308;'
-                    if 'P3' in v: return base + 'background-color: #301047; color: #d78aff; font-weight: bold; border-left: 4px solid #eab308;'
-                    if 'P4' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #eab308;'
-                    return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
-                return base + 'color: #8c9eb5; font-style: italic;'
-                
-            columnas_pintar = [c for c in cols_finales if c not in cols_base]
-            if len(columnas_pintar) > 0:
-                try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
-                except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
-            else:
-                st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
     # --- 7.2 VISTA DE FIRMAS, EDICIÓN Y DESCARGAS ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
