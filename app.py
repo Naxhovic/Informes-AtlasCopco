@@ -353,6 +353,7 @@ def calcular_quincena(wk_string):
     d = wk_to_date(wk_string)
     if not d: return "Sin Asignar"
     meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    # Corte Minero: el 15 de cada mes
     if d.day <= 15: return f"15c {meses_abr[d.month - 1]}"
     else: return f"15c {meses_abr[d.month if d.month < 12 else 0]}"
 
@@ -562,11 +563,16 @@ else:
             </div>
         """, unsafe_allow_html=True)
         
+        # 🔥 CÁLCULO DE CUMPLIMIENTO (EXCLUYENDO EQUIPOS FUERA DE SERVICIO)
         df_kpi = df_cmms[(df_cmms["Quincena_Calc"] == quincena_de_hoy) & (df_cmms["Tipo"] != "N/A")]
         total_tareas = len(df_kpi)
         hechas = len(df_kpi[df_kpi["Estado"] == "✅ Hecho"])
         fs = len(df_kpi[df_kpi["Estado"] == "🚨 F/S"])
-        cumplimiento = int((hechas / total_tareas * 100)) if total_tareas > 0 else 100
+        pendientes = len(df_kpi[df_kpi["Estado"] == "⏳ Pendiente"])
+        
+        # El Total Evaluable son solo las tareas Hechas + Pendientes.
+        total_evaluable = hechas + pendientes
+        cumplimiento = int((hechas / total_evaluable * 100)) if total_evaluable > 0 else (100 if hechas > 0 else 0)
         
         c_kpi1, c_kpi2, c_kpi3, c_kpi4 = st.columns(4)
         c_kpi1.metric(label="📈 Cumplimiento Quincena", value=f"{cumplimiento}%")
@@ -578,11 +584,12 @@ else:
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
         
         with tab_gestion:
-            st.info("💡 **Fechas Restringidas:** El calendario solo te permitirá seleccionar días correspondientes al mes minero seleccionado (Del 16 al 15).")
+            st.info("💡 **Fechas Restringidas:** El calendario solo te permitirá seleccionar días correspondientes a la quincena minera seleccionada (Del 16 al 15).")
             c_f1, c_f2 = st.columns([1, 3])
             orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
             
+            # 🔥 LÓGICA DE RESTRICCIÓN DE FECHAS EN EL CALENDARIO MINERO
             min_date_val, max_date_val = None, None
             if filtro_quin != "Todas":
                 meses_map = {"Dic": 12, "Ene": 1, "Feb": 2, "Mar": 3, "Abr": 4, "May": 5, "Jun": 6, "Jul": 7, "Ago": 8, "Sep": 9, "Oct": 10, "Nov": 11}
@@ -610,13 +617,7 @@ else:
 
             df_editado = pd.DataFrame()
             
-            def safe_get_wk(x):
-                if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
-                try:
-                    if isinstance(x, str): x = datetime.datetime.strptime(x[:10], "%Y-%m-%d").date()
-                    return f"WK{x.isocalendar()[1]:02d}"
-                except: return ""
-
+            # 🔥 FUNCIONES DE SEGURIDAD PARA FECHAS
             def safe_date_str(x):
                 if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
                 try:
@@ -633,6 +634,7 @@ else:
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
                 df_mostrar.insert(0, "🗑️ Quitar", False)
                 
+                # Magia Reactiva
                 if "kanban_table" in st.session_state:
                     edits = st.session_state["kanban_table"].get("edited_rows", {})
                     for idx_str, changes in edits.items():
@@ -672,7 +674,15 @@ else:
                 df_editado = st.data_editor(df_estilizado, key="kanban_table", hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
-                    df_editado['S_Programada'] = df_editado['Día Programado'].apply(safe_get_wk)
+                    # 🔥 FUNCIÓN DE RESCATE: Si no puso fecha, conservamos la WK antigua de la Base de Datos
+                    def get_final_wk(row):
+                        d = row['Día Programado']
+                        if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
+                            if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
+                            return f"WK{d.isocalendar()[1]:02d}"
+                        return row['S_Programada']  # Conserva el texto "WK11" original
+                        
+                    df_editado['S_Programada'] = df_editado.apply(get_final_wk, axis=1)
                     df_editado['S_Realizada'] = df_editado['S_Realizada'].apply(safe_date_str)
                     
                     filas_validas = df_editado[
@@ -700,6 +710,7 @@ else:
                     n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
                     n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
                     
+                    # El campo de Fecha por defecto ahora respeta la quincena filtrada
                     default_d = datetime.date.today()
                     if min_date_val and max_date_val:
                         if not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
@@ -713,8 +724,17 @@ else:
                         df_cmms_guardar = df_cmms.copy()
                         if not df_editado.empty:
                             df_editado_clean = df_editado.copy()
-                            df_editado_clean['S_Programada'] = df_editado_clean['Día Programado'].apply(safe_get_wk)
+                            
+                            def get_final_wk_clean(row):
+                                d = row['Día Programado']
+                                if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
+                                    if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
+                                    return f"WK{d.isocalendar()[1]:02d}"
+                                return row['S_Programada']
+                                
+                            df_editado_clean['S_Programada'] = df_editado_clean.apply(get_final_wk_clean, axis=1)
                             df_editado_clean['S_Realizada'] = df_editado_clean['S_Realizada'].apply(safe_date_str)
+                            
                             filas_validas_f = df_editado_clean[
                                 (df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A") & 
                                 (df_editado_clean["Estado"] != "⚪ N/A") & (df_editado_clean["S_Programada"] != "")
@@ -732,6 +752,7 @@ else:
                         df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
                         guardar_cmms(df_cmms_final_extra); st.success(f"✅ Se guardaron los cambios y se añadió a {n_sem_format}."); time.sleep(1.5); st.rerun()
 
+        # --- PESTAÑA 2: CALENDARIO VISUAL CON COLUMNA WK DE REFERENCIA ---
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
@@ -792,7 +813,6 @@ else:
             html_cal += '</div>'
             st.markdown(html_cal, unsafe_allow_html=True)
 
-        # --- PESTAÑA 3: MATRIZ DINÁMICA MULTI-VISTA (AHORA CON VISTA POR MESES) ---
         with tab_matriz:
             st.markdown("### 📊 Matriz Dinámica de Mantenimiento")
             st.info("Desplázate hacia la derecha. Los nombres de los equipos se quedarán **congelados** en la pantalla para que nunca pierdas la fila.")
@@ -802,10 +822,8 @@ else:
             
             c_mat1, c_mat2 = st.columns([1.5, 2])
             with c_mat1: 
-                # 🔥 AÑADIMOS LA TERCERA VISTA AL SELECTOR
                 vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual (Semanas WK)", "📅 Anual (Por Meses)"], horizontal=True)
             
-            # Función para traducir el código "15c Abr" al formato de tu Excel "abr-26"
             def map_mes(q):
                 if q == "15c Dic": return "dic-25"
                 meses = {"Ene":"ene", "Feb":"feb", "Mar":"mar", "Abr":"abr", "May":"may", "Jun":"jun", "Jul":"jul", "Ago":"ago", "Sep":"sept", "Oct":"oct", "Nov":"nov"}
@@ -835,7 +853,6 @@ else:
             
             cols_base = ['TAG', 'Equipo', 'Área']
             
-            # Inyectar columnas vacías si en ese mes/semana no hay nada programado
             for c in cols_todas:
                 if c not in df_matriz.columns: df_matriz[c] = ""
                 
@@ -860,7 +877,6 @@ else:
             def estilo_matriz_colores(val):
                 v = str(val).upper()
                 if not v or v == "NAN": return ''
-                # Reducimos un poco el texto en la vista mensual para que se vea más condensado y pro
                 base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; font-size: 0.85em; '
                 if 'HECHO' in v: return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
                 if 'F/S' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
