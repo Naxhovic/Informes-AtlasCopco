@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 🔥 TRUCO MÁGICO: Esto debe ir en la línea 2 para matar el título de "Streamlit" al instante
+# 🔥 CONFIGURACIÓN DE PÁGINA: Debe ir en la línea 2 para efectos visuales inmediatos
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
 from docxtpl import DocxTemplate, InlineImage
@@ -67,10 +67,7 @@ def aplicar_estilos_premium():
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap');
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
-        
-        /* 🔥 BLOQUEO DEL MENSAJE 'RUNNING' DE STREAMLIT */
         [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
-        
         header { background: transparent !important; }
         [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; } 
         [data-testid="stDecoration"] { display: none !important; }
@@ -124,7 +121,7 @@ inventario_equipos = {
     "55-GC-015": ["GA 30", "API501440", "planta borra", "Área Húmeda"],
     "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "Área Húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "Área Húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "Área Húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "Área Húmeda"],
     "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "Área Húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "Área Húmeda"],
-    "Taller": ["GA 18", "API335343", "Taller", "Laboratorio"] # ✅ Laboratorio mantenido
+    "Taller": ["GA 18", "API335343", "Taller", "Laboratorio"] # 🔥 Cambio: Laboratorio
 }
 
 # =============================================================================
@@ -301,7 +298,9 @@ def eliminar_contacto(nombre):
 def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
-    # =============================================================================
+
+# --- FIN DE LA PARTE 1 ---
+# =============================================================================
 # 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
@@ -374,7 +373,7 @@ def formatear_wk(wk_str):
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
-    # 🔥 CAMBIO APLICADO: Todos los comentarios de ejemplo borrados ("Falta Kit", "OK", etc.)
+    # 🔥 CAMBIO APLICADO: Cero comentarios en la base de datos
     datos_reales = [
         {"TAG": "70-GC-013", "S_Programada": "WK51", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
         {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
@@ -447,7 +446,6 @@ def seleccionar_equipo(tag):
     reg = buscar_ultimo_registro(tag)
     if reg:
         st.session_state.input_cliente = reg[1]; st.session_state.input_tec1 = reg[5]; st.session_state.input_tec2 = reg[6]
-        # 🔥 CAMBIO APLICADO: Comentarios borrados al seleccionar equipo
         st.session_state.input_estado = ""; st.session_state.input_reco = ""
         st.session_state.input_estado_eq = reg[12] if reg[12] else "Operativo"
         st.session_state.input_h_marcha = int(reg[9]) if reg[9] else 0; st.session_state.input_h_carga = int(reg[10]) if reg[10] else 0
@@ -506,7 +504,8 @@ else:
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
         
-        if st.button("📊 Planificación (CMMS)", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
+        # 🔥 CAMBIO APLICADO: Título lateral "Planificación" limpio
+        if st.button("📊 Planificación", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
         
         if st.button("📜 Últimas Intervenciones", use_container_width=True, type="primary" if st.session_state.vista_actual == "historial" else "secondary"):
@@ -619,7 +618,7 @@ else:
                             )
                             st.markdown(html_card, unsafe_allow_html=True)
 
-    # --- 7.1 VISTA PLANIFICACIÓN (CMMS KANBAN Y CALENDARIO) ---
+    # --- 7.1 VISTA PLANIFICACIÓN ---
     elif st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -628,9 +627,10 @@ else:
         df_cmms['Mes_Calc'] = df_cmms['S_Programada'].apply(calcular_mes_minero)
         mes_de_hoy_full = calcular_mes_minero(semana_actual)
         
+        # 🔥 CAMBIO APLICADO: Título "Panel de Control" limpio
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
-                <h2 style="color: white; margin: 0;">📅 Panel de Control CMMS</h2>
+                <h2 style="color: white; margin: 0;">📅 Panel de Control</h2>
                 <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Semana Actual: {semana_actual} &nbsp;|&nbsp; Planificación Activa: {mes_de_hoy_full}</p>
             </div>
         """, unsafe_allow_html=True)
@@ -652,14 +652,14 @@ else:
         
         st.markdown("---")
         
-        # 🔥 CAMBIO APLICADO: Nombres de pestañas limpias.
-        tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero", "📆 Calendario", "📊 Matriz de Mantenimiento"])
+        # 🔥 CAMBIO APLICADO: Pestañas limpias y sin Matriz
+        tab_gestion, tab_calendario = st.tabs(["📋 Tablero", "📆 Calendario"])
         
         with tab_gestion:
-            st.info("💡 **El calendario calcula todo.** Selecciona la fecha en '📆 Prog. para (Día y WK)' y verás que automáticamente aparece la 'WK' al lado.")
+            st.info("💡 **Formato Unificado:** Las fechas de Programación y Ejecución calculan y muestran automáticamente su Semana (WK).")
             c_f1, c_f2 = st.columns([1, 3])
             
-            # 🔥 CAMBIO APLICADO: Filtro limpio por mes.
+            # 🔥 CAMBIO APLICADO: Filtro limpio por mes
             orden_meses_full = ["Todas", "Diciembre", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre"]
             with c_f1: filtro_mes = st.selectbox("Filtrar por Mes:", orden_meses_full, index=orden_meses_full.index(mes_de_hoy_full) if mes_de_hoy_full in orden_meses_full else 0)
             
@@ -677,23 +677,18 @@ else:
 
             df_mostrar = df_cmms.copy() if filtro_mes == "Todas" else df_cmms[df_cmms["Mes_Calc"] == filtro_mes].copy()
             
-            if filtro_mes != "Todas":
-                tags_presentes = df_mostrar['TAG'].tolist()
-                tags_faltantes = [t for t in inventario_equipos.keys() if t not in tags_presentes]
-                if tags_faltantes:
-                    filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": "", "Tipo": "N/A", "Estado": "⚪ N/A", "S_Realizada": None, "Observacion": "", "Mes_Calc": filtro_mes} for t in tags_faltantes])
-                    df_mostrar = pd.concat([df_mostrar, filas_vacias], ignore_index=True)
-                df_mostrar = df_mostrar.sort_values(by="TAG").reset_index(drop=True)
+            # 🔥 CAMBIO APLICADO: Taller siempre visible
+            tags_presentes = df_mostrar['TAG'].tolist()
+            todos_los_tags = list(inventario_equipos.keys())
+            tags_faltantes = [t for t in todos_los_tags if t not in tags_presentes]
+            
+            if tags_faltantes:
+                filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": "", "Tipo": "N/A", "Estado": "⚪ N/A", "S_Realizada": None, "Observacion": "", "Mes_Calc": filtro_mes if filtro_mes != "Todas" else "Sin Asignar"} for t in tags_faltantes])
+                df_mostrar = pd.concat([df_mostrar, filas_vacias], ignore_index=True)
+            df_mostrar = df_mostrar.sort_values(by="TAG").reset_index(drop=True)
 
             df_editado = pd.DataFrame()
             
-            def safe_get_wk(x):
-                if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
-                try:
-                    if isinstance(x, str): x = datetime.datetime.strptime(x[:10], "%Y-%m-%d").date()
-                    return f"WK{x.isocalendar()[1]:02d}"
-                except: return ""
-
             def safe_date_str(x):
                 if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
                 try:
@@ -731,12 +726,12 @@ else:
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "Mes_Calc": None, 
                     "S_Programada": None, 
-                    # 🔥 CAMBIO APLICADO: Fechas y WK fusionadas en Día Programado
-                    "Día Programado": st.column_config.DateColumn("📆 Prog. para (Día y WK)", format="DD/MM/YYYY - [WK]WW", min_value=min_date_val, max_value=max_date_val, disabled=False),
+                    # 🔥 CAMBIO APLICADO: Día Prog. fusionado
+                    "Día Programado": st.column_config.DateColumn("📆 Programación (Día y WK)", format="DD/MM/YYYY - [WK]WW", min_value=min_date_val, max_value=max_date_val, disabled=False),
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["N/A", "INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
                     "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["⚪ N/A", "⏳ Pendiente", "✅ Hecho", "🚨 F/S"], required=True),
-                    # 🔥 CAMBIO APLICADO: Fechas y WK fusionadas en Día Ejecución
-                    "S_Realizada": st.column_config.DateColumn("Día Ejecución 📅", format="DD/MM/YYYY - [WK]WW", disabled=False),
+                    # 🔥 CAMBIO APLICADO: Día Ejecución fusionado
+                    "S_Realizada": st.column_config.DateColumn("Día Ejecución (Día y WK) 📅", format="DD/MM/YYYY - [WK]WW", disabled=False),
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
                 def color_estado(val):
@@ -779,7 +774,7 @@ else:
                     guardar_cmms(df_cmms_final); st.success(f"✅ ¡Guardado!"); time.sleep(1.5); st.rerun()
 
             st.markdown("<br>", unsafe_allow_html=True)
-            with st.expander("➕ Inyectar Tarea Extra (Duplicar pautas)", expanded=False):
+            with st.expander("➕ Inyectar Tarea Extra", expanded=False):
                 with st.form("form_nueva_tarea"):
                     st.write("*(Si editaste la tabla de arriba, este botón guardará todo automáticamente)*")
                     c1, c2, c3 = st.columns(3)
@@ -804,10 +799,8 @@ else:
                                     if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
                                     return f"WK{d.isocalendar()[1]:02d}"
                                 return row['S_Programada']
-                                
                             df_editado_clean['S_Programada'] = df_editado_clean.apply(get_final_wk_clean, axis=1)
                             df_editado_clean['S_Realizada'] = df_editado_clean['S_Realizada'].apply(safe_date_str)
-                            
                             filas_validas_f = df_editado_clean[
                                 (df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A") & 
                                 (df_editado_clean["Estado"] != "⚪ N/A") & (df_editado_clean["S_Programada"] != "")
@@ -829,7 +822,7 @@ else:
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
-            with c_cal_tit: st.markdown("### 📆 Calendario Dinámico")
+            with c_cal_tit: st.markdown("### 📆 Calendario Interactivo")
             with c_cal_sel:
                 hoy_cal = datetime.date.today()
                 mes_str = f"Diciembre 2025" if hoy_cal.year == 2025 and hoy_cal.month == 12 else f"{opciones_meses_calendario[hoy_cal.month]}" if hoy_cal.year == 2026 else "Enero 2026"
@@ -884,86 +877,6 @@ else:
                     html_cal += '</div>'
             html_cal += '</div>'
             st.markdown(html_cal, unsafe_allow_html=True)
-
-        with tab_matriz:
-            st.markdown("### 📊 Matriz Dinámica de Mantenimiento")
-            st.info("Desplázate hacia la derecha. Los nombres de los equipos se quedarán **congelados** en la pantalla para que nunca pierdas la fila.")
-            
-            df_pivot_base = df_cmms[df_cmms['Tipo'] != 'N/A'].copy()
-            df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: str(x).split(" ")[1] if " " in str(x) else str(x))
-            
-            c_mat1, c_mat2 = st.columns([1.5, 2])
-            with c_mat1: 
-                vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Mes (Zoom In)", "📆 Anual (Semanas WK)", "📅 Anual (Por Meses)"], horizontal=True)
-            
-            def map_mes_full(q):
-                if q == "Diciembre": return "dic-25"
-                meses = {"Enero":"ene-26", "Febrero":"feb-26", "Marzo":"mar-26", "Abril":"abr-26", "Mayo":"may-26", "Junio":"jun-26", "Julio":"jul-26", "Agosto":"ago-26", "Septiembre":"sept-26", "Octubre":"oct-26", "Noviembre":"nov-26"}
-                return meses.get(q, q)
-
-            df_pivot_base['Mes_Vista'] = df_pivot_base['Mes_Calc'].apply(map_mes_full)
-            
-            if vista_matriz == "📅 Anual (Por Meses)":
-                col_pivot = 'Mes_Vista'
-                cols_todas = ["dic-25", "ene-26", "feb-26", "mar-26", "abr-26", "may-26", "jun-26", "jul-26", "ago-26", "sept-26", "oct-26", "nov-26"]
-            else:
-                col_pivot = 'S_Programada'
-                semanas_brutas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
-                cols_todas = list(dict.fromkeys(semanas_brutas))
-                
-            df_pivot = df_pivot_base.groupby(['TAG', col_pivot])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
-            
-            lista_info = []
-            for t in df_pivot.index:
-                if t in inventario_equipos: eq, _, area, _ = inventario_equipos[t]; lista_info.append({"TAG": t, "Equipo": eq, "Área": area.title()})
-                else: lista_info.append({"TAG": t, "Equipo": "-", "Área": "-"})
-            
-            df_info = pd.DataFrame(lista_info).set_index("TAG")
-            df_matriz = pd.concat([df_info, df_pivot], axis=1).reset_index()
-            
-            cols_base = ['TAG', 'Equipo', 'Área']
-            
-            for c in cols_todas:
-                if c not in df_matriz.columns: df_matriz[c] = ""
-                
-            df_matriz = df_matriz[cols_base + cols_todas]
-            
-            cols_finales = cols_base.copy()
-            if vista_matriz == "🔍 Por Mes (Zoom In)":
-                wk_a_quincena = {wk: calcular_mes_minero(wk) for wk in cols_todas}
-                with c_mat2:
-                    orden_meses_zoom = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-                    q_unicas = list(set(wk_a_quincena.values()))
-                    q_unicas.sort(key=lambda x: orden_meses_zoom.index(x) if x in orden_meses_zoom else 99)
-                    quin_seleccionada = st.selectbox("Selecciona el Mes a enfocar:", q_unicas, index=q_unicas.index(mes_de_hoy_full) if mes_de_hoy_full in q_unicas else 0)
-                wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
-                cols_finales.extend(wks_mostrar)
-            else:
-                cols_finales.extend(cols_todas)
-                
-            df_matriz_final = df_matriz[cols_finales]
-            df_matriz_congelada = df_matriz_final.set_index(['TAG', 'Equipo', 'Área'])
-            
-            def estilo_matriz_colores(val):
-                v = str(val).upper()
-                if not v or v == "NAN": return ''
-                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; font-size: 0.85em; '
-                if 'HECHO' in v: return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
-                if 'F/S' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
-                if 'PENDIENTE' in v: 
-                    if 'P1' in v: return base + 'background-color: #0c2d48; color: #66c2ff; font-weight: bold; border-left: 4px solid #eab308;'
-                    if 'P2' in v: return base + 'background-color: #4a2c00; color: #ffb04c; font-weight: bold; border-left: 4px solid #eab308;'
-                    if 'P3' in v: return base + 'background-color: #301047; color: #d78aff; font-weight: bold; border-left: 4px solid #eab308;'
-                    if 'P4' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #eab308;'
-                    return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
-                return base + 'color: #8c9eb5; font-style: italic;'
-                
-            columnas_pintar = [c for c in cols_finales if c not in cols_base]
-            if len(columnas_pintar) > 0:
-                try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
-                except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
-            else:
-                st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
     # --- 7.2 VISTA DE FIRMAS, EDICIÓN Y DESCARGAS ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
