@@ -353,7 +353,6 @@ def calcular_quincena(wk_string):
     d = wk_to_date(wk_string)
     if not d: return "Sin Asignar"
     meses_abr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-    # Corte Minero: el 15 de cada mes
     if d.day <= 15: return f"15c {meses_abr[d.month - 1]}"
     else: return f"15c {meses_abr[d.month if d.month < 12 else 0]}"
 
@@ -421,13 +420,7 @@ def cargar_cmms():
                             return d.strftime("%Y-%m-%d") if d else ""
                         return val
                     df['S_Realizada'] = df.apply(migrar_fechas, axis=1)
-                    
-                    df['Estado'] = df['Estado'].replace({
-                        'Hecho': '✅ Hecho',
-                        'Pendiente': '⏳ Pendiente',
-                        'F/S': '🚨 F/S',
-                        'N/A': '⚪ N/A'
-                    })
+                    df['Estado'] = df['Estado'].replace({'Hecho': '✅ Hecho', 'Pendiente': '⏳ Pendiente', 'F/S': '🚨 F/S', 'N/A': '⚪ N/A'})
                     return df
                 sheet.clear(); df_base = pd.DataFrame(datos_reales, columns=headers)
                 sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
@@ -563,14 +556,12 @@ else:
             </div>
         """, unsafe_allow_html=True)
         
-        # 🔥 CÁLCULO DE CUMPLIMIENTO (EXCLUYENDO EQUIPOS FUERA DE SERVICIO)
         df_kpi = df_cmms[(df_cmms["Quincena_Calc"] == quincena_de_hoy) & (df_cmms["Tipo"] != "N/A")]
         total_tareas = len(df_kpi)
         hechas = len(df_kpi[df_kpi["Estado"] == "✅ Hecho"])
         fs = len(df_kpi[df_kpi["Estado"] == "🚨 F/S"])
         pendientes = len(df_kpi[df_kpi["Estado"] == "⏳ Pendiente"])
         
-        # El Total Evaluable son solo las tareas Hechas + Pendientes.
         total_evaluable = hechas + pendientes
         cumplimiento = int((hechas / total_evaluable * 100)) if total_evaluable > 0 else (100 if hechas > 0 else 0)
         
@@ -579,6 +570,64 @@ else:
         c_kpi2.metric(label="🎯 Tareas Programadas", value=total_tareas)
         c_kpi3.metric(label="✅ Tareas Completadas", value=hechas)
         c_kpi4.metric(label="🚨 Equipos F/S", value=fs)
+
+        # 🔥 BOTÓN SECRETO DE INYECCIÓN MASIVA (ABRIL - DICIEMBRE)
+        with st.expander("🚨 BOTÓN SECRETO: Cargar Planificación Anual de Excel (Abr - Dic)"):
+            st.warning("He leído la foto de tu Excel. Este botón inyectará las 180 pautas desde Abril hasta Diciembre a tu Base de Datos en la nube. **¡No borrará ni tocará nada de Marzo!** Úsalo solo 1 vez y luego podrás ocultarlo.")
+            if st.button("🚀 INYECTAR DATOS DEL EXCEL AHORA", type="primary"):
+                # Traducción exacta de la imagen de tu Excel
+                plan_masivo = {
+                    "70-GC-013": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
+                    "70-GC-014": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
+                    "50-GC-001": ["P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
+                    "50-GC-002": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
+                    "50-GC-003": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
+                    "50-GC-004": ["INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
+                    "50-CD-001": ["INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP"],
+                    "50-CD-002": ["INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP"],
+                    "55-GC-015": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
+                    "65-GC-011": ["P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4"],
+                    "65-GC-009": ["INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
+                    "65-CD-011": ["INSP", "P2", "INSP", "INSP", "P2", "INSP", "INSP", "P2", "INSP"],
+                    "65-CD-012": ["INSP", "P2", "INSP", "INSP", "P2", "INSP", "INSP", "P2", "INSP"],
+                    "35-GC-006": ["P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2"],
+                    "35-GC-007": ["P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1"],
+                    "35-GC-008": ["P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1"],
+                    "20-GC-004": ["INSP", "P4", "INSP", "INSP", "P1", "INSP", "INSP", "P2", "INSP"],
+                    "20-GC-001": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
+                    "20-GC-002": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
+                    "20-GC-003": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"]
+                }
+                
+                # Asignación de semanas correspondientes a cada mes
+                # (Abril, Mayo, Junio, Julio, Agosto, Septiembre, Octubre, Noviembre, Diciembre)
+                semanas = ["WK15", "WK19", "WK24", "WK28", "WK33", "WK37", "WK41", "WK46", "WK50"]
+
+                nuevas_filas = []
+                existentes = set(zip(df_cmms['TAG'], df_cmms['S_Programada']))
+                
+                for eq, tareas in plan_masivo.items():
+                    for i, tipo in enumerate(tareas):
+                        wk_asignada = semanas[i]
+                        if (eq, wk_asignada) not in existentes:
+                            nuevas_filas.append({
+                                "TAG": eq,
+                                "S_Programada": wk_asignada,
+                                "Tipo": tipo,
+                                "Estado": "⏳ Pendiente",
+                                "S_Realizada": "",
+                                "Observacion": ""
+                            })
+
+                if nuevas_filas:
+                    df_nuevas = pd.DataFrame(nuevas_filas)
+                    df_cmms_final = pd.concat([df_cmms, df_nuevas], ignore_index=True)
+                    guardar_cmms(df_cmms_final)
+                    st.success(f"✅ ¡Éxito! Se inyectaron {len(nuevas_filas)} tareas nuevas a tu Base de Datos.")
+                    time.sleep(2)
+                    st.rerun()
+                else:
+                    st.info("👍 Todos los datos de tu Excel ya estaban cargados en el sistema.")
         
         st.markdown("---")
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
@@ -632,7 +681,6 @@ else:
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
                 df_mostrar.insert(0, "🗑️ Quitar", False)
                 
-                # Magia Reactiva
                 if "kanban_table" in st.session_state:
                     edits = st.session_state["kanban_table"].get("edited_rows", {})
                     for idx_str, changes in edits.items():
@@ -672,7 +720,6 @@ else:
                 df_editado = st.data_editor(df_estilizado, key="kanban_table", hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
-                    # 🔥 FUNCIÓN DE RESCATE: Si no puso fecha, conservamos la WK antigua de la Base de Datos
                     def get_final_wk(row):
                         d = row['Día Programado']
                         if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
@@ -713,7 +760,6 @@ else:
                         if not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
                         
                     n_fecha_prog = c3.date_input("📆 Día a Programar:", value=default_d, min_value=min_date_val, max_value=max_date_val)
-                    # 🔥 SE ELIMINÓ EL TEXTO EN VERDE AQUÍ, PERO SE MANTIENE LA DELIMITACIÓN ARRIBA
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     
                     if st.form_submit_button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
@@ -741,7 +787,6 @@ else:
                                 df_cmms_rest_f = df_cmms[df_cmms["Quincena_Calc"] != filtro_quin]
                                 df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
 
-                        # Calcular la semana para la nueva fila
                         n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}"
                         nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": n_obs}])
                         for col in ['Quincena_Calc', '🗑️ Quitar', 'Día Programado']:
@@ -817,29 +862,7 @@ else:
             
             df_pivot_base = df_cmms[df_cmms['Tipo'] != 'N/A'].copy()
             df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: str(x).split(" ")[1] if " " in str(x) else str(x))
-            
-            c_mat1, c_mat2 = st.columns([1.5, 2])
-            with c_mat1: 
-                vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual (Semanas WK)", "📅 Anual (Por Meses)"], horizontal=True)
-            
-            def map_mes(q):
-                if q == "15c Dic": return "dic-25"
-                meses = {"Ene":"ene", "Feb":"feb", "Mar":"mar", "Abr":"abr", "May":"may", "Jun":"jun", "Jul":"jul", "Ago":"ago", "Sep":"sept", "Oct":"oct", "Nov":"nov"}
-                for k, v in meses.items():
-                    if k in str(q): return f"{v}-26"
-                return str(q)
-
-            df_pivot_base['Mes_Vista'] = df_pivot_base['Quincena_Calc'].apply(map_mes)
-            
-            if vista_matriz == "📅 Anual (Por Meses)":
-                col_pivot = 'Mes_Vista'
-                cols_todas = ["dic-25", "ene-26", "feb-26", "mar-26", "abr-26", "may-26", "jun-26", "jul-26", "ago-26", "sept-26", "oct-26", "nov-26"]
-            else:
-                col_pivot = 'S_Programada'
-                semanas_brutas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
-                cols_todas = list(dict.fromkeys(semanas_brutas))
-                
-            df_pivot = df_pivot_base.groupby(['TAG', col_pivot])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
+            df_pivot = df_pivot_base.groupby(['TAG', 'S_Programada'])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
             
             lista_info = []
             for t in df_pivot.index:
@@ -851,14 +874,20 @@ else:
             
             cols_base = ['TAG', 'Equipo', 'Área']
             
-            for c in cols_todas:
+            semanas_brutas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
+            cols_wk_completas = list(dict.fromkeys(semanas_brutas)) 
+            
+            for c in cols_wk_completas:
                 if c not in df_matriz.columns: df_matriz[c] = ""
-                
-            df_matriz = df_matriz[cols_base + cols_todas]
+            df_matriz = df_matriz[cols_base + cols_wk_completas]
+            
+            wk_a_quincena = {wk: calcular_quincena(wk) for wk in cols_wk_completas}
+            
+            c_mat1, c_mat2 = st.columns([1, 2])
+            with c_mat1: vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual Completo"], horizontal=True)
             
             cols_finales = cols_base.copy()
             if vista_matriz == "🔍 Por Quincena (Zoom In)":
-                wk_a_quincena = {wk: calcular_quincena(wk) for wk in cols_todas}
                 with c_mat2:
                     orden_meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
                     q_unicas = list(set(wk_a_quincena.values()))
@@ -867,7 +896,7 @@ else:
                 wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
                 cols_finales.extend(wks_mostrar)
             else:
-                cols_finales.extend(cols_todas)
+                cols_finales.extend(cols_wk_completas)
                 
             df_matriz_final = df_matriz[cols_finales]
             df_matriz_congelada = df_matriz_final.set_index(['TAG', 'Equipo', 'Área'])
@@ -875,7 +904,7 @@ else:
             def estilo_matriz_colores(val):
                 v = str(val).upper()
                 if not v or v == "NAN": return ''
-                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; font-size: 0.85em; '
+                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
                 if 'HECHO' in v: return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
                 if 'F/S' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
                 if 'PENDIENTE' in v: 
@@ -886,10 +915,10 @@ else:
                     return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
                 return base + 'color: #8c9eb5; font-style: italic;'
                 
-            columnas_pintar = [c for c in cols_finales if c not in cols_base]
-            if len(columnas_pintar) > 0:
-                try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
-                except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
+            columnas_wk_pintar = [c for c in df_matriz_congelada.columns if c.startswith('WK')]
+            if len(columnas_wk_pintar) > 0:
+                try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
+                except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
