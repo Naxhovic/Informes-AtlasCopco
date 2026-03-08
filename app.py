@@ -433,7 +433,6 @@ def cargar_cmms():
 def guardar_cmms(df):
     sheet = get_sheet("plan_cmms")
     if sheet:
-        # 🔥 FILTRO SANITIZADOR ANTI-JSON ERROR: Limpiamos todos los valores nulos (NaT, NaN) antes de enviar a Google
         df_clean = df.copy()
         df_clean = df_clean.fillna("").astype(str)
         df_clean = df_clean.replace(["nan", "NaN", "NaT", "None", "<NA>"], "")
@@ -519,7 +518,7 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES ---
+    # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES (DISEÑO MEJORADO Y ANTI-DUPLICADOS) ---
     if st.session_state.vista_actual == "historial":
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(255,102,0,0) 0%, rgba(255,102,0,0.15) 50%, rgba(255,102,0,0) 100%); padding: 20px; border-radius: 15px;">
@@ -532,22 +531,55 @@ else:
         if not historial_global:
             st.info("Aún no hay reportes firmados y almacenados en la base de datos central.")
         else:
+            # 🔥 1. FILTRO ANTI-DUPLICADOS: Si un equipo se registró varias veces el mismo día, solo mostramos el último
+            historial_unico = []
+            vistos = set()
             for item in historial_global:
-                b_color = "#00e676" if item['estado'] == "Operativo" else "#ff1744"
-                bg_color = "#151a22"
-                icono = "✅" if item['estado'] == "Operativo" else "🚨"
+                # La "huella dactilar" es el TAG + Fecha
+                identificador = (item['tag'], item['fecha'])
+                if identificador not in vistos:
+                    vistos.add(identificador)
+                    historial_unico.append(item)
+
+            # 🔥 2. AGRUPACIÓN POR FECHAS: Para crear un Dashboard estilo "Línea de tiempo"
+            historial_agrupado = {}
+            for item in historial_unico:
+                f = item['fecha']
+                if f not in historial_agrupado:
+                    historial_agrupado[f] = []
+                historial_agrupado[f].append(item)
+
+            # 🔥 3. RENDERIZADO EN CUADRÍCULA (GRID)
+            for fecha, intervenciones in historial_agrupado.items():
+                st.markdown(f"<h3 style='color: white; border-bottom: 2px solid #2b3543; padding-bottom: 5px; margin-top: 15px;'>🗓️ {fecha}</h3>", unsafe_allow_html=True)
                 
-                with st.container(border=True):
-                    st.markdown(f"""
-                        <div style='border-left: 6px solid {b_color}; padding-left: 15px;'>
-                            <h3 style='margin: 0; color: #007CA6;'>{item['tag']} <span style='color: white; font-size: 0.8em;'>| {item['modelo']}</span></h3>
-                            <p style='margin: 5px 0 10px 0; color: #8c9eb5;'>📅 <b>{item['fecha']}</b> &nbsp;&bull;&nbsp; 🧑‍🔧 Técnico: {item['tecnico']}</p>
-                            <div style='display: flex; gap: 15px; align-items: center;'>
-                                <div style='background: #2b3543; padding: 5px 15px; border-radius: 20px; font-size: 0.85em; font-weight: bold;'>🛠️ Tarea: {item['tipo']}</div>
-                                <div style='background: {b_color}20; color: {b_color}; border: 1px solid {b_color}; padding: 5px 15px; border-radius: 20px; font-size: 0.85em; font-weight: bold;'>{icono} Estado Final: {item['estado']}</div>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
+                # Creamos 3 columnas para que parezca un dashboard
+                columnas_muro = st.columns(3) 
+                
+                for idx, item in enumerate(intervenciones):
+                    b_color = "#00e676" if item['estado'] == "Operativo" else "#ff1744"
+                    bg_color = "rgba(0, 230, 118, 0.1)" if item['estado'] == "Operativo" else "rgba(255, 23, 68, 0.1)"
+                    icono = "✅" if item['estado'] == "Operativo" else "🚨"
+                    
+                    with columnas_muro[idx % 3]:
+                        with st.container(border=True):
+                            st.markdown(f"""
+                                <div style='border-left: 5px solid {b_color}; padding-left: 12px; height: 100%;'>
+                                    <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
+                                        <h3 style='margin: 0; color: #007CA6; font-size: 1.4em;'>{item['tag']}</h3>
+                                        <span style='background: #2b3543; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;'>🛠️ {item['tipo']}</span>
+                                    </div>
+                                    <p style='margin: 2px 0 10px 0; color: #aeb9cc; font-size: 0.9em;'>{item['modelo']} &bull; {item['area'].title()}</p>
+                                    
+                                    <div style='background: #151a22; padding: 8px; border-radius: 8px; margin-bottom: 5px;'>
+                                        <p style='margin: 0; color: #8c9eb5; font-size: 0.85em;'>🧑‍🔧 <b>Técnico:</b> {item['tecnico']}</p>
+                                    </div>
+                                    
+                                    <div style='margin-top: 10px; background: {bg_color}; border: 1px solid {b_color}; color: {b_color}; padding: 5px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 0.85em;'>
+                                        {icono} {item['estado']}
+                                    </div>
+                                </div>
+                            """, unsafe_allow_html=True)
 
     # --- 7.1 VISTA PLANIFICACIÓN (CMMS KANBAN Y CALENDARIO) ---
     elif st.session_state.vista_actual == "planificacion":
@@ -668,13 +700,6 @@ else:
 
             df_editado = pd.DataFrame()
             
-            def safe_get_wk(x):
-                if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
-                try:
-                    if isinstance(x, str): x = datetime.datetime.strptime(x[:10], "%Y-%m-%d").date()
-                    return f"WK{x.isocalendar()[1]:02d}"
-                except: return ""
-
             def safe_date_str(x):
                 if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
                 try:
@@ -769,7 +794,6 @@ else:
                     if min_date_val and max_date_val:
                         if not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
                         
-                    # 🔥 CALENDARIO BLOQUEADO, PERO SIN EL TEXTO VERDE ABAJO
                     n_fecha_prog = c3.date_input("📆 Día a Programar:", value=default_d, min_value=min_date_val, max_value=max_date_val)
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     
