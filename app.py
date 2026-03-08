@@ -436,7 +436,6 @@ def guardar_cmms(df):
         df_clean = df.copy()
         df_clean = df_clean.fillna("").astype(str)
         df_clean = df_clean.replace(["nan", "NaN", "NaT", "None", "<NA>"], "")
-        
         sheet.clear()
         sheet.append_rows([df_clean.columns.values.tolist()] + df_clean.values.tolist())
         st.cache_data.clear()
@@ -518,7 +517,7 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES (DISEÑO MEJORADO Y ANTI-DUPLICADOS) ---
+    # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES (DISEÑO MEJORADO) ---
     if st.session_state.vista_actual == "historial":
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(255,102,0,0) 0%, rgba(255,102,0,0.15) 50%, rgba(255,102,0,0) 100%); padding: 20px; border-radius: 15px;">
@@ -531,17 +530,14 @@ else:
         if not historial_global:
             st.info("Aún no hay reportes firmados y almacenados en la base de datos central.")
         else:
-            # 🔥 1. FILTRO ANTI-DUPLICADOS: Si un equipo se registró varias veces el mismo día, solo mostramos el último
             historial_unico = []
             vistos = set()
             for item in historial_global:
-                # La "huella dactilar" es el TAG + Fecha
                 identificador = (item['tag'], item['fecha'])
                 if identificador not in vistos:
                     vistos.add(identificador)
                     historial_unico.append(item)
 
-            # 🔥 2. AGRUPACIÓN POR FECHAS: Para crear un Dashboard estilo "Línea de tiempo"
             historial_agrupado = {}
             for item in historial_unico:
                 f = item['fecha']
@@ -549,11 +545,8 @@ else:
                     historial_agrupado[f] = []
                 historial_agrupado[f].append(item)
 
-            # 🔥 3. RENDERIZADO EN CUADRÍCULA (GRID)
             for fecha, intervenciones in historial_agrupado.items():
                 st.markdown(f"<h3 style='color: white; border-bottom: 2px solid #2b3543; padding-bottom: 5px; margin-top: 15px;'>🗓️ {fecha}</h3>", unsafe_allow_html=True)
-                
-                # Creamos 3 columnas para que parezca un dashboard
                 columnas_muro = st.columns(3) 
                 
                 for idx, item in enumerate(intervenciones):
@@ -563,23 +556,23 @@ else:
                     
                     with columnas_muro[idx % 3]:
                         with st.container(border=True):
-                            st.markdown(f"""
-                                <div style='border-left: 5px solid {b_color}; padding-left: 12px; height: 100%;'>
-                                    <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
-                                        <h3 style='margin: 0; color: #007CA6; font-size: 1.4em;'>{item['tag']}</h3>
-                                        <span style='background: #2b3543; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;'>🛠️ {item['tipo']}</span>
-                                    </div>
-                                    <p style='margin: 2px 0 10px 0; color: #aeb9cc; font-size: 0.9em;'>{item['modelo']} &bull; {item['area'].title()}</p>
-                                    
-                                    <div style='background: #151a22; padding: 8px; border-radius: 8px; margin-bottom: 5px;'>
-                                        <p style='margin: 0; color: #8c9eb5; font-size: 0.85em;'>🧑‍🔧 <b>Técnico:</b> {item['tecnico']}</p>
-                                    </div>
-                                    
-                                    <div style='margin-top: 10px; background: {bg_color}; border: 1px solid {b_color}; color: {b_color}; padding: 5px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 0.85em;'>
-                                        {icono} {item['estado']}
-                                    </div>
-                                </div>
-                            """, unsafe_allow_html=True)
+                            # 🔥 TEXTO CONTINUO PARA EVITAR ERROR DE STREAMLIT (BLOCK DE CÓDIGO)
+                            html_card = (
+                                f"<div style='border-left: 5px solid {b_color}; padding-left: 12px; height: 100%;'>"
+                                f"<div style='display: flex; justify-content: space-between; align-items: flex-start;'>"
+                                f"<h3 style='margin: 0; color: #007CA6; font-size: 1.4em;'>{item['tag']}</h3>"
+                                f"<span style='background: #2b3543; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;'>🛠️ {item['tipo']}</span>"
+                                f"</div>"
+                                f"<p style='margin: 2px 0 10px 0; color: #aeb9cc; font-size: 0.9em;'>{item['modelo']} &bull; {item['area'].title()}</p>"
+                                f"<div style='background: #151a22; padding: 8px; border-radius: 8px; margin-bottom: 5px;'>"
+                                f"<p style='margin: 0; color: #8c9eb5; font-size: 0.85em;'>🧑‍🔧 <b>Técnico:</b> {item['tecnico']}</p>"
+                                f"</div>"
+                                f"<div style='margin-top: 10px; background: {bg_color}; border: 1px solid {b_color}; color: {b_color}; padding: 5px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 0.85em;'>"
+                                f"{icono} {item['estado']}"
+                                f"</div>"
+                                f"</div>"
+                            )
+                            st.markdown(html_card, unsafe_allow_html=True)
 
     # --- 7.1 VISTA PLANIFICACIÓN (CMMS KANBAN Y CALENDARIO) ---
     elif st.session_state.vista_actual == "planificacion":
