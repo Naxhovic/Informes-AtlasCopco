@@ -302,7 +302,7 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
     # =============================================================================
-# 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO (Turno 4x3)
+# 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -341,7 +341,6 @@ def guardar_pendientes(usuario, pendientes):
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
-# --- EL CEREBRO MINERO AVANZADO ---
 def wk_to_date(wk_string):
     try:
         wk_num = int(re.sub(r'\D', '', str(wk_string)))
@@ -406,6 +405,7 @@ def cargar_cmms():
         {"TAG": "35-GC-006", "S_Programada": "WK02", "Tipo": "P1", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": "Falta Kit"},
         {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
     ]
+
     try:
         sheet = get_sheet("plan_cmms")
         if sheet:
@@ -706,14 +706,16 @@ else:
                     if d_target not in tareas_por_fecha: tareas_por_fecha[d_target] = []
                     tareas_por_fecha[d_target].append({"tag": row['TAG'], "tipo": row['Tipo'], "est": row['Estado']})
             
-            # 🔥 MAGIA VISUAL: 8 Columnas. La primera es un indicador de la Semana (REF)
+            # 🔥 REDISEÑO DEL CALENDARIO: Ahora con 8 columnas (incluye WK a la izquierda)
             html_cal = '<div style="display:grid; grid-template-columns: 65px repeat(7, 1fr); gap: 10px; margin-top:10px;">'
+            
+            # Cabeceras
             html_cal += '<div style="text-align:center; color:#FF6600; font-weight:900; font-size:0.8rem; margin-top: 10px;">REF</div>'
             for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: 
                 html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
                 
             for semana in semanas_mes:
-                # Calculamos a qué semana pertenece el Lunes de esa fila
+                # Calcular la WK de esta semana
                 wk_num = semana[0].isocalendar()[1]
                 if cal_year == 2025 and semana[0].month == 12: wk_num = semana[0].isocalendar()[1] 
                 
@@ -740,13 +742,17 @@ else:
             html_cal += '</div>'
             st.markdown(html_cal, unsafe_allow_html=True)
 
+        # --- PESTAÑA 3: MATRIZ DINÁMICA AGRUPADA POR QUINCENAS ---
         with tab_matriz:
-            st.markdown("### 📊 Matriz Dinámica de Mantenimiento")
-            st.info("Desplázate hacia la derecha. Los nombres de los equipos se quedarán **congelados** en la pantalla para que nunca pierdas la fila.")
+            st.markdown("### 📊 Matriz Anual por Quincenas")
+            st.info("Vista Estratégica: Todo el año compactado por quincenas. Los equipos están **congelados** a la izquierda.")
             
-            df_pivot_base = df_cmms.copy()
+            # Filtramos los "N/A" para no ensuciar la matriz
+            df_pivot_base = df_cmms[df_cmms['Tipo'] != 'N/A'].copy()
+            # Mostramos Tipo + Estado (sin el emoji para que sea más corto)
             df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: x.split(" ")[1] if " " in x else x)
-            df_pivot = df_pivot_base.groupby(['TAG', 'S_Programada'])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
+            # Agrupamos por QUINCENA en vez de por WK
+            df_pivot = df_pivot_base.groupby(['TAG', 'Quincena_Calc'])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
             
             lista_info = []
             for t in df_pivot.index:
@@ -758,39 +764,23 @@ else:
             
             cols_base = ['TAG', 'Equipo', 'Área']
             
-            # 🔥 SOLUCIÓN DEL ERROR PANDAS: Generamos la lista de semanas sin que se duplique "WK51" y "WK52"
-            semanas_brutas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
-            cols_wk_completas = list(dict.fromkeys(semanas_brutas)) 
-            
-            for c in cols_wk_completas:
-                if c not in df_matriz.columns: df_matriz[c] = ""
-            df_matriz = df_matriz[cols_base + cols_wk_completas]
-            
-            wk_a_quincena = {wk: calcular_quincena(wk) for wk in cols_wk_completas}
-            
-            c_mat1, c_mat2 = st.columns([1, 2])
-            with c_mat1: vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual Completo"], horizontal=True)
-            
-            cols_finales = cols_base.copy()
-            if vista_matriz == "🔍 Por Quincena (Zoom In)":
-                with c_mat2:
-                    orden_meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-                    q_unicas = list(set(wk_a_quincena.values()))
-                    q_unicas.sort(key=lambda x: orden_meses.index(x.split(" ")[1]) if " " in x and x.split(" ")[1] in orden_meses else 99)
-                    quin_seleccionada = st.selectbox("Selecciona la Quincena a enfocar:", q_unicas, index=q_unicas.index(quincena_de_hoy) if quincena_de_hoy in q_unicas else 0)
-                wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
-                cols_finales.extend(wks_mostrar)
-            else:
-                cols_finales.extend(cols_wk_completas)
+            # Forzamos que existan las 12 quincenas del año para que la tabla siempre tenga el mismo tamaño
+            orden_quincenas = ["15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
+            for q in orden_quincenas:
+                if q not in df_matriz.columns: df_matriz[q] = ""
                 
-            df_matriz_final = df_matriz[cols_finales]
-            df_matriz_congelada = df_matriz_final.set_index(['TAG', 'Equipo', 'Área'])
+            # Recuperar quincenas extra que puedan existir (ej. 2027)
+            cols_extra = [c for c in df_matriz.columns if c not in cols_base and c not in orden_quincenas]
+            
+            df_matriz = df_matriz[cols_base + orden_quincenas + cols_extra]
+            df_matriz_congelada = df_matriz.set_index(['TAG', 'Equipo', 'Área'])
             
             def estilo_matriz_colores(val):
                 v = str(val).upper()
-                if not v or v == "NAN": return ''
-                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
-                if 'HECHO' in v: return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
+                if not v or v == "NAN" or v.strip() == "": return ''
+                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; font-size: 0.85em; '
+                
+                # Reglas de prioridad (si hay 2 tareas en una quincena y una falla, se pinta rojo)
                 if 'F/S' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
                 if 'PENDIENTE' in v: 
                     if 'P1' in v: return base + 'background-color: #0c2d48; color: #66c2ff; font-weight: bold; border-left: 4px solid #eab308;'
@@ -798,14 +788,13 @@ else:
                     if 'P3' in v: return base + 'background-color: #301047; color: #d78aff; font-weight: bold; border-left: 4px solid #eab308;'
                     if 'P4' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #eab308;'
                     return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
+                if 'HECHO' in v: return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
+                
                 return base + 'color: #8c9eb5; font-style: italic;'
                 
-            columnas_wk_pintar = [c for c in df_matriz_congelada.columns if c.startswith('WK')]
-            if len(columnas_wk_pintar) > 0:
-                try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
-                except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
-            else:
-                st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
+            columnas_a_pintar = orden_quincenas + cols_extra
+            try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_a_pintar), use_container_width=True, height=600)
+            except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_a_pintar), use_container_width=True, height=600)
 
     # --- 7.2 VISTA DE FIRMAS, EDICIÓN Y DESCARGAS ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
