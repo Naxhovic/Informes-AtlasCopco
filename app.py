@@ -302,7 +302,7 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
     # =============================================================================
-# 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO
+# 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO (Turno 4x3)
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -341,6 +341,7 @@ def guardar_pendientes(usuario, pendientes):
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
+# --- EL CEREBRO MINERO AVANZADO ---
 def wk_to_date(wk_string):
     try:
         wk_num = int(re.sub(r'\D', '', str(wk_string)))
@@ -540,7 +541,7 @@ else:
                         </div>
                     """, unsafe_allow_html=True)
 
-    # --- 7.1 VISTA PLANIFICACIÓN (CMMS KANBAN) ---
+    # --- 7.1 VISTA PLANIFICACIÓN (CMMS KANBAN Y CALENDARIO) ---
     elif st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -571,7 +572,7 @@ else:
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero Kanban", "📆 Calendario Interactivo", "📊 Matriz de Mantenimiento"])
         
         with tab_gestion:
-            st.info("💡 **El calendario calcula todo.** Selecciona la fecha en '📆 Prog. para (Día)' y verás que automáticamente aparece la 'WK' en la misma celda.")
+            st.info("💡 **El calendario calcula todo.** Selecciona la fecha en '📆 Prog. para (Día)' y verás que automáticamente aparece la 'WK' al lado.")
             c_f1, c_f2 = st.columns([1, 3])
             orden_quincenas = ["Todas", "15c Dic", "15c Ene", "15c Feb", "15c Mar", "15c Abr", "15c May", "15c Jun", "15c Jul", "15c Ago", "15c Sep", "15c Oct", "15c Nov"]
             with c_f1: filtro_quin = st.selectbox("Filtrar por Quincena:", orden_quincenas, index=orden_quincenas.index(quincena_de_hoy) if quincena_de_hoy in orden_quincenas else 0)
@@ -676,7 +677,7 @@ else:
                         df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
                         guardar_cmms(df_cmms_final_extra); st.success(f"✅ Se guardaron los cambios y se añadió a {n_sem_format}."); time.sleep(1.5); st.rerun()
 
-        # --- PESTAÑA 2: CALENDARIO VISUAL (AHORA CON COLUMNA WK) ---
+        # --- PESTAÑA 2: CALENDARIO VISUAL CON COLUMNA WK DE REFERENCIA ---
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
@@ -705,21 +706,19 @@ else:
                     if d_target not in tareas_por_fecha: tareas_por_fecha[d_target] = []
                     tareas_por_fecha[d_target].append({"tag": row['TAG'], "tipo": row['Tipo'], "est": row['Estado']})
             
-            # 🔥 REDISEÑO DEL CALENDARIO: Ahora con 8 columnas (incluye WK a la izquierda)
-            html_cal = '<div style="display:grid; grid-template-columns: 60px repeat(7, 1fr); gap: 10px; margin-top:10px;">'
-            
-            # Cabeceras
-            html_cal += '<div style="text-align:center; color:#FF6600; font-weight:900; font-size:0.9rem;">REF</div>'
+            # 🔥 MAGIA VISUAL: 8 Columnas. La primera es un indicador de la Semana (REF)
+            html_cal = '<div style="display:grid; grid-template-columns: 65px repeat(7, 1fr); gap: 10px; margin-top:10px;">'
+            html_cal += '<div style="text-align:center; color:#FF6600; font-weight:900; font-size:0.8rem; margin-top: 10px;">REF</div>'
             for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: 
                 html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
                 
             for semana in semanas_mes:
-                # Calcular la WK de esta semana
+                # Calculamos a qué semana pertenece el Lunes de esa fila
                 wk_num = semana[0].isocalendar()[1]
-                if cal_year == 2025 and semana[0].month == 12: wk_num = semana[0].isocalendar()[1] # Diciembre 2025 (WK51, WK52)
+                if cal_year == 2025 and semana[0].month == 12: wk_num = semana[0].isocalendar()[1] 
                 
-                # Renderizar la Etiqueta WK
-                html_cal += f'<div style="display:flex; align-items:center; justify-content:center; background:#2b3543; border-radius:8px; border-left: 4px solid #FF6600; color:white; font-weight:bold; font-size:0.9rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">WK{wk_num:02d}</div>'
+                # Etiqueta de la semana en la izquierda
+                html_cal += f'<div style="display:flex; align-items:center; justify-content:center; background:#2b3543; border-radius:8px; border-left: 4px solid #FF6600; color:white; font-weight:bold; font-size:0.85rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); height: 120px;">WK{wk_num:02d}</div>'
                 
                 for dia in semana:
                     is_current_month = dia.month == cal_month
@@ -758,7 +757,11 @@ else:
             df_matriz = pd.concat([df_info, df_pivot], axis=1).reset_index()
             
             cols_base = ['TAG', 'Equipo', 'Área']
-            cols_wk_completas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
+            
+            # 🔥 SOLUCIÓN DEL ERROR PANDAS: Generamos la lista de semanas sin que se duplique "WK51" y "WK52"
+            semanas_brutas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
+            cols_wk_completas = list(dict.fromkeys(semanas_brutas)) 
+            
             for c in cols_wk_completas:
                 if c not in df_matriz.columns: df_matriz[c] = ""
             df_matriz = df_matriz[cols_base + cols_wk_completas]
@@ -766,7 +769,7 @@ else:
             wk_a_quincena = {wk: calcular_quincena(wk) for wk in cols_wk_completas}
             
             c_mat1, c_mat2 = st.columns([1, 2])
-            with c_mat1: vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual (WK51 a WK52)"], horizontal=True)
+            with c_mat1: vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Quincena (Zoom In)", "📆 Anual Completo"], horizontal=True)
             
             cols_finales = cols_base.copy()
             if vista_matriz == "🔍 Por Quincena (Zoom In)":
@@ -798,8 +801,11 @@ else:
                 return base + 'color: #8c9eb5; font-style: italic;'
                 
             columnas_wk_pintar = [c for c in df_matriz_congelada.columns if c.startswith('WK')]
-            try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
-            except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
+            if len(columnas_wk_pintar) > 0:
+                try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
+                except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_wk_pintar), use_container_width=True, height=600)
+            else:
+                st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
     # --- 7.2 VISTA DE FIRMAS, EDICIÓN Y DESCARGAS ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
