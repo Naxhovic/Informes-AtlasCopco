@@ -110,7 +110,7 @@ aplicar_estilos_premium()
 # =============================================================================
 # 1. DATOS MAESTROS E INVENTARIO
 # =============================================================================
-# 🔥 NUEVO USUARIO AGREGADO AQUÍ
+# 🔥 USUARIO AÑADIDO
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "yerko villarroel": "spence2026", "admin": "admin123"}
 DEFAULT_SPECS = {
     "GA 18": {"Litros de Aceite": "14.1 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1625 4800 00 / 1625 7525 01", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1630 2201 36 / 1625 2204 36", "Tipo de Aceite": "Roto Inject Fluid", "Manual": "manuales/manual_ga18.pdf"},
@@ -636,7 +636,7 @@ else:
                             )
                             st.markdown(html_card, unsafe_allow_html=True)
 
-    # --- 7.1 VISTA PLANIFICACIÓN ---
+    # --- 7.1 VISTA PLANIFICACIÓN REACTIVA E INTERACTIVA ---
     elif st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -687,10 +687,7 @@ else:
                 if filtro_mes in meses_map_full:
                     m_num = meses_map_full[filtro_mes]
                     y_num = 2025 if m_num == 12 else 2026
-                    if m_num == 1:
-                        min_date_val = datetime.date(y_num - 1, 12, 16)
-                    else:
-                        min_date_val = datetime.date(y_num, m_num - 1, 16)
+                    min_date_val = datetime.date(y_num - 1, 12, 16) if m_num == 1 else datetime.date(y_num, m_num - 1, 16)
                     max_date_val = datetime.date(y_num, m_num, 15)
 
             df_mostrar = df_cmms.copy() if filtro_mes == "Todas" else df_cmms[df_cmms["Mes_Calc"] == filtro_mes].copy()
@@ -718,7 +715,6 @@ else:
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
                 df_mostrar.insert(0, "🗑️ Quitar", False)
 
-                # 🔥 MOTOR VISUAL NATIVO PARA EDITOR
                 tipo_visual_map = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03", "N/A": "⚪ N/A"}
                 map_visual_estado = {"Hecho": "✅ Hecho", "Pendiente": "⏳ Pendiente", "F/S": "🚨 F/S", "N/A": "⚪ N/A"}
                 
@@ -760,7 +756,6 @@ else:
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
                     df_guardar = df_editado.copy()
                     
-                    # 🔥 MOTOR LIMPIADOR INVISIBLE
                     inv_tipo_map = {v: k for k, v in tipo_visual_map.items()}
                     inv_estado_map = {v: k for k, v in map_visual_estado.items()}
                     
@@ -980,7 +975,7 @@ else:
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-    # --- 7.2 VISTA DE FIRMAS, EDICIÓN Y DESCARGAS (ERGONÓMICA) ---
+    # --- 7.2 VISTA DE FIRMAS (DISEÑO CORPORATIVO PREMIUM) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -990,14 +985,22 @@ else:
         
         if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
-            # 🔥 FIRMA TÉCNICO GLOBAL EN EXPANDER
+            # 🔥 1. CONFIGURACIÓN DE FIRMA DEL TÉCNICO (SUPERIOR, CENTRADA Y DESPLEGABLE)
             with st.expander("🧑‍🔧 Configuración de Mi Firma Fija (Técnico)", expanded=(st.session_state.firma_tec_json is None)):
-                st.markdown("<p style='text-align: center; color: #8c9eb5; margin-bottom: 15px;'>Dibuja tu firma una sola vez aquí. Se aplicará automáticamente a todos los informes que apruebes.</p>", unsafe_allow_html=True)
                 
+                # Columnas para forzar el centrado absoluto
                 c_esp1, c_canv, c_esp2 = st.columns([1, 2, 1])
+                
                 with c_canv:
+                    st.markdown(f"""
+                        <div class="firma-card" style="margin-bottom: 15px; padding: 20px;">
+                            <h4 style="margin-top:0; color: #007CA6; text-align: center;">Firma Fija del Técnico</h4>
+                            <p style="margin-bottom: 10px; font-size: 0.9em;">Dibuja tu firma una sola vez aquí.<br>Se aplicará automáticamente a todos los informes.</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
                     with st.container(border=True):
-                        # display_toolbar=False quita el bug de los botones
+                        # Bug del basurero solucionado (display_toolbar=False)
                         canvas_tec_global = st_canvas(
                             stroke_width=3, 
                             stroke_color="#000", 
@@ -1006,11 +1009,10 @@ else:
                             width=400, 
                             drawing_mode="freedraw", 
                             key="canvas_tec_global", 
-                            display_toolbar=False,
+                            display_toolbar=False, 
                             initial_drawing=st.session_state.firma_tec_json if st.session_state.firma_tec_json else None
                         )
                     
-                    # Botones elegantes debajo del canvas
                     cb1, cb2 = st.columns(2)
                     with cb1:
                         if st.button("💾 Guardar Mi Firma", use_container_width=True):
@@ -1021,12 +1023,12 @@ else:
                                 time.sleep(1); st.rerun()
                             else: st.warning("⚠️ Dibuja tu firma antes de guardar.")
                     with cb2:
-                        if st.button("🔄 Reiniciar", use_container_width=True):
+                        if st.button("🔄 Limpiar", use_container_width=True):
                             st.session_state.firma_tec_json = None
                             st.session_state.firma_tec_img = None
                             st.rerun()
 
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<br><hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
 
             areas_agrupadas = {}
             for inf in st.session_state.informes_pendientes:
@@ -1122,30 +1124,22 @@ else:
                     nombres_clientes = " y ".join(list(set([inf['cli'] for inf in informes_area if inf.get('cli')])))
                     if not nombres_clientes: nombres_clientes = "Cliente a cargo"
                     
-                    st.markdown(f"<h3 style='text-align: center; color: #007CA6; margin-bottom: 25px;'>Pizarra de Aprobación Final</h3>", unsafe_allow_html=True)
+                    # 🔥 2. FIRMA DE APROBACIÓN FINAL DEL CLIENTE (CENTRADA, SIN TÉCNICO AL LADO)
+                    st.markdown(f"<h3 style='text-align: center; color: #007CA6;'>Pizarra de Aprobación Final</h3>", unsafe_allow_html=True)
                     
-                    # 🔥 DISEÑO DE 2 COLUMNAS (Estilo Tarjeta) PARA LA APROBACIÓN FINAL
-                    c_tec, c_cli = st.columns(2)
+                    _, col_firma_cli, _ = st.columns([1, 2, 1])
                     
-                    with c_tec:
-                        st.markdown("<div class='firma-card'>", unsafe_allow_html=True)
-                        st.markdown("<h4 style='color: white; margin-top: 0; margin-bottom: 5px; text-align: center;'>🧑‍🔧 Técnico Atlas Copco</h4>", unsafe_allow_html=True)
-                        st.markdown(f"<p style='color: #8c9eb5; font-size: 0.9em; text-align: center; margin-bottom: 15px;'>{st.session_state.usuario_actual.title()}</p>", unsafe_allow_html=True)
-                        
-                        if st.session_state.firma_tec_img is not None:
-                            st.image(st.session_state.firma_tec_img, use_container_width=True)
-                            st.markdown("<p style='color: #00e676; text-align: center; font-weight: bold; margin-top: 10px;'>✅ Firma lista para aplicar</p>", unsafe_allow_html=True)
-                        else:
-                            st.markdown("<div style='display:flex; justify-content:center; align-items:center; height:180px; border: 2px dashed #455065; border-radius: 10px; color: #ff1744; text-align: center;'>⚠️ Falta configurar tu firma arriba</div>", unsafe_allow_html=True)
-                        st.markdown("</div>", unsafe_allow_html=True)
-
-                    with c_cli:
-                        st.markdown("<div class='firma-card'>", unsafe_allow_html=True)
-                        st.markdown("<h4 style='color: white; margin-top: 0; margin-bottom: 5px; text-align: center;'>Firma de Aprobación Final</h4>", unsafe_allow_html=True)
-                        st.markdown(f"<p style='color: #8c9eb5; font-size: 0.9em; text-align: center; margin-bottom: 15px;'>Aprobador: {nombres_clientes}</p>", unsafe_allow_html=True)
+                    with col_firma_cli:
+                        st.markdown(f"""
+                            <div class="firma-card" style="margin-bottom: 15px; padding: 20px;">
+                                <h4 style="margin-top:0; color: white; text-align: center;">Firma del Cliente</h4>
+                                <p style="margin-bottom: 5px; font-size: 0.9em;">Aprobador: {nombres_clientes}</p>
+                            </div>
+                        """, unsafe_allow_html=True)
                         
                         with st.container(border=True):
                             cli_key = f"cli_{macro_area}_{st.session_state.get(f'reset_cli_{macro_area}', 0)}"
+                            # Bug del basurero solucionado (display_toolbar=False)
                             canvas_cli = st_canvas(
                                 stroke_width=3, 
                                 stroke_color="#000", 
@@ -1154,76 +1148,79 @@ else:
                                 width=400, 
                                 drawing_mode="freedraw", 
                                 key=cli_key,
-                                display_toolbar=False # 🔥 BUG ARREGLADO
+                                display_toolbar=False
                             )
                         
-                        c_cb1, c_cb2 = st.columns(2)
-                        with c_cb1:
-                            if st.button("🚀 Aprobar y Enviar", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
-                                tec_ok = st.session_state.firma_tec_img is not None
-                                cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
-                                
-                                if not tec_ok: st.warning("⚠️ Debes guardar tu Firma de Técnico arriba primero.")
-                                elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {nombres_clientes}.")
-                                else:
-                                    def procesar_imagen_firma(img_data): img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
-                                    
-                                    informes_finales = []
-                                    with st.spinner(f"Generando documentos sellados para {macro_area}..."):
-                                        io_cli = procesar_imagen_firma(canvas_cli.image_data)
-                                        io_tec = procesar_imagen_firma(st.session_state.firma_tec_img)
-                                        
-                                        try:
-                                            for inf in informes_area:
-                                                io_cli_local = io.BytesIO(io_cli.getvalue())
-                                                io_tec_local = io.BytesIO(io_tec.getvalue())
-                                                
-                                                doc = DocxTemplate(inf['file_plantilla']); context = inf['context']
-                                                
-                                                # Ambas firmas inyectadas automáticamente
-                                                context['firma_cliente'] = InlineImage(doc, io_cli_local, width=Mm(40))
-                                                context['firma_tecnico'] = InlineImage(doc, io_tec_local, width=Mm(40))
-                                                context['show_tech_signature'] = True
+                        # Botón de limpiar nativo para el cliente
+                        if st.button("🔄 Limpiar Firma Cliente", use_container_width=True, key=f"btn_reset_cli_{macro_area}"):
+                            st.session_state[f'reset_cli_{macro_area}'] = st.session_state.get(f'reset_cli_{macro_area}', 0) + 1
+                            st.rerun()
 
-                                                # Árbol de carpetas
-                                                d_obj = parse_fecha(context['fecha'])
-                                                wk_str = f"WK{d_obj.isocalendar()[1]:02d}_{d_obj.year}"
-                                                fecha_corta = f"{d_obj.day}-{d_obj.month}-{d_obj.year}"
-                                                
-                                                dir_final = os.path.join(RUTA_APROBADOS, wk_str, macro_area, fecha_corta)
-                                                os.makedirs(dir_final, exist_ok=True)
-                                                
-                                                ruta_docx_final = os.path.join(dir_final, inf['nombre_archivo_base'])
-                                                doc.render(context); doc.save(ruta_docx_final)
-                                                
-                                                ruta_pdf_gen = convertir_a_pdf(ruta_docx_final)
-                                                
-                                                if ruta_pdf_gen: 
-                                                    ruta_final = ruta_pdf_gen
-                                                    nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
-                                                else: 
-                                                    ruta_final = ruta_docx_final
-                                                    nombre_final = inf['nombre_archivo_base']
-                                                
-                                                tupla_lista = list(inf['tupla_db']); tupla_lista[18] = ruta_final; guardar_registro(tuple(tupla_lista))
-                                                informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{macro_area}@@{inf['tag']}@@{nombre_final}"})
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    
+                    # 🔥 BOTÓN DE ENVÍO FINAL CENTRADO
+                    _, col_btn_final, _ = st.columns([1, 2, 1])
+                    with col_btn_final:
+                        if st.button(f"🚀 Aprobar, Firmar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
+                            
+                            tec_ok = st.session_state.firma_tec_img is not None 
+                            cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
+                            
+                            if not tec_ok: st.warning("⚠️ Debes guardar tu Firma de Técnico en el panel superior desplegable primero.")
+                            elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {nombres_clientes}.")
+                            else:
+                                def procesar_imagen_firma(img_data): img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
+                                
+                                informes_finales = []
+                                with st.spinner(f"Generando documentos sellados para {macro_area}..."):
+                                    io_cli = procesar_imagen_firma(canvas_cli.image_data)
+                                    io_tec = procesar_imagen_firma(st.session_state.firma_tec_img)
+                                    try:
+                                        for inf in informes_area:
+                                            io_cli_local = io.BytesIO(io_cli.getvalue())
+                                            io_tec_local = io.BytesIO(io_tec.getvalue())
                                             
-                                            exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
-                                            if exito: 
-                                                st.success(f"✅ ¡Listos y enviados los reportes de {macro_area}!")
-                                                for inf_enviado in informes_area:
-                                                    if inf_enviado in st.session_state.informes_pendientes: st.session_state.informes_pendientes.remove(inf_enviado)
-                                                guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
-                                                time.sleep(2)
-                                                if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
-                                                st.rerun()
-                                            else: st.error(f"Error de red: {mensaje_correo}")
-                                        except Exception as e: st.error(f"Error procesando los PDFs: {e}")
-                        with c_cb2:
-                            if st.button("🔄 Reiniciar", use_container_width=True, key=f"btn_reset_cli_{macro_area}"):
-                                st.session_state[f'reset_cli_{macro_area}'] = st.session_state.get(f'reset_cli_{macro_area}', 0) + 1
-                                st.rerun()
-                        st.markdown("</div>", unsafe_allow_html=True)
+                                            doc = DocxTemplate(inf['file_plantilla']); context = inf['context']
+                                            
+                                            # Ambas firmas inyectadas automáticamente y de manera invisible
+                                            context['firma_cliente'] = InlineImage(doc, io_cli_local, width=Mm(40))
+                                            context['firma_tecnico'] = InlineImage(doc, io_tec_local, width=Mm(40))
+
+                                            # Carpetas inteligentes por WK y Área
+                                            d_obj = parse_fecha(context['fecha'])
+                                            wk_str = f"WK{d_obj.isocalendar()[1]:02d}_{d_obj.year}"
+                                            fecha_corta = f"{d_obj.day}-{d_obj.month}-{d_obj.year}"
+                                            
+                                            dir_final = os.path.join(RUTA_APROBADOS, wk_str, macro_area, fecha_corta)
+                                            os.makedirs(dir_final, exist_ok=True)
+                                            
+                                            ruta_docx_final = os.path.join(dir_final, inf['nombre_archivo_base'])
+                                            doc.render(context); doc.save(ruta_docx_final)
+                                            
+                                            ruta_pdf_gen = convertir_a_pdf(ruta_docx_final)
+                                            
+                                            if ruta_pdf_gen: 
+                                                ruta_final = ruta_pdf_gen
+                                                nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
+                                            else: 
+                                                ruta_final = ruta_docx_final
+                                                nombre_final = inf['nombre_archivo_base']
+                                            
+                                            tupla_lista = list(inf['tupla_db']); tupla_lista[18] = ruta_final; guardar_registro(tuple(tupla_lista))
+                                            informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{macro_area}@@{inf['tag']}@@{nombre_final}"})
+                                        
+                                        exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
+                                        if exito: 
+                                            st.success(f"✅ ¡Listos y enviados los reportes de {macro_area}!")
+                                            for inf_enviado in informes_area:
+                                                if inf_enviado in st.session_state.informes_pendientes: st.session_state.informes_pendientes.remove(inf_enviado)
+                                            guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
+                                            time.sleep(2)
+                                            if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
+                                            st.rerun()
+                                        else: st.error(f"Error de red: {mensaje_correo}")
+                                    except Exception as e: st.error(f"Error procesando los PDFs: {e}")
+                st.markdown("<br><br>", unsafe_allow_html=True)
 
     # --- 7.3 VISTA CATÁLOGO AGRUPADO POR ÁREA ---
     elif st.session_state.vista_actual == "catalogo" and st.session_state.equipo_seleccionado is None:
