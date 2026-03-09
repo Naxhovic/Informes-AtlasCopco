@@ -60,7 +60,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (NUEVA ESTRATEGIA SIN BUG DE BARRA LATERAL)
+# 0.2 ESTILOS PREMIUM (NUEVA ESTRATEGIA SEGURA PARA LA BARRA LATERAL)
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -69,21 +69,15 @@ def aplicar_estilos_premium():
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
         
-        /* Cinemática de Transición */
-        @keyframes cinematicFadeIn {
-            0% { opacity: 0; transform: translateY(15px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-        .main .block-container {
-            animation: cinematicFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
+        /* 🔥 CINEMÁTICA DE TRANSICIÓN */
+        @keyframes cinematicFadeIn { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
+        .main .block-container { animation: cinematicFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
         
-        /* 🔥 ESTRATEGIA SEGURA: Ocultar solo lo necesario, sin tocar el botón de colapsar 🔥 */
-        header { background: transparent !important; }
-        [data-testid="stToolbar"] { display: none !important; } 
-        [data-testid="stDecoration"] { display: none !important; }
+        /* 🔥 OCULTAMOS SOLO LA BASURA, DEJAMOS LA CABECERA NATIVA INTACTA 🔥 */
         [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
-        footer { display: none !important; } 
+        [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; } 
+        a[href*="github.com"] { display: none !important; visibility: hidden !important; }
+        [data-testid="viewerBadge"], div[class^="viewerBadge_container"], footer { display: none !important; }
         
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
@@ -504,8 +498,7 @@ default_states = {
     'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
     'input_reco': "", 'input_estado_eq': "Operativo", 'vista_firmas': False,
-    'firma_tec_json': None, 'firma_tec_img': None,
-    'mostrar_panel_firma': False # Estado para botón seguro
+    'firma_tec_img': None
 }
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
@@ -630,7 +623,7 @@ else:
                             )
                             st.markdown(html_card, unsafe_allow_html=True)
 
-    # --- 7.1 VISTA PLANIFICACIÓN ---
+    # --- 7.1 VISTA PLANIFICACIÓN REACTIVA E INTERACTIVA ---
     elif st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -989,7 +982,7 @@ else:
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-    # --- 7.2 VISTA DE FIRMAS (NUEVA ESTRATEGIA ANTICRASH) ---
+    # --- 7.2 VISTA DE FIRMAS (100% ESTABLE A PRUEBA DE BUGS) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -1000,45 +993,31 @@ else:
         if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
             
-            # 🔥 ESTRATEGIA SEGURA: Botón de estado en lugar de st.expander para evitar bugs de renderizado 🔥
-            c_btn_toggle, _ = st.columns([1.5, 2])
-            with c_btn_toggle:
-                texto_boton = "👁️ Ocultar Panel de Firma (Técnico)" if st.session_state.mostrar_panel_firma else "🧑‍🔧 Configurar Mi Firma Fija (Técnico)"
-                if st.button(texto_boton, use_container_width=True):
-                    st.session_state.mostrar_panel_firma = not st.session_state.mostrar_panel_firma
-                    st.rerun()
-            
-            if st.session_state.mostrar_panel_firma:
-                st.markdown("<p style='text-align: center; color: #8c9eb5; margin-top: 15px; margin-bottom: 15px;'>Dibuja tu firma una sola vez aquí. Se aplicará automáticamente a todos los informes que apruebes.</p>", unsafe_allow_html=True)
+            # 🔥 ESTRATEGIA ANTICRASH PARA EL TÉCNICO: Expander nativo pero con lógica de imagen estática
+            with st.expander("🧑‍🔧 Configuración de Mi Firma Fija (Técnico)", expanded=(st.session_state.firma_tec_img is None)):
+                st.markdown("<p style='text-align: center; color: #8c9eb5; margin-bottom: 15px;'>Dibuja tu firma una sola vez aquí. Se aplicará automáticamente a todos los informes que apruebes.</p>", unsafe_allow_html=True)
                 
-                c_esp1, c_canv, c_esp2 = st.columns([1, 2.5, 1])
-                with c_canv:
-                    with st.container(border=True):
-                        # Basurero Nativo activado para Técnico
-                        canvas_tec_global = st_canvas(
-                            stroke_width=3, 
-                            stroke_color="#000", 
-                            background_color="#fff", 
-                            height=220, 
-                            width=500, 
-                            drawing_mode="freedraw", 
-                            key="canvas_tec_global_fija", 
-                            display_toolbar=True, 
-                            initial_drawing=st.session_state.firma_tec_json if st.session_state.firma_tec_json else None
-                        )
-                    
-                    cb1, cb2 = st.columns(2)
-                    with cb1:
+                _, col_canv, _ = st.columns([1, 2, 1])
+                with col_canv:
+                    if st.session_state.firma_tec_img is None:
+                        # MODO DIBUJO
+                        with st.container(border=True):
+                            canvas_tec_global = st_canvas(
+                                stroke_width=3, stroke_color="#000", background_color="#fff", 
+                                height=200, width=450, drawing_mode="freedraw", 
+                                key="canvas_tec_global", display_toolbar=True
+                            )
                         if st.button("💾 Guardar Mi Firma", use_container_width=True):
                             if canvas_tec_global.json_data is not None and len(canvas_tec_global.json_data.get("objects", [])) > 0:
-                                st.session_state.firma_tec_json = canvas_tec_global.json_data
                                 st.session_state.firma_tec_img = canvas_tec_global.image_data
                                 st.success("✅ Firma guardada correctamente.")
                                 time.sleep(1); st.rerun()
                             else: st.warning("⚠️ Dibuja tu firma antes de guardar.")
-                    with cb2:
-                        if st.button("🔄 Reiniciar", use_container_width=True):
-                            st.session_state.firma_tec_json = None
+                    else:
+                        # MODO GUARDADO (Imagen Estática, NUNCA se traba)
+                        st.image(st.session_state.firma_tec_img, width=450)
+                        st.markdown("<p style='color: #00e676; text-align: center; font-weight: bold;'>✅ Firma lista para aplicar</p>", unsafe_allow_html=True)
+                        if st.button("🔄 Cambiar / Nueva Firma", use_container_width=True):
                             st.session_state.firma_tec_img = None
                             st.rerun()
 
@@ -1077,7 +1056,6 @@ else:
                                     else: st.warning("⚠️ Vista preliminar no disponible.")
                                     
                                 with tab_editar:
-                                    st.info("Si olvidaste algún dato o te equivocaste, corrígelo aquí abajo y presiona guardar. El PDF se actualizará automáticamente.")
                                     with st.form(f"edit_form_{inf['tag']}_{idx}"):
                                         c1, c2, c3 = st.columns(3)
                                         new_h_m = c1.number_input("Horas Marcha Totales", value=int(inf['context'].get('horas_marcha', 0)), step=1)
@@ -1144,7 +1122,6 @@ else:
                     st.markdown(f"<h4 style='text-align: center; color: #aeb9cc; margin-top: 0px; margin-bottom: 25px;'>Aprobador: <span style='color: white;'>{nombres_clientes}</span></h4>", unsafe_allow_html=True)
                     
                     _, col_firma_cli, _ = st.columns([1, 2.5, 1])
-                    
                     with col_firma_cli:
                         with st.container(border=True):
                             st.markdown("<p style='text-align: center; font-size: 0.9em; color: #aeb9cc; margin-bottom: 5px;'>Coloque su firma en el recuadro blanco</p>", unsafe_allow_html=True)
@@ -1157,7 +1134,7 @@ else:
                                 width=550, 
                                 drawing_mode="freedraw", 
                                 key=cli_key,
-                                display_toolbar=True # Basurero Nativo Encendido
+                                display_toolbar=True
                             )
                             
                     st.markdown("<br>", unsafe_allow_html=True)
@@ -1187,11 +1164,9 @@ else:
                                             
                                             doc = DocxTemplate(inf['file_plantilla']); context = inf['context']
                                             
-                                            # Ambas firmas inyectadas automáticamente
                                             context['firma_cliente'] = InlineImage(doc, io_cli_local, width=Mm(40))
                                             context['firma_tecnico'] = InlineImage(doc, io_tec_local, width=Mm(40))
 
-                                            # Carpetas inteligentes por WK y Área
                                             d_obj = parse_fecha(context['fecha'])
                                             wk_str = f"WK{d_obj.isocalendar()[1]:02d}_{d_obj.year}"
                                             fecha_corta = f"{d_obj.day}-{d_obj.month}-{d_obj.year}"
