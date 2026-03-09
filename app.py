@@ -59,7 +59,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM Y CINEMÁTICA FLUIDA
+# 0.2 ESTILOS PREMIUM
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -68,31 +68,21 @@ def aplicar_estilos_premium():
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
         
-        /* 🔥 CINEMÁTICA DE TRANSICIÓN: Enmascara cargas con un suave fade-in */
+        /* Cinemática de Transición Fluida */
         @keyframes cinematicFadeIn {
             0% { opacity: 0; transform: translateY(15px); }
             100% { opacity: 1; transform: translateY(0); }
         }
-        .main .block-container {
-            animation: cinematicFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
+        .main .block-container { animation: cinematicFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
         
         [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
         header { background: transparent !important; }
         [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; } 
         [data-testid="stDecoration"] { display: none !important; }
-        [data-testid="collapsedControl"] {
-            display: flex !important; visibility: visible !important; opacity: 1 !important;
-            z-index: 999999 !important; background-color: var(--ac-blue) !important; 
-            border-radius: 8px !important; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4) !important;
-            margin-top: 15px !important; margin-left: 15px !important; transition: all 0.3s ease !important;
-        }
+        [data-testid="collapsedControl"] { display: flex !important; visibility: visible !important; opacity: 1 !important; z-index: 999999 !important; background-color: var(--ac-blue) !important; border-radius: 8px !important; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4) !important; margin-top: 15px !important; margin-left: 15px !important; transition: all 0.3s ease !important; }
         [data-testid="collapsedControl"]:hover { background-color: var(--bhp-orange) !important; transform: scale(1.05) !important; }
         [data-testid="collapsedControl"] svg { fill: white !important; stroke: white !important; }
-        a[href*="github.com"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-        [data-testid="viewerBadge"] {display: none !important;}
-        div[class^="viewerBadge_container"] {display: none !important;}
-        footer {display: none !important;} 
+        a[href*="github.com"], [data-testid="viewerBadge"], div[class^="viewerBadge_container"], footer { display: none !important; visibility: hidden !important; }
         
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
@@ -102,23 +92,6 @@ def aplicar_estilos_premium():
         .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus, .stDateInput>div>div>input:focus { border-color: var(--bhp-orange) !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.3) !important; }
         .stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #2b3543; }
         .stTabs [aria-selected="true"] { color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; }
-        
-        /* Tarjeta de firma centrada */
-        .firma-card {
-            background-color: #1a212b;
-            border-radius: 15px;
-            padding: 30px;
-            border: 1px solid #2b3543;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto;
-            max-width: 500px;
-        }
-        .firma-card p { text-align: center; color: #8c9eb5; margin-bottom: 15px; }
-        .firma-card h3 { text-align: center; color: var(--ac-blue); margin-top: 0; }
         </style>
     """, unsafe_allow_html=True)
 aplicar_estilos_premium()
@@ -164,8 +137,7 @@ def get_gspread_client():
 
 def get_sheet(sheet_name):
     try:
-        client = get_gspread_client()
-        doc = client.open("BaseDatos")
+        client = get_gspread_client(); doc = client.open("BaseDatos")
         try: return doc.worksheet(sheet_name)
         except gspread.exceptions.WorksheetNotFound: return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e: return None
@@ -179,13 +151,11 @@ def obtener_estados_actuales():
     try:
         sheet_int = get_sheet("intervenciones")
         if sheet_int:
-            data_int = sheet_int.get_all_values()
-            for row in data_int:
+            for row in sheet_int.get_all_values():
                 if len(row) >= 18: estados[row[0]] = row[17]
         sheet = get_sheet("estados_equipos")
         if sheet:
-            data = sheet.get_all_values()
-            for row in data:
+            for row in sheet.get_all_values():
                 if len(row) >= 2: estados[row[0]] = row[1] 
     except: pass
     return estados
@@ -206,8 +176,7 @@ def actualizar_estado_equipo_en_nube(tag, nuevo_estado):
 def obtener_datos_equipo(tag):
     datos = {}; sheet = get_sheet("datos_equipo")
     if sheet:
-        data = sheet.get_all_values()
-        for r in data:
+        for r in sheet.get_all_values():
             if len(r) >= 3 and r[0] == tag: datos[r[1]] = r[2]
     return datos
 
@@ -215,8 +184,7 @@ def obtener_datos_equipo(tag):
 def obtener_observaciones(tag):
     sheet = get_sheet("observaciones")
     if sheet:
-        data = sheet.get_all_values()
-        obs = [{"id": r[0], "fecha": r[2], "usuario": r[3], "texto": r[4]} for r in data if len(r) >= 6 and r[1] == tag and r[5] == "ACTIVO"]
+        obs = [{"id": r[0], "fecha": r[2], "usuario": r[3], "texto": r[4]} for r in sheet.get_all_values() if len(r) >= 6 and r[1] == tag and r[5] == "ACTIVO"]
         if obs: return pd.DataFrame(obs).iloc[::-1]
     return pd.DataFrame(columns=["id", "fecha", "usuario", "texto"])
 
@@ -224,8 +192,7 @@ def obtener_observaciones(tag):
 def obtener_contactos():
     sheet = get_sheet("contactos")
     if sheet:
-        data = sheet.get_all_values()
-        contactos = [r[0] for r in data if len(r) > 1 and r[1] == "ACTIVO"]
+        contactos = [r[0] for r in sheet.get_all_values() if len(r) > 1 and r[1] == "ACTIVO"]
         if contactos: return sorted(list(set(contactos)))
     return ["Lorena Rojas"]
 
@@ -235,12 +202,10 @@ def obtener_especificaciones(defaults):
     try:
         sheet = get_sheet("especificaciones")
         if sheet:
-            data = sheet.get_all_values()
-            for row in data:
+            for row in sheet.get_all_values():
                 if len(row) >= 3:
-                    mod, clave, valor = row[0], row[1], row[2]
-                    if mod not in specs: specs[mod] = {}
-                    specs[mod][clave] = valor
+                    if row[0] not in specs: specs[row[0]] = {}
+                    specs[row[0]][row[1]] = row[2]
     except: pass
     return specs
 
@@ -248,8 +213,7 @@ def obtener_especificaciones(defaults):
 def buscar_ultimo_registro(tag):
     sheet = get_sheet("intervenciones")
     if sheet:
-        data = sheet.get_all_values()
-        for row in reversed(data):
+        for row in reversed(sheet.get_all_values()):
             if len(row) >= 20 and row[0] == tag: return (row[5], row[6], row[9], row[14], row[15], row[7], row[8], row[10], row[11], row[12], row[13], row[16], row[17])
     return None
 
@@ -258,8 +222,7 @@ def obtener_todo_el_historial(tag):
     try:
         sheet = get_sheet("intervenciones")
         if sheet:
-            data = sheet.get_all_values()
-            hist = [{"fecha": r[5], "tipo_intervencion": r[15], "estado_equipo": r[17], "Cuenta Usuario": r[19], "horas_marcha": r[12], "p_carga": r[10], "temp_salida": r[9]} for r in data if len(r) >= 20 and r[0] == tag]
+            hist = [{"fecha": r[5], "tipo_intervencion": r[15], "estado_equipo": r[17], "Cuenta Usuario": r[19], "horas_marcha": r[12], "p_carga": r[10], "temp_salida": r[9]} for r in sheet.get_all_values() if len(r) >= 20 and r[0] == tag]
             if hist: return pd.DataFrame(hist).iloc[::-1]
     except: pass
     return pd.DataFrame()
@@ -269,15 +232,10 @@ def obtener_historial_global():
     try:
         sheet = get_sheet("intervenciones")
         if sheet:
-            data = sheet.get_all_values()
             hist = []
-            for r in reversed(data):
+            for r in reversed(sheet.get_all_values()):
                 if len(r) >= 20 and r[0] != "TAG":
-                    hist.append({
-                        "tag": r[0], "modelo": r[1], "area": r[3], 
-                        "fecha": r[5], "tecnico": r[7], "tipo": r[15], 
-                        "estado": r[17], "condicion": r[14], "reco": r[16]
-                    })
+                    hist.append({"tag": r[0], "modelo": r[1], "area": r[3], "fecha": r[5], "tecnico": r[7], "tipo": r[15], "estado": r[17], "condicion": r[14], "reco": r[16]})
                     if len(hist) >= 50: break
             return hist
     except: pass
@@ -292,9 +250,7 @@ def guardar_registro(data_tuple):
         try:
             sheet = get_sheet("intervenciones")
             if sheet is not None:
-                row = [str(x) for x in data_tuple]
-                num_filas = len(sheet.get_all_values()) + 1
-                sheet.insert_row(row, index=num_filas)
+                sheet.insert_row([str(x) for x in data_tuple], index=len(sheet.get_all_values()) + 1)
                 st.cache_data.clear(); return True
         except Exception as e: time.sleep(5)
     return False
@@ -319,89 +275,70 @@ def agregar_contacto(nombre):
 def eliminar_contacto(nombre):
     sheet = get_sheet("contactos")
     if sheet:
-        cells = sheet.findall(nombre)
-        for cell in cells: sheet.update_cell(cell.row, 2, "ELIMINADO"); st.cache_data.clear()
+        for cell in sheet.findall(nombre): sheet.update_cell(cell.row, 2, "ELIMINADO")
+        st.cache_data.clear()
 
 def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
 
+# --- FIN DE LA PARTE 1 ---
 # =============================================================================
 # 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
-    ruta_pdf = ruta_docx.replace(".docx", ".pdf")
-    ruta_absoluta = os.path.abspath(ruta_docx)
-    carpeta_salida = os.path.dirname(ruta_absoluta)
-    try:
-        comando = ['libreoffice', '--headless', '--convert-to', 'pdf', ruta_absoluta, '--outdir', carpeta_salida]
-        subprocess.run(comando, capture_output=True, text=True)
-        if os.path.exists(ruta_pdf): return ruta_pdf
+    ruta_pdf = ruta_docx.replace(".docx", ".pdf"); abs_path = os.path.abspath(ruta_docx)
+    try: subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', abs_path, '--outdir', os.path.dirname(abs_path)], capture_output=True); return ruta_pdf if os.path.exists(ruta_pdf) else None
     except: pass
-    try:
-        import pythoncom
-        from docx2pdf import convert
-        pythoncom.CoInitialize(); convert(ruta_absoluta, ruta_pdf)
-        if os.path.exists(ruta_pdf): return ruta_pdf
-    except: pass
-    return None
+    try: import pythoncom; from docx2pdf import convert; pythoncom.CoInitialize(); convert(abs_path, ruta_pdf); return ruta_pdf if os.path.exists(ruta_pdf) else None
+    except: return None
 
 def obtener_fecha_hoy_esp():
-    meses = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
-    ahora = pd.Timestamp.now()
-    return f"{ahora.day} de {meses[ahora.month]} de {ahora.year}"
+    m = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
+    return f"{pd.Timestamp.now().day} de {m[pd.Timestamp.now().month]} de {pd.Timestamp.now().year}"
 
 def cargar_pendientes(usuario):
-    archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
-    if os.path.exists(archivo):
-        try:
-            with open(archivo, "r", encoding="utf-8") as f: return json.load(f)
-        except: return []
-    return []
+    p = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
+    try: return json.load(open(p, "r", encoding="utf-8")) if os.path.exists(p) else []
+    except: return []
 
 def guardar_pendientes(usuario, pendientes):
     os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
-    archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
-    try:
-        with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
+    try: json.dump(pendientes, open(os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=4)
     except: pass
 
 def wk_to_date(wk_string):
     try:
-        wk_num = int(re.sub(r'\D', '', str(wk_string)))
-        if wk_num >= 50: return datetime.date.fromisocalendar(2025, wk_num, 1)
-        return datetime.date.fromisocalendar(2026, wk_num, 1)
+        w = int(re.sub(r'\D', '', str(wk_string)))
+        return datetime.date.fromisocalendar(2025 if w >= 50 else 2026, w, 1)
     except: return None
 
 def calcular_mes_minero(wk_string):
-    if pd.isna(wk_string) or str(wk_string).strip() == "": return "Sin Asignar"
     d = wk_to_date(wk_string)
     if not d: return "Sin Asignar"
-    meses_full = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-    if d.day <= 15: return meses_full[d.month - 1]
-    else: return meses_full[d.month if d.month < 12 else 0]
+    m_full = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    return m_full[d.month - 1] if d.day <= 15 else m_full[d.month if d.month < 12 else 0]
 
 def get_current_wk():
     hoy = datetime.date.today()
-    wk_num = hoy.isocalendar()[1]
-    return f"WK{wk_num:02d}"
+    return f"WK{hoy.isocalendar()[1]:02d}"
 
 def formatear_wk(wk_str):
-    if pd.isna(wk_str) or str(wk_str).strip() == "": return ""
     nums = re.findall(r'\d+', str(wk_str))
-    if nums: return f"WK{int(nums[0]):02d}"
-    return str(wk_str).upper()
+    return f"WK{int(nums[0]):02d}" if nums else str(wk_str).upper()
 
 def get_semanas_mes_minero(mes_nombre):
     if mes_nombre == "Todas" or mes_nombre == "Sin Asignar": return "Todas"
-    meses_map_full = {"Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12}
-    if mes_nombre not in meses_map_full: return ""
-    m_num = meses_map_full[mes_nombre]
-    y_num = 2025 if m_num == 12 else 2026
-    if m_num == 1: min_d = datetime.date(y_num - 1, 12, 16)
-    else: min_d = datetime.date(y_num, m_num - 1, 16)
+    m_map = {"Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12}
+    if mes_nombre not in m_map: return ""
+    m_num = m_map[mes_nombre]; y_num = 2025 if m_num == 12 else 2026
+    min_d = datetime.date(y_num - 1, 12, 16) if m_num == 1 else datetime.date(y_num, m_num - 1, 16)
     max_d = datetime.date(y_num, m_num, 15)
     return f"WK{min_d.isocalendar()[1]:02d} a WK{max_d.isocalendar()[1]:02d}"
+
+def safe_date_str(x):
+    try: return x[:10] if isinstance(x, str) else x.strftime("%Y-%m-%d")
+    except: return ""
 
 # =============================================================================
 # 5. MOTOR PLANIFICACIÓN CON DATOS LIMPIOS
@@ -463,17 +400,14 @@ def cargar_cmms():
             else:
                 df_base = pd.DataFrame(datos_reales, columns=headers)
                 sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
-    except Exception as e: print(f"Error cargando CMMS: {e}")
+    except Exception as e: print(f"Error cargando Planificación: {e}")
     return pd.DataFrame(datos_reales, columns=headers)
 
 def guardar_cmms(df):
     sheet = get_sheet("plan_cmms")
     if sheet:
-        df_clean = df.copy()
-        df_clean = df_clean.fillna("").astype(str)
-        df_clean = df_clean.replace(["nan", "NaN", "NaT", "None", "<NA>"], "")
-        sheet.clear()
-        sheet.append_rows([df_clean.columns.values.tolist()] + df_clean.values.tolist())
+        df_clean = df.copy().fillna("").astype(str).replace(["nan", "NaN", "NaT", "None", "<NA>"], "")
+        sheet.clear(); sheet.append_rows([df_clean.columns.values.tolist()] + df_clean.values.tolist())
         st.cache_data.clear()
 
 def seleccionar_equipo(tag):
@@ -481,7 +415,6 @@ def seleccionar_equipo(tag):
     reg = buscar_ultimo_registro(tag)
     if reg:
         st.session_state.input_cliente = reg[1]; st.session_state.input_tec1 = reg[5]; st.session_state.input_tec2 = reg[6]
-        st.session_state.input_estado = ""; st.session_state.input_reco = ""
         st.session_state.input_estado_eq = reg[12] if reg[12] else "Operativo"
         st.session_state.input_h_marcha = int(reg[9]) if reg[9] else 0; st.session_state.input_h_carga = int(reg[10]) if reg[10] else 0
         st.session_state.input_temp = str(reg[2]).replace(',', '.') if reg[2] is not None else "70.0"
@@ -489,7 +422,8 @@ def seleccionar_equipo(tag):
         except: st.session_state.input_p_carga = "7.0"
         try: st.session_state.input_p_descarga = str(reg[8]).split()[0].replace(',', '.')
         except: st.session_state.input_p_descarga = "7.5"
-    else: st.session_state.update({'input_estado_eq': "Operativo", 'input_estado': "", 'input_reco': ""})
+    else: st.session_state.update({'input_estado_eq': "Operativo"})
+    st.session_state.input_estado = ""; st.session_state.input_reco = ""
 
 def volver_catalogo(): 
     st.session_state.equipo_seleccionado = None; st.session_state.vista_firmas = False; st.session_state.vista_actual = "catalogo"
@@ -539,6 +473,7 @@ else:
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
         
+        # 🔥 Título del botón limpio sin CMMS
         if st.button("📊 Planificación", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
         
@@ -573,52 +508,39 @@ else:
                 nums = re.findall(r'\d+', s)
                 words = re.findall(r'[a-z]+', s)
                 if not nums: return datetime.date(1970,1,1)
-                day = int(nums[0])
-                year = int(nums[-1]) if len(nums)>1 else datetime.date.today().year
+                day, year = int(nums[0]), int(nums[-1]) if len(nums)>1 else datetime.date.today().year
                 if year < 100: year += 2000
                 month = 1
                 for w in words:
-                    if w in meses:
-                        month = meses[w]; break
+                    if w in meses: month = meses[w]; break
                 if day > 31: day, year = year, day
                 return datetime.date(year, month, day)
             except: return datetime.date(1970, 1, 1)
 
         def format_fecha_historial(d):
             meses_nombres = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
-            if d.year == 1970: return "Fecha Desconocida"
-            return f"{d.day} de {meses_nombres[d.month]} de {d.year}"
+            return f"{d.day} de {meses_nombres[d.month]} de {d.year}" if d.year != 1970 else "Fecha Desconocida"
 
         historial_global = obtener_historial_global()
         if not historial_global:
             st.info("Aún no hay reportes firmados y almacenados en la base de datos central.")
         else:
-            historial_unico = []
-            vistos = set()
+            historial_unico = []; vistos = set()
             for item in historial_global:
                 d_obj = parse_fecha_historial(item['fecha'])
-                identificador = (item['tag'], d_obj)
-                if identificador not in vistos:
-                    vistos.add(identificador)
+                if (item['tag'], d_obj) not in vistos:
+                    vistos.add((item['tag'], d_obj))
                     item['fecha_obj'] = d_obj
                     historial_unico.append(item)
 
             historial_agrupado = {}
-            for item in historial_unico:
-                f_obj = item['fecha_obj']
-                if f_obj not in historial_agrupado: historial_agrupado[f_obj] = []
-                historial_agrupado[f_obj].append(item)
+            for item in historial_unico: historial_agrupado.setdefault(item['fecha_obj'], []).append(item)
 
-            fechas_ordenadas = sorted(list(historial_agrupado.keys()), reverse=True)
-
-            for d_obj in fechas_ordenadas:
-                fecha_str = format_fecha_historial(d_obj)
-                intervenciones = historial_agrupado[d_obj]
-                
-                st.markdown(f"<h3 style='color: white; border-bottom: 2px solid #2b3543; padding-bottom: 5px; margin-top: 15px;'>🗓️ {fecha_str}</h3>", unsafe_allow_html=True)
+            for d_obj in sorted(list(historial_agrupado.keys()), reverse=True):
+                st.markdown(f"<h3 style='color: white; border-bottom: 2px solid #2b3543; padding-bottom: 5px; margin-top: 15px;'>🗓️ {format_fecha_historial(d_obj)}</h3>", unsafe_allow_html=True)
                 columnas_muro = st.columns(3) 
                 
-                for idx, item in enumerate(intervenciones):
+                for idx, item in enumerate(historial_agrupado[d_obj]):
                     b_color = "#00e676" if item['estado'] == "Operativo" else "#ff1744"
                     bg_color = "rgba(0, 230, 118, 0.1)" if item['estado'] == "Operativo" else "rgba(255, 23, 68, 0.1)"
                     icono = "✅" if item['estado'] == "Operativo" else "🚨"
@@ -631,28 +553,9 @@ else:
 
                     with columnas_muro[idx % 3]:
                         with st.container(border=True):
-                            html_card = (
-                                f"<div style='border-left: 5px solid {b_color}; padding-left: 12px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;'>"
-                                f"<div>"
-                                f"<div style='display: flex; justify-content: space-between; align-items: flex-start;'>"
-                                f"<h3 style='margin: 0; color: #007CA6; font-size: 1.4em;'>{item['tag']}</h3>"
-                                f"<span style='background: #2b3543; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;'>🛠️ {item['tipo']}</span>"
-                                f"</div>"
-                                f"<p style='margin: 2px 0 10px 0; color: #aeb9cc; font-size: 0.9em;'>{item['modelo']} &bull; {item['area'].title()}</p>"
-                                f"<div style='background: #151a22; padding: 8px; border-radius: 8px; margin-bottom: 5px;'>"
-                                f"<p style='margin: 0; color: #8c9eb5; font-size: 0.85em;'>🧑‍🔧 <b>Técnico:</b> {item['tecnico']}</p>"
-                                f"{cond_html}"
-                                f"{reco_html}"
-                                f"</div>"
-                                f"</div>"
-                                f"<div style='margin-top: 10px; background: {bg_color}; border: 1px solid {b_color}; color: {b_color}; padding: 5px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 0.85em;'>"
-                                f"{icono} {item['estado']}"
-                                f"</div>"
-                                f"</div>"
-                            )
-                            st.markdown(html_card, unsafe_allow_html=True)
+                            st.markdown(f"<div style='border-left: 5px solid {b_color}; padding-left: 12px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;'><div><div style='display: flex; justify-content: space-between; align-items: flex-start;'><h3 style='margin: 0; color: #007CA6; font-size: 1.4em;'>{item['tag']}</h3><span style='background: #2b3543; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;'>🛠️ {item['tipo']}</span></div><p style='margin: 2px 0 10px 0; color: #aeb9cc; font-size: 0.9em;'>{item['modelo']} &bull; {item['area'].title()}</p><div style='background: #151a22; padding: 8px; border-radius: 8px; margin-bottom: 5px;'><p style='margin: 0; color: #8c9eb5; font-size: 0.85em;'>🧑‍🔧 <b>Técnico:</b> {item['tecnico']}</p>{cond_html}{reco_html}</div></div><div style='margin-top: 10px; background: {bg_color}; border: 1px solid {b_color}; color: {b_color}; padding: 5px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 0.85em;'>{icono} {item['estado']}</div></div>", unsafe_allow_html=True)
 
-    # --- 7.1 VISTA PLANIFICACIÓN ---
+    # --- 7.1 VISTA PLANIFICACIÓN REACTIVA Y SIN BUGS ---
     elif st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -690,12 +593,12 @@ else:
         
         st.markdown("---")
         
+        # 🔥 Pestañas limpias
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero", "📆 Calendario", "📊 Matriz de Mantenimiento"])
         
         with tab_gestion:
             c_f1, c_f2 = st.columns([1, 3])
             orden_meses_full = ["Todas", "Diciembre", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre"]
-            
             filtro_mes = c_f1.selectbox("Filtrar por Mes:", orden_meses_full, key="filtro_mes_activo")
             
             min_date_val, max_date_val = None, None
@@ -704,129 +607,71 @@ else:
                 if filtro_mes in meses_map_full:
                     m_num = meses_map_full[filtro_mes]
                     y_num = 2025 if m_num == 12 else 2026
-                    if m_num == 1:
-                        min_date_val = datetime.date(y_num - 1, 12, 16)
-                    else:
-                        min_date_val = datetime.date(y_num, m_num - 1, 16)
+                    min_date_val = datetime.date(y_num - 1, 12, 16) if m_num == 1 else datetime.date(y_num, m_num - 1, 16)
                     max_date_val = datetime.date(y_num, m_num, 15)
 
             df_mostrar = df_cmms.copy() if filtro_mes == "Todas" else df_cmms[df_cmms["Mes_Calc"] == filtro_mes].copy()
             
+            # 🔥 Laboratorio y equipos faltantes (limpios por defecto)
             tags_presentes = df_mostrar['TAG'].tolist()
             todos_los_tags = list(inventario_equipos.keys())
             tags_faltantes = [t for t in todos_los_tags if t not in tags_presentes]
             
             if tags_faltantes:
-                filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": "", "Tipo": "N/A", "Estado": "⚪ N/A", "S_Realizada": None, "Observacion": "", "Mes_Calc": filtro_mes if filtro_mes != "Todas" else "Sin Asignar"} for t in tags_faltantes])
+                filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": "", "Tipo": "⚪ N/A", "Estado": "⚪ N/A", "S_Realizada": None, "Observacion": "", "Mes_Calc": filtro_mes if filtro_mes != "Todas" else "Sin Asignar"} for t in tags_faltantes])
                 df_mostrar = pd.concat([df_mostrar, filas_vacias], ignore_index=True)
             df_mostrar = df_mostrar.sort_values(by="TAG").reset_index(drop=True)
 
-            df_editado = pd.DataFrame()
+            # 🔥 MOTOR VISUAL: Emojis nativos para evitar bugs del Styler
+            tipo_visual_map = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03", "N/A": "⚪ N/A"}
             
-            def safe_get_wk(x):
-                if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
-                try:
-                    if isinstance(x, str): x = datetime.datetime.strptime(x[:10], "%Y-%m-%d").date()
-                    return f"WK{x.isocalendar()[1]:02d}"
-                except: return ""
-
             def safe_date_str(x):
-                if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
-                try:
-                    if isinstance(x, str): return x[:10]
-                    return x.strftime("%Y-%m-%d")
+                try: return x[:10] if isinstance(x, str) else x.strftime("%Y-%m-%d")
                 except: return ""
 
             if not df_mostrar.empty:
-                def string_to_date(val):
-                    try: return datetime.datetime.strptime(str(val).strip(), "%Y-%m-%d").date()
-                    except: return None
-                
-                df_mostrar['S_Realizada'] = df_mostrar['S_Realizada'].apply(string_to_date)
+                df_mostrar['S_Realizada'] = df_mostrar['S_Realizada'].apply(lambda val: datetime.datetime.strptime(str(val).strip(), "%Y-%m-%d").date() if val else None)
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
+                
+                # Transformamos los datos PUROS en VISUALES para que el editor los muestre coloreados
+                df_mostrar['Tipo'] = df_mostrar['Tipo'].apply(lambda x: tipo_visual_map.get(str(x).strip(), "⚪ N/A"))
+                # El estado ya viene con Emojis desde la base de datos (✅ Hecho)
+                
                 df_mostrar.insert(0, "🗑️ Quitar", False)
-                
-                # 🔥 MOTOR DE COLORES INTERACTIVOS: Traducimos Tipo a Emojis VISUALES
-                tipo_visual_map = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03", "N/A": "⚪ N/A"}
-                
-                # Reemplazamos los valores puros por los valores visuales ANTES de enviarlos al editor
-                df_mostrar['Tipo'] = df_mostrar['Tipo'].apply(lambda x: tipo_visual_map.get(str(x).strip(), str(x)))
-
-                if "kanban_table" in st.session_state:
-                    edits = st.session_state["kanban_table"].get("edited_rows", {})
-                    for idx_str, changes in edits.items():
-                        if "Día Programado" in changes:
-                            val = changes["Día Programado"]
-                            if val is not None:
-                                try:
-                                    if isinstance(val, str): new_date = datetime.datetime.strptime(val[:10], "%Y-%m-%d").date()
-                                    else: new_date = val
-                                    wk_calculada = f"WK{new_date.isocalendar()[1]:02d}"
-                                    df_mostrar.at[int(idx_str), 'S_Programada'] = wk_calculada
-                                except: pass
-
-                columnas_ordenadas = ["🗑️ Quitar", "TAG", "Día Programado", "Tipo", "Estado", "S_Realizada", "Observacion", "Mes_Calc", "S_Programada"]
-                df_mostrar = df_mostrar[columnas_ordenadas]
-                
-                # Le damos a SelectboxColumn exactamente las opciones visuales mapeadas
-                opciones_visuales_tipo = list(tipo_visual_map.values())
+                df_mostrar = df_mostrar[["🗑️ Quitar", "TAG", "Día Programado", "Tipo", "Estado", "S_Realizada", "Observacion", "Mes_Calc", "S_Programada"]]
                 
                 config_columnas = {
                     "🗑️ Quitar": st.column_config.CheckboxColumn("Quitar", default=False),
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
-                    "Mes_Calc": None, 
-                    "S_Programada": None, 
+                    "Mes_Calc": None, "S_Programada": None, 
                     "Día Programado": st.column_config.DateColumn("📆 Prog. para (Día y WK)", format="DD/MM/YYYY - [WK]WW", min_value=min_date_val, max_value=max_date_val, disabled=False),
-                    # 🔥 Ahora la columna asume las opciones con emojis
-                    "Tipo": st.column_config.SelectboxColumn("Intervención", options=opciones_visuales_tipo, disabled=False),
+                    "Tipo": st.column_config.SelectboxColumn("Intervención", options=list(tipo_visual_map.values()), required=True),
                     "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["⚪ N/A", "⏳ Pendiente", "✅ Hecho", "🚨 F/S"], required=True),
                     "S_Realizada": st.column_config.DateColumn("Día Ejecución (Día y WK) 📅", format="DD/MM/YYYY - [WK]WW", disabled=False),
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
                 
-                # 🔥 PINTAMOS EL FONDO DE LA CELDA SEGÚN EL EMOJI ELEGIDO
-                def color_estado(val):
-                    if val == '✅ Hecho': return 'background-color: #063f22; color: #6ee7b7; font-weight: bold;'
-                    if val == '⏳ Pendiente': return 'background-color: #423205; color: #fde047; font-weight: bold;'
-                    if val == '🚨 F/S': return 'background-color: #471015; color: #ff8a93; font-weight: bold;'
-                    if val == '⚪ N/A': return 'color: #556b82; font-style: italic;'
-                    return ''
-                    
-                def color_tipo(val):
-                    if 'INSP' in str(val): return 'background-color: #1e3a8a; color: #93c5fd; font-weight: bold;' # Azul profundo
-                    if 'P1' in str(val): return 'background-color: #064e3b; color: #6ee7b7; font-weight: bold;' # Verde
-                    if 'P2' in str(val): return 'background-color: #78350f; color: #fdba74; font-weight: bold;' # Naranja
-                    if 'P3' in str(val): return 'background-color: #4c1d95; color: #d8b4fe; font-weight: bold;' # Púrpura
-                    if 'P4' in str(val): return 'background-color: #7f1d1d; color: #fca5a5; font-weight: bold;' # Rojo
-                    if 'PM03' in str(val): return 'background-color: #0f766e; color: #a7f3d0; font-weight: bold;' # Turquesa
-                    if 'N/A' in str(val): return 'color: #556b82; font-style: italic;'
-                    return ''
-                    
-                try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado']).map(color_tipo, subset=['Tipo'])
-                except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado']).applymap(color_tipo, subset=['Tipo'])
-                
-                df_editado = st.data_editor(df_estilizado, key="kanban_table", hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
+                # Pasamos el dataframe directo sin .style para evitar el bug de reseteo de celdas
+                df_editado = st.data_editor(df_mostrar, key="kanban_table", hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
-                    # 🔥 MOTOR DE LIMPIEZA: Quitamos el Emoji antes de guardar a Base de Datos
-                    inv_tipo_map = {v: k for k, v in tipo_visual_map.items()}
-                    df_editado['Tipo'] = df_editado['Tipo'].apply(lambda x: inv_tipo_map.get(str(x).strip(), str(x)))
+                    df_guardar = df_editado.copy()
                     
+                    # 🔥 MOTOR LIMPIADOR: Quitamos el Emoji antes de guardar (Ej: "🟦 INSP" -> "INSP")
+                    inv_tipo_map = {v: k for k, v in tipo_visual_map.items()}
+                    df_guardar['Tipo'] = df_guardar['Tipo'].apply(lambda x: inv_tipo_map.get(str(x).strip(), str(x)))
+                    
+                    # Calculamos el WK automáticamente al guardar
                     def get_final_wk(row):
                         d = row['Día Programado']
                         if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
-                            if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
-                            return f"WK{d.isocalendar()[1]:02d}"
+                            return f"WK{(datetime.datetime.strptime(d[:10], '%Y-%m-%d').date() if isinstance(d, str) else d).isocalendar()[1]:02d}"
                         return row['S_Programada']
                         
-                    df_editado['S_Programada'] = df_editado.apply(get_final_wk, axis=1)
-                    df_editado['S_Realizada'] = df_editado['S_Realizada'].apply(safe_date_str)
+                    df_guardar['S_Programada'] = df_guardar.apply(get_final_wk, axis=1)
+                    df_guardar['S_Realizada'] = df_guardar['S_Realizada'].apply(safe_date_str)
                     
-                    filas_validas = df_editado[
-                        (df_editado["🗑️ Quitar"] == False) & (df_editado["Tipo"] != "N/A") & 
-                        (df_editado["Estado"] != "⚪ N/A") & (df_editado["S_Programada"] != "")
-                    ].copy()
-                    
+                    filas_validas = df_guardar[(df_guardar["🗑️ Quitar"] == False) & (df_guardar["Tipo"] != "N/A") & (df_guardar["Estado"] != "⚪ N/A") & (df_guardar["S_Programada"] != "")].copy()
                     filas_validas.loc[(filas_validas['Estado'] == '✅ Hecho') & (filas_validas['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
                     
                     if filtro_mes == "Todas": df_cmms_final = filas_validas
@@ -844,53 +689,39 @@ else:
                 with st.form("form_nueva_tarea"):
                     c1, c2, c3 = st.columns(3)
                     n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
-                    
-                    # Formulario de inyectar también usa las opciones visuales
-                    tipo_visual_map_iny = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03"}
-                    n_tipo_visual = c2.selectbox("Tipo de Tarea:", list(tipo_visual_map_iny.values()))
+                    # Usamos los emojis también en el selector de Inyectar para consistencia visual
+                    n_tipo_visual = c2.selectbox("Tipo de Tarea:", ["🟦 INSP", "🟩 P1", "🟧 P2", "🟪 P3", "🟥 P4", "🩵 PM03"])
                     
                     default_d = datetime.date.today()
-                    if min_date_val and max_date_val:
-                        if not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
-                        
+                    if min_date_val and max_date_val and not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
                     n_fecha_prog = c3.date_input("📆 Día a Programar:", value=default_d, min_value=min_date_val, max_value=max_date_val)
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     
                     if st.form_submit_button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
-                        # Limpiamos el valor inyectado a puro
-                        n_tipo_puro = {v: k for k, v in tipo_visual_map_iny.items()}.get(n_tipo_visual, "INSP")
-                        
+                        # Limpiamos el valor inyectado
+                        n_tipo_puro = {v: k for k, v in tipo_visual_map.items()}.get(n_tipo_visual, "INSP")
                         df_cmms_guardar = df_cmms.copy()
+                        
                         if not df_editado.empty:
-                            # Limpiar tabla actual antes de unir
                             df_editado_clean = df_editado.copy()
-                            df_editado_clean['Tipo'] = df_editado_clean['Tipo'].apply(lambda x: inv_tipo_map.get(str(x).strip(), str(x)))
-                            
+                            df_editado_clean['Tipo'] = df_editado_clean['Tipo'].apply(lambda x: {v: k for k, v in tipo_visual_map.items()}.get(str(x).strip(), str(x)))
                             def get_final_wk_clean(row):
                                 d = row['Día Programado']
                                 if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
-                                    if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
-                                    return f"WK{d.isocalendar()[1]:02d}"
+                                    return f"WK{(datetime.datetime.strptime(d[:10], '%Y-%m-%d').date() if isinstance(d, str) else d).isocalendar()[1]:02d}"
                                 return row['S_Programada']
                             df_editado_clean['S_Programada'] = df_editado_clean.apply(get_final_wk_clean, axis=1)
                             df_editado_clean['S_Realizada'] = df_editado_clean['S_Realizada'].apply(safe_date_str)
-                            filas_validas_f = df_editado_clean[
-                                (df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A") & 
-                                (df_editado_clean["Estado"] != "⚪ N/A") & (df_editado_clean["S_Programada"] != "")
-                            ].copy()
+                            filas_validas_f = df_editado_clean[(df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A") & (df_editado_clean["Estado"] != "⚪ N/A") & (df_editado_clean["S_Programada"] != "")].copy()
                             filas_validas_f.loc[(filas_validas_f['Estado'] == '✅ Hecho') & (filas_validas_f['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
-                            if filtro_mes == "Todas": df_cmms_guardar = filas_validas_f
-                            else:
-                                df_cmms_rest_f = df_cmms[df_cmms["Mes_Calc"] != filtro_mes]
-                                df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
+                            df_cmms_guardar = filas_validas_f if filtro_mes == "Todas" else pd.concat([df_cmms[df_cmms["Mes_Calc"] != filtro_mes], filas_validas_f], ignore_index=True)
 
                         n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}"
                         nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo_puro, "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": n_obs}])
                         for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
                             if col in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=[col])
                         
-                        df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
-                        guardar_cmms(df_cmms_final_extra); st.success("✅ Guardado."); time.sleep(1.5); st.rerun()
+                        guardar_cmms(pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)); st.success("✅ Guardado."); time.sleep(1.5); st.rerun()
 
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
@@ -1021,7 +852,6 @@ else:
                     if 'P2' in v: return base + 'background-color: #4a2c00; color: #ffb04c; font-weight: bold; border-left: 4px solid #eab308;'
                     if 'P3' in v: return base + 'background-color: #301047; color: #d78aff; font-weight: bold; border-left: 4px solid #eab308;'
                     if 'P4' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #eab308;'
-                    if 'PM03' in v: return base + 'background-color: #0f766e; color: #a7f3d0; font-weight: bold; border-left: 4px solid #eab308;'
                     return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
                 return base + 'color: #8c9eb5; font-style: italic;'
                 
@@ -1043,26 +873,30 @@ else:
         if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
             # 🔥 FIRMA DE TÉCNICO CENTRADA Y ERGONÓMICA
-            st.markdown("<h3 style='text-align: center; color: #007CA6;'>🧑‍🔧 Configuración de Mi Firma Fija (Técnico)</h3>", unsafe_allow_html=True)
             _, col_card, _ = st.columns([1, 2, 1])
             with col_card:
+                st.markdown(f"""
+                    <div class="firma-card">
+                        <h3>🧑‍🔧 Configuración de Mi Firma Fija (Técnico)</h3>
+                        <p>Dibuja tu firma una sola vez aquí.<br>Se aplicará automáticamente a todos los informes que apruebes.</p>
+                    </div>
+                """, unsafe_allow_html=True)
                 with st.container(border=True):
-                    st.markdown("<p style='text-align: center; color: #8c9eb5; margin-bottom: 10px;'>Dibuja tu firma una sola vez aquí. Se aplicará automáticamente a todos los informes que apruebes.</p>", unsafe_allow_html=True)
                     canvas_tec_global = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=180, width=400, drawing_mode="freedraw", key="canvas_tec_global", initial_drawing=st.session_state.firma_tec_json if st.session_state.firma_tec_json else None)
-                    c_btn1, c_btn2 = st.columns(2)
-                    with c_btn1:
-                        if st.button("💾 Guardar Mi Firma", use_container_width=True):
-                            if canvas_tec_global.json_data is not None and len(canvas_tec_global.json_data.get("objects", [])) > 0:
-                                st.session_state.firma_tec_json = canvas_tec_global.json_data
-                                st.session_state.firma_tec_img = canvas_tec_global.image_data
-                                st.success("✅ Firma guardada correctamente en la memoria.")
-                                time.sleep(1); st.rerun()
-                            else: st.warning("⚠️ Dibuja tu firma en el recuadro blanco antes de guardar.")
-                    with c_btn2:
-                        if st.button("🔄 Reiniciar Firma", use_container_width=True):
-                            st.session_state.firma_tec_json = None
-                            st.session_state.firma_tec_img = None
-                            st.rerun()
+                c_btn1, c_btn2 = st.columns(2)
+                with c_btn1:
+                    if st.button("💾 Guardar Mi Firma", use_container_width=True):
+                        if canvas_tec_global.json_data is not None and len(canvas_tec_global.json_data.get("objects", [])) > 0:
+                            st.session_state.firma_tec_json = canvas_tec_global.json_data
+                            st.session_state.firma_tec_img = canvas_tec_global.image_data
+                            st.success("✅ Firma guardada correctamente.")
+                            time.sleep(1); st.rerun()
+                        else: st.warning("⚠️ Dibuja tu firma antes de guardar.")
+                with c_btn2:
+                    if st.button("🔄 Reiniciar Firma", use_container_width=True):
+                        st.session_state.firma_tec_json = None
+                        st.session_state.firma_tec_img = None
+                        st.rerun()
 
             st.markdown("<br><hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
 
@@ -1075,6 +909,14 @@ else:
             for macro_area, informes_area in areas_agrupadas.items():
                 st.markdown(f"### 🏢 Reportes de {macro_area} ({len(informes_area)} pendientes)")
                 with st.container(border=True):
+                    # 🔥 CONTROL DE VISIBILIDAD DE FIRMA TÉCNICO
+                    st.markdown("#### Configuración de Firmas para este lote")
+                    _, col_check, _ = st.columns([1, 2, 1])
+                    with col_check:
+                        show_tech = st.checkbox(f"Mostrar mi firma en el documento final", value=True, key=f"check_tech_{macro_area}")
+                        st.session_state['show_tech'] = show_tech
+                    st.markdown("---")
+
                     for idx, inf in enumerate(informes_area):
                         c_exp, c_del = st.columns([11, 1])
                         with c_exp:
@@ -1099,7 +941,6 @@ else:
                                     else: st.warning("⚠️ Vista preliminar no disponible.")
                                     
                                 with tab_editar:
-                                    st.info("Si olvidaste algún dato o te equivocaste, corrígelo aquí abajo y presiona guardar. El PDF se actualizará automáticamente.")
                                     with st.form(f"edit_form_{inf['tag']}_{idx}"):
                                         c1, c2, c3 = st.columns(3)
                                         new_h_m = c1.number_input("Horas Marcha Totales", value=int(inf['context'].get('horas_marcha', 0)), step=1)
@@ -1172,23 +1013,37 @@ else:
                     
                     st.markdown("<br>", unsafe_allow_html=True)
                     if st.button(f"🚀 Aprobar, Firmar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
-                        tec_ok = st.session_state.firma_tec_img is not None
+                        show_tech_active = st.session_state.get('show_tech', True)
+                        tec_ok = st.session_state.firma_tec_img is not None if show_tech_active else True
                         cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
                         
-                        if not tec_ok: st.warning("⚠️ Debes guardar primero tu Firma de Técnico en el panel superior de esta pantalla.")
+                        if not tec_ok: st.warning("⚠️ Debes guardar primero tu Firma de Técnico en el panel superior (o desactívala).")
                         elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {nombres_clientes}.")
                         else:
                             def procesar_imagen_firma(img_data): img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
                             
                             informes_finales = []
                             with st.spinner(f"Generando documentos sellados para {macro_area}..."):
+                                io_cli = procesar_imagen_firma(canvas_cli.image_data)
+                                io_tec = procesar_imagen_firma(st.session_state.firma_tec_img) if show_tech_active else None
                                 try:
                                     for inf in informes_area:
-                                        io_tec_local = procesar_imagen_firma(st.session_state.firma_tec_img)
-                                        io_cli_local = procesar_imagen_firma(canvas_cli.image_data)
+                                        io_cli_local = io.BytesIO(io_cli.getvalue())
+                                        io_tec_local = io.BytesIO(io_tec.getvalue()) if io_tec else None
                                         
                                         doc = DocxTemplate(inf['file_plantilla']); context = inf['context']
-                                        context['firma_tecnico'] = InlineImage(doc, io_tec_local, width=Mm(40)); context['firma_cliente'] = InlineImage(doc, io_cli_local, width=Mm(40)); doc.render(context); doc.save(inf['ruta_docx']); ruta_pdf_gen = convertir_a_pdf(inf['ruta_docx'])
+                                        
+                                        # 🔥 ASIGNACIÓN Y LÓGICA DE FIRMAS (Python a Word)
+                                        context['firma_cliente'] = InlineImage(doc, io_cli_local, width=Mm(40))
+                                        
+                                        if show_tech_active:
+                                            context['firma_tecnico'] = InlineImage(doc, io_tec_local, width=Mm(40))
+                                            context['show_tech_signature'] = True 
+                                        else:
+                                            context['firma_tecnico'] = "" 
+                                            context['show_tech_signature'] = False
+
+                                        doc.render(context); doc.save(inf['ruta_docx']); ruta_pdf_gen = convertir_a_pdf(inf['ruta_docx'])
                                         
                                         if ruta_pdf_gen: ruta_final = ruta_pdf_gen; nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
                                         else: ruta_final = inf['ruta_docx']; nombre_final = inf['nombre_archivo_base']
@@ -1209,7 +1064,7 @@ else:
                                 except Exception as e: st.error(f"Error procesando los PDFs: {e}")
                 st.markdown("<br><br>", unsafe_allow_html=True)
 
-    # --- 7.3 VISTA CATÁLOGO AGRUPADO ---
+    # --- 7.3 VISTA CATÁLOGO AGRUPADO POR ÁREA ---
     elif st.session_state.vista_actual == "catalogo" and st.session_state.equipo_seleccionado is None:
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(0,124,166,0) 0%, rgba(0,124,166,0.1) 50%, rgba(0,124,166,0) 100%); padding: 20px; border-radius: 15px;">
