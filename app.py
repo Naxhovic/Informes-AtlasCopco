@@ -69,7 +69,7 @@ def aplicar_estilos_premium():
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
         
-        /* 🔥 CINEMÁTICA DE TRANSICIÓN: Enmascara cargas con un suave fade-in */
+        /* 🔥 CINEMÁTICA DE TRANSICIÓN */
         @keyframes cinematicFadeIn {
             0% { opacity: 0; transform: translateY(15px); }
             100% { opacity: 1; transform: translateY(0); }
@@ -110,7 +110,8 @@ aplicar_estilos_premium()
 # =============================================================================
 # 1. DATOS MAESTROS E INVENTARIO
 # =============================================================================
-USUARIOS = {"ignacio morales": "spence2026", "yerko villarroel": "spence2026", "ignacio veas": "spence2026", "admin": "admin123"}
+# 🔥 NUEVO USUARIO AGREGADO
+USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "yerko villarroel": "spence2026", "admin": "admin123"}
 DEFAULT_SPECS = {
     "GA 18": {"Litros de Aceite": "14.1 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1625 4800 00 / 1625 7525 01", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1630 2201 36 / 1625 2204 36", "Tipo de Aceite": "Roto Inject Fluid", "Manual": "manuales/manual_ga18.pdf"},
     "GA 30": {"Litros de Aceite": "14.6 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1613 6105 00", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1613 7407 00", "N° Parte Kit": "2901-0326-00 / 2901 0325 00", "Tipo de Aceite": "Indurance - Xtend Duty", "Manual": "manuales/manual_ga30.pdf"},
@@ -125,6 +126,7 @@ DEFAULT_SPECS = {
     "CD 630": {"Filtro de Gases": "DD/PD 630", "Desecante": "Alúmina", "Kit Válvulas": "2901 1625 00", "Silenciador": "1621 1235 00", "Manual": "manuales/manual_cd630.pdf"}
 }
 
+# Taller pertenece a Laboratorio
 inventario_equipos = {
     "20-GC-001": ["GA 75", "AII482673", "truck shop", "Mina"], "20-GC-002": ["GA 75", "AII482674", "truck shop", "Mina"], "20-GC-003": ["GA 90", "AIF095178", "truck shop", "Mina"], "20-GC-004": ["GA 37", "AII390776", "truck shop", "Mina"],
     "35-GC-006": ["GA 250", "AIF095420", "chancado secundario", "Área Seca"], "35-GC-007": ["GA 250", "AIF095421", "chancado secundario", "Área Seca"], "35-GC-008": ["GA 250", "AIF095302", "chancado secundario", "Área Seca"],
@@ -410,42 +412,42 @@ def get_semanas_mes_minero(mes_nombre):
     return f"WK{min_d.isocalendar()[1]:02d} a WK{max_d.isocalendar()[1]:02d}"
 
 # =============================================================================
-# 5. MOTOR PLANIFICACIÓN CON DATOS LIMPIOS
+# 5. MOTOR PLANIFICACIÓN BASE (LIMPIO)
 # =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
     datos_reales = [
-        {"TAG": "70-GC-013", "S_Programada": "WK51", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
-        {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
-        {"TAG": "70-GC-013", "S_Programada": "WK04", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
-        {"TAG": "70-GC-013", "S_Programada": "WK07", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-02-10", "Observacion": ""},
-        {"TAG": "70-GC-013", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "70-GC-014", "S_Programada": "WK52", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2025-12-22", "Observacion": ""},
-        {"TAG": "70-GC-014", "S_Programada": "WK02", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
-        {"TAG": "70-GC-014", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": ""}, 
-        {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
-        {"TAG": "70-GC-014", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-001", "S_Programada": "WK01", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-        {"TAG": "50-GC-001", "S_Programada": "WK04", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-01-21", "Observacion": ""},
-        {"TAG": "50-GC-001", "S_Programada": "WK09", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
-        {"TAG": "50-GC-001", "S_Programada": "WK10", "Tipo": "P3", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-002", "S_Programada": "WK01", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-        {"TAG": "50-GC-002", "S_Programada": "WK02", "Tipo": "P2", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-002", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
-        {"TAG": "50-GC-002", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-003", "S_Programada": "WK01", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-        {"TAG": "50-GC-003", "S_Programada": "WK07", "Tipo": "P1", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-003", "S_Programada": "WK11", "Tipo": "P1", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "55-GC-015", "S_Programada": "WK01", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-        {"TAG": "55-GC-015", "S_Programada": "WK06", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-02-04", "Observacion": ""},
-        {"TAG": "55-GC-015", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-02-16", "Observacion": ""},
-        {"TAG": "65-GC-011", "S_Programada": "WK01", "Tipo": "P3", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-        {"TAG": "65-GC-011", "S_Programada": "WK05", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-01-28", "Observacion": ""},
-        {"TAG": "65-GC-011", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-03-09", "Observacion": ""},
-        {"TAG": "35-GC-006", "S_Programada": "WK01", "Tipo": "P3", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-        {"TAG": "35-GC-006", "S_Programada": "WK02", "Tipo": "P1", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
+        {"TAG": "70-GC-013", "S_Programada": "WK51", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK07", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-10", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK52", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2025-12-22", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK02", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": ""}, 
+        {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-21", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK09", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK10", "Tipo": "P3", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-002", "S_Programada": "WK01", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "50-GC-002", "S_Programada": "WK02", "Tipo": "P2", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-002", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
+        {"TAG": "50-GC-002", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-003", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "50-GC-003", "S_Programada": "WK07", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-003", "S_Programada": "WK11", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "55-GC-015", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "55-GC-015", "S_Programada": "WK06", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-04", "Observacion": ""},
+        {"TAG": "55-GC-015", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""},
+        {"TAG": "65-GC-011", "S_Programada": "WK01", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "65-GC-011", "S_Programada": "WK05", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-28", "Observacion": ""},
+        {"TAG": "65-GC-011", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-03-09", "Observacion": ""},
+        {"TAG": "35-GC-006", "S_Programada": "WK01", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "35-GC-006", "S_Programada": "WK02", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
     ]
 
     try:
@@ -462,7 +464,15 @@ def cargar_cmms():
                             return d.strftime("%Y-%m-%d") if d else ""
                         return val
                     df['S_Realizada'] = df.apply(migrar_fechas, axis=1)
-                    df['Estado'] = df['Estado'].replace({'Hecho': '✅ Hecho', 'Pendiente': '⏳ Pendiente', 'F/S': '🚨 F/S', 'N/A': '⚪ N/A'})
+                    
+                    # Motor Limpiador de DB
+                    def clean_db_values(val):
+                        if pd.isnull(val): return ''
+                        return re.sub(r'^[^\w\s\/-]+', '', str(val)).strip()
+                        
+                    if "Tipo" in df.columns: df["Tipo"] = df["Tipo"].apply(clean_db_values)
+                    if "Estado" in df.columns: df["Estado"] = df["Estado"].apply(clean_db_values)
+                    
                     return df
                 sheet.clear(); df_base = pd.DataFrame(datos_reales, columns=headers)
                 sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
@@ -475,11 +485,8 @@ def cargar_cmms():
 def guardar_cmms(df):
     sheet = get_sheet("plan_cmms")
     if sheet:
-        df_clean = df.copy()
-        df_clean = df_clean.fillna("").astype(str)
-        df_clean = df_clean.replace(["nan", "NaN", "NaT", "None", "<NA>"], "")
-        sheet.clear()
-        sheet.append_rows([df_clean.columns.values.tolist()] + df_clean.values.tolist())
+        df_clean = df.copy().fillna("").astype(str).replace(["nan", "NaN", "NaT", "None", "<NA>"], "")
+        sheet.clear(); sheet.append_rows([df_clean.columns.values.tolist()] + df_clean.values.tolist())
         st.cache_data.clear()
 
 def seleccionar_equipo(tag):
@@ -487,7 +494,6 @@ def seleccionar_equipo(tag):
     reg = buscar_ultimo_registro(tag)
     if reg:
         st.session_state.input_cliente = reg[1]; st.session_state.input_tec1 = reg[5]; st.session_state.input_tec2 = reg[6]
-        st.session_state.input_estado = ""; st.session_state.input_reco = ""
         st.session_state.input_estado_eq = reg[12] if reg[12] else "Operativo"
         st.session_state.input_h_marcha = int(reg[9]) if reg[9] else 0; st.session_state.input_h_carga = int(reg[10]) if reg[10] else 0
         st.session_state.input_temp = str(reg[2]).replace(',', '.') if reg[2] is not None else "70.0"
@@ -495,7 +501,8 @@ def seleccionar_equipo(tag):
         except: st.session_state.input_p_carga = "7.0"
         try: st.session_state.input_p_descarga = str(reg[8]).split()[0].replace(',', '.')
         except: st.session_state.input_p_descarga = "7.5"
-    else: st.session_state.update({'input_estado_eq': "Operativo", 'input_estado': "", 'input_reco': ""})
+    else: st.session_state.update({'input_estado_eq': "Operativo"})
+    st.session_state.input_estado = ""; st.session_state.input_reco = ""
 
 def volver_catalogo(): 
     st.session_state.equipo_seleccionado = None; st.session_state.vista_firmas = False; st.session_state.vista_actual = "catalogo"
@@ -654,9 +661,9 @@ else:
         
         df_kpi = df_cmms[(df_cmms["Mes_Calc"] == mes_visualizado) & (df_cmms["Tipo"] != "N/A") & (df_cmms["Tipo"] != "")]
         total_tareas = len(df_kpi)
-        hechas = len(df_kpi[df_kpi["Estado"] == "✅ Hecho"])
-        fs = len(df_kpi[df_kpi["Estado"] == "🚨 F/S"])
-        pendientes = len(df_kpi[df_kpi["Estado"] == "⏳ Pendiente"])
+        hechas = len(df_kpi[df_kpi["Estado"] == "Hecho"])
+        fs = len(df_kpi[df_kpi["Estado"] == "F/S"])
+        pendientes = len(df_kpi[df_kpi["Estado"] == "Pendiente"])
         
         total_evaluable = hechas + pendientes
         cumplimiento = int((hechas / total_evaluable * 100)) if total_evaluable > 0 else (100 if hechas > 0 else 0)
@@ -674,7 +681,6 @@ else:
         with tab_gestion:
             c_f1, c_f2 = st.columns([1, 3])
             orden_meses_full = ["Todas", "Diciembre", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre"]
-            
             filtro_mes = c_f1.selectbox("Filtrar por Mes:", orden_meses_full, key="filtro_mes_activo")
             
             min_date_val, max_date_val = None, None
@@ -683,10 +689,7 @@ else:
                 if filtro_mes in meses_map_full:
                     m_num = meses_map_full[filtro_mes]
                     y_num = 2025 if m_num == 12 else 2026
-                    if m_num == 1:
-                        min_date_val = datetime.date(y_num - 1, 12, 16)
-                    else:
-                        min_date_val = datetime.date(y_num, m_num - 1, 16)
+                    min_date_val = datetime.date(y_num - 1, 12, 16) if m_num == 1 else datetime.date(y_num, m_num - 1, 16)
                     max_date_val = datetime.date(y_num, m_num, 15)
 
             df_mostrar = df_cmms.copy() if filtro_mes == "Todas" else df_cmms[df_cmms["Mes_Calc"] == filtro_mes].copy()
@@ -700,8 +703,6 @@ else:
                 df_mostrar = pd.concat([df_mostrar, filas_vacias], ignore_index=True)
             df_mostrar = df_mostrar.sort_values(by="TAG").reset_index(drop=True)
 
-            df_editado = pd.DataFrame()
-            
             def safe_date_str(x):
                 if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
                 try: return x[:10] if isinstance(x, str) else x.strftime("%Y-%m-%d")
@@ -718,9 +719,10 @@ else:
 
                 # 🔥 MOTOR VISUAL NATIVO (Colores Inmediatos sin bugs)
                 tipo_visual_map = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03", "N/A": "⚪ N/A"}
-                map_visual_estado = {"✅ Hecho": "✅ Hecho", "⏳ Pendiente": "⏳ Pendiente", "🚨 F/S": "🚨 F/S", "⚪ N/A": "⚪ N/A"}
+                map_visual_estado = {"Hecho": "✅ Hecho", "Pendiente": "⏳ Pendiente", "F/S": "🚨 F/S", "N/A": "⚪ N/A"}
                 
                 df_mostrar['Tipo'] = df_mostrar['Tipo'].apply(lambda x: tipo_visual_map.get(str(x).strip(), "⚪ N/A"))
+                df_mostrar['Estado'] = df_mostrar['Estado'].apply(lambda x: map_visual_estado.get(str(x).strip(), "⚪ N/A"))
                 
                 if "kanban_table" in st.session_state:
                     edits = st.session_state["kanban_table"].get("edited_rows", {})
@@ -759,7 +761,10 @@ else:
                     
                     # 🔥 MOTOR LIMPIADOR INVISIBLE
                     inv_tipo_map = {v: k for k, v in tipo_visual_map.items()}
+                    inv_estado_map = {v: k for k, v in map_visual_estado.items()}
+                    
                     df_guardar['Tipo'] = df_guardar['Tipo'].apply(lambda x: inv_tipo_map.get(str(x).strip(), "N/A"))
+                    df_guardar['Estado'] = df_guardar['Estado'].apply(lambda x: inv_estado_map.get(str(x).strip(), "N/A"))
                     
                     def get_final_wk(row):
                         d = row['Día Programado']
@@ -771,8 +776,8 @@ else:
                     df_guardar['S_Programada'] = df_guardar.apply(get_final_wk, axis=1)
                     df_guardar['S_Realizada'] = df_guardar['S_Realizada'].apply(safe_date_str)
                     
-                    filas_validas = df_guardar[(df_guardar["🗑️ Quitar"] == False) & (df_guardar["Tipo"] != "N/A") & (df_guardar["Estado"] != "⚪ N/A") & (df_guardar["S_Programada"] != "")].copy()
-                    filas_validas.loc[(filas_validas['Estado'] == '✅ Hecho') & (filas_validas['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
+                    filas_validas = df_guardar[(df_guardar["🗑️ Quitar"] == False) & (df_guardar["Tipo"] != "N/A") & (df_guardar["Estado"] != "N/A") & (df_guardar["S_Programada"] != "")].copy()
+                    filas_validas.loc[(filas_validas['Estado'] == 'Hecho') & (filas_validas['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
                     
                     if filtro_mes == "Todas": df_cmms_final = filas_validas
                     else:
@@ -805,24 +810,29 @@ else:
                         
                         if not df_editado.empty:
                             df_editado_clean = df_editado.copy()
+                            inv_tipo_map = {v: k for k, v in tipo_visual_map.items()}; inv_estado_map = {v: k for k, v in map_visual_estado.items()}
                             df_editado_clean['Tipo'] = df_editado_clean['Tipo'].apply(lambda x: inv_tipo_map.get(str(x).strip(), "N/A"))
+                            df_editado_clean['Estado'] = df_editado_clean['Estado'].apply(lambda x: inv_estado_map.get(str(x).strip(), "N/A"))
+                            
                             def get_final_wk_clean(row):
                                 d = row['Día Programado']
                                 if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
                                     if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
                                     return f"WK{d.isocalendar()[1]:02d}"
                                 return row['S_Programada']
+                                
                             df_editado_clean['S_Programada'] = df_editado_clean.apply(get_final_wk_clean, axis=1)
                             df_editado_clean['S_Realizada'] = df_editado_clean['S_Realizada'].apply(safe_date_str)
-                            filas_validas_f = df_editado_clean[(df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A") & (df_editado_clean["Estado"] != "⚪ N/A") & (df_editado_clean["S_Programada"] != "")].copy()
-                            filas_validas_f.loc[(filas_validas_f['Estado'] == '✅ Hecho') & (filas_validas_f['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
+                            
+                            filas_validas_f = df_editado_clean[(df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A") & (df_editado_clean["Estado"] != "N/A") & (df_editado_clean["S_Programada"] != "")].copy()
+                            filas_validas_f.loc[(filas_validas_f['Estado'] == 'Hecho') & (filas_validas_f['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
                             if filtro_mes == "Todas": df_cmms_guardar = filas_validas_f
                             else:
                                 df_cmms_rest_f = df_cmms[df_cmms["Mes_Calc"] != filtro_mes]
                                 df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
 
                         n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}"
-                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo_puro, "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": n_obs}])
+                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo_puro, "Estado": "Pendiente", "S_Realizada": "", "Observacion": n_obs}])
                         for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
                             if col in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=[col])
                         
@@ -849,7 +859,7 @@ else:
             for _, row in df_cmms.iterrows():
                 d_prog = wk_to_date(row['S_Programada'])
                 d_target = None
-                if row['Estado'] == '✅ Hecho' and str(row['S_Realizada']).strip() != "":
+                if row['Estado'] == 'Hecho' and str(row['S_Realizada']).strip() != "":
                     try: d_target = datetime.datetime.strptime(str(row['S_Realizada']).strip(), "%Y-%m-%d").date()
                     except: d_target = d_prog
                 else: d_target = d_prog
@@ -877,8 +887,8 @@ else:
                     if dia in tareas_por_fecha:
                         for t in tareas_por_fecha[dia]:
                             c_bg = "transparent"; c_tx = "#8c9eb5"; b_style = "1px dashed #455065" 
-                            if t['est'] == '✅ Hecho': c_bg, c_tx, b_style = "#063f22", "#6ee7b7", "1px solid #10b981"
-                            elif t['est'] == '🚨 F/S': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #ef4444"
+                            if t['est'] == 'Hecho': c_bg, c_tx, b_style = "#063f22", "#6ee7b7", "1px solid #10b981"
+                            elif t['est'] == 'F/S': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #ef4444"
                             elif t['tipo'] == 'INSP': c_bg, c_tx, b_style = "#1e3a8a", "#93c5fd", "1px solid #1a5c94"
                             elif t['tipo'] == 'P1': c_bg, c_tx, b_style = "#064e3b", "#6ee7b7", "1px solid #047857"
                             elif t['tipo'] == 'P2': c_bg, c_tx, b_style = "#78350f", "#fdba74", "1px solid #8c5300"
@@ -892,7 +902,7 @@ else:
 
         with tab_matriz:
             df_pivot_base = df_cmms[df_cmms['Tipo'] != 'N/A'].copy()
-            df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: str(x).split(" ")[1] if " " in str(x) else str(x))
+            df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado']
             
             c_mat1, c_mat2 = st.columns([1.5, 2])
             with c_mat1: 
@@ -969,7 +979,7 @@ else:
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-    # --- 7.2 VISTA DE FIRMAS, EDICIÓN Y DESCARGAS ---
+    # --- 7.2 VISTA DE FIRMAS (ERGONÓMICA) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -979,16 +989,26 @@ else:
         
         if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
-            # 🔥 FIRMA TÉCNICO EN EXPANDER (Se abre y cierra, no estorba)
+            # 🔥 FIRMA TÉCNICO DESPLEGABLE Y CUADRADA
             with st.expander("🧑‍🔧 Configuración de Mi Firma Fija (Técnico)", expanded=(st.session_state.firma_tec_json is None)):
-                st.markdown("<p style='text-align: center; color: #8c9eb5; margin-bottom: 10px;'>Dibuja tu firma una sola vez aquí. Se aplicará automáticamente a todos los informes que apruebes.</p>", unsafe_allow_html=True)
+                st.markdown("<p style='text-align: center; color: #8c9eb5; margin-bottom: 15px;'>Dibuja tu firma una sola vez aquí. Se aplicará automáticamente a todos los informes que apruebes.</p>", unsafe_allow_html=True)
                 
-                _, col_canvas, _ = st.columns([1, 2, 1])
-                with col_canvas:
-                    canvas_tec_global = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=180, width=400, drawing_mode="freedraw", key="canvas_tec_global", initial_drawing=st.session_state.firma_tec_json if st.session_state.firma_tec_json else None)
+                c_esp1, c_canv, c_esp2 = st.columns([1, 2, 1])
+                with c_canv:
+                    with st.container(border=True):
+                        canvas_tec_global = st_canvas(
+                            stroke_width=3, 
+                            stroke_color="#000", 
+                            background_color="#fff", 
+                            height=180, 
+                            width=400, 
+                            drawing_mode="freedraw", 
+                            key="canvas_tec_global", 
+                            initial_drawing=st.session_state.firma_tec_json if st.session_state.firma_tec_json else None
+                        )
                     
-                    c_btn1, c_btn2 = st.columns(2)
-                    with c_btn1:
+                    cb1, cb2 = st.columns(2)
+                    with cb1:
                         if st.button("💾 Guardar Mi Firma", use_container_width=True):
                             if canvas_tec_global.json_data is not None and len(canvas_tec_global.json_data.get("objects", [])) > 0:
                                 st.session_state.firma_tec_json = canvas_tec_global.json_data
@@ -996,13 +1016,13 @@ else:
                                 st.success("✅ Firma guardada correctamente.")
                                 time.sleep(1); st.rerun()
                             else: st.warning("⚠️ Dibuja tu firma antes de guardar.")
-                    with c_btn2:
+                    with cb2:
                         if st.button("🔄 Reiniciar Firma", use_container_width=True):
                             st.session_state.firma_tec_json = None
                             st.session_state.firma_tec_img = None
                             st.rerun()
 
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<br><hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
 
             areas_agrupadas = {}
             for inf in st.session_state.informes_pendientes:
@@ -1101,15 +1121,24 @@ else:
                     st.markdown(f"<h3 style='text-align: center; color: #007CA6;'>Firma de Aprobación Final</h3>", unsafe_allow_html=True)
                     st.markdown(f"<p style='text-align: center; color: #8c9eb5; margin-top: -10px;'><b>Aprobador:</b> {nombres_clientes}</p>", unsafe_allow_html=True)
                     
-                    # 🔥 PANEL FINAL LIMPIO: Solo pide la firma del cliente
-                    _, col_firma, _ = st.columns([1, 2, 1])
-                    with col_firma:
+                    # 🔥 FIRMA DEL CLIENTE CENTRADA
+                    _, col_firma_cli, _ = st.columns([1, 2, 1])
+                    with col_firma_cli:
                         with st.container(border=True):
-                            canvas_cli = st_canvas(stroke_width=4, stroke_color="#000", background_color="#f0f2f6", height=200, width=450, drawing_mode="freedraw", key=f"cli_{macro_area}")
-                            st.markdown("<p style='text-align: center; font-size: 0.8em; color: gray;'>Coloque su firma en el recuadro superior</p>", unsafe_allow_html=True)
+                            st.markdown("<p style='text-align: center; font-size: 0.9em; color: #aeb9cc; margin-bottom: 5px;'>Coloque su firma en el recuadro blanco</p>", unsafe_allow_html=True)
+                            canvas_cli = st_canvas(
+                                stroke_width=3, 
+                                stroke_color="#000", 
+                                background_color="#fff", 
+                                height=180, 
+                                width=400, 
+                                drawing_mode="freedraw", 
+                                key=f"cli_{macro_area}"
+                            )
                     
                     st.markdown("<br>", unsafe_allow_html=True)
                     if st.button(f"🚀 Aprobar, Firmar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
+                        
                         tec_ok = st.session_state.firma_tec_img is not None
                         cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
                         
@@ -1133,7 +1162,6 @@ else:
                                         # Ambas firmas se inyectan automáticamente
                                         context['firma_cliente'] = InlineImage(doc, io_cli_local, width=Mm(40))
                                         context['firma_tecnico'] = InlineImage(doc, io_tec_local, width=Mm(40))
-                                        context['show_tech_signature'] = True 
 
                                         # Creación de carpetas inteligentes
                                         d_obj = parse_fecha(context['fecha'])
