@@ -115,7 +115,7 @@ DEFAULT_SPECS = {
     "CD 630": {"Filtro de Gases": "DD/PD 630", "Desecante": "Alúmina", "Kit Válvulas": "2901 1625 00", "Silenciador": "1621 1235 00", "Manual": "manuales/manual_cd630.pdf"}
 }
 
-# 🔥 CAMBIO 1: Taller ahora es de área Laboratorio
+# 🔥 CAMBIO: Taller ahora es de área Laboratorio
 inventario_equipos = {
     "20-GC-001": ["GA 75", "AII482673", "truck shop", "Mina"], "20-GC-002": ["GA 75", "AII482674", "truck shop", "Mina"], "20-GC-003": ["GA 90", "AIF095178", "truck shop", "Mina"], "20-GC-004": ["GA 37", "AII390776", "truck shop", "Mina"],
     "35-GC-006": ["GA 250", "AIF095420", "chancado secundario", "Área Seca"], "35-GC-007": ["GA 250", "AIF095421", "chancado secundario", "Área Seca"], "35-GC-008": ["GA 250", "AIF095302", "chancado secundario", "Área Seca"],
@@ -300,7 +300,8 @@ def eliminar_contacto(nombre):
 def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
-    # =============================================================================
+
+# =============================================================================
 # 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
@@ -347,7 +348,7 @@ def wk_to_date(wk_string):
         return datetime.date.fromisocalendar(2026, wk_num, 1)
     except: return None
 
-# 🔥 CEREBRO MINERO: Meses limpios en lugar de Quincenas
+# 🔥 CEREBRO MINERO (Calcula el mes por nombre limpio)
 def calcular_mes_minero(wk_string):
     if pd.isna(wk_string) or str(wk_string).strip() == "": return "Sin Asignar"
     d = wk_to_date(wk_string)
@@ -367,13 +368,26 @@ def formatear_wk(wk_str):
     if nums: return f"WK{int(nums[0]):02d}"
     return str(wk_str).upper()
 
+# 🔥 FUNCIÓN DE RANGO DE SEMANAS (Calcula "WK08 a WK11" para el título)
+def get_semanas_mes_minero(mes_nombre):
+    meses_map_full = {"Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12}
+    if mes_nombre not in meses_map_full: return ""
+    m_num = meses_map_full[mes_nombre]
+    y_num = 2025 if m_num == 12 else 2026
+    if m_num == 1:
+        min_d = datetime.date(y_num - 1, 12, 16)
+    else:
+        min_d = datetime.date(y_num, m_num - 1, 16)
+    max_d = datetime.date(y_num, m_num, 15)
+    return f"WK{min_d.isocalendar()[1]:02d} a WK{max_d.isocalendar()[1]:02d}"
+
 # =============================================================================
-# 5. MOTOR PLANIFICACIÓN CON DATOS REALES LIMPIOS
+# 5. MOTOR CMMS CON DATOS REALES
 # =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
-    # 🔥 CAMBIO 2: Comentarios ("Falta", "OK", etc.) completamente eliminados de la base
+    # 🔥 Cero comentarios en la DB base
     datos_reales = [
         {"TAG": "70-GC-013", "S_Programada": "WK51", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
         {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
@@ -428,7 +442,7 @@ def cargar_cmms():
             else:
                 df_base = pd.DataFrame(datos_reales, columns=headers)
                 sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
-    except Exception as e: print(f"Error cargando: {e}")
+    except Exception as e: print(f"Error cargando CMMS: {e}")
     return pd.DataFrame(datos_reales, columns=headers)
 
 def guardar_cmms(df):
@@ -504,7 +518,7 @@ else:
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
         
-        # 🔥 CAMBIO 3: Menú lateral ahora dice solo "Planificación"
+        # 🔥 Sidebar dice "Planificación" sin (CMMS)
         if st.button("📊 Planificación", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
         
@@ -528,7 +542,7 @@ else:
             </div>
         """, unsafe_allow_html=True)
         
-        def parse_fecha(fecha_str):
+        def parse_fecha_historial(fecha_str):
             try:
                 s = str(fecha_str).lower().strip()
                 meses = {"enero":1, "ene":1, "febrero":2, "feb":2, "marzo":3, "mar":3, "abril":4, "abr":4, "mayo":5, "may":5, "junio":6, "jun":6, "julio":7, "jul":7, "agosto":8, "ago":8, "septiembre":9, "sep":9, "sept":9, "octubre":10, "oct":10, "noviembre":11, "nov":11, "diciembre":12, "dic":12}
@@ -550,7 +564,7 @@ else:
                 return datetime.date(year, month, day)
             except: return datetime.date(1970, 1, 1)
 
-        def format_fecha(d):
+        def format_fecha_historial(d):
             meses_nombres = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
             if d.year == 1970: return "Fecha Desconocida"
             return f"{d.day} de {meses_nombres[d.month]} de {d.year}"
@@ -562,7 +576,7 @@ else:
             historial_unico = []
             vistos = set()
             for item in historial_global:
-                d_obj = parse_fecha(item['fecha'])
+                d_obj = parse_fecha_historial(item['fecha'])
                 identificador = (item['tag'], d_obj)
                 if identificador not in vistos:
                     vistos.add(identificador)
@@ -578,7 +592,7 @@ else:
             fechas_ordenadas = sorted(list(historial_agrupado.keys()), reverse=True)
 
             for d_obj in fechas_ordenadas:
-                fecha_str = format_fecha(d_obj)
+                fecha_str = format_fecha_historial(d_obj)
                 intervenciones = historial_agrupado[d_obj]
                 
                 st.markdown(f"<h3 style='color: white; border-bottom: 2px solid #2b3543; padding-bottom: 5px; margin-top: 15px;'>🗓️ {fecha_str}</h3>", unsafe_allow_html=True)
@@ -623,15 +637,15 @@ else:
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
         df_cmms['S_Programada'] = df_cmms['S_Programada'].apply(formatear_wk)
-        
         df_cmms['Mes_Calc'] = df_cmms['S_Programada'].apply(calcular_mes_minero)
         mes_de_hoy_full = calcular_mes_minero(semana_actual)
+        rango_semanas_header = get_semanas_mes_minero(mes_de_hoy_full)
         
-        # 🔥 CAMBIO 3: Título "Panel de Control" sin CMMS
+        # 🔥 Título "Panel de Control" sin CMMS. "Semana Actual" ahora muestra el rango de la Quincena Minera (ej: WK08 a WK11)
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
                 <h2 style="color: white; margin: 0;">📅 Panel de Control</h2>
-                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Semana Actual: {semana_actual} &nbsp;|&nbsp; Planificación Activa: {mes_de_hoy_full}</p>
+                <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Semanas del Mes: {rango_semanas_header} &nbsp;|&nbsp; Planificación Activa: {mes_de_hoy_full}</p>
             </div>
         """, unsafe_allow_html=True)
         
@@ -652,14 +666,14 @@ else:
         
         st.markdown("---")
         
-        # 🔥 CAMBIO 3 y 1: Nombres de pestañas perfectos y Matriz Restaurada
+        # 🔥 Pestañas limpias. Matriz restaurada y funcional.
         tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero", "📆 Calendario", "📊 Matriz de Mantenimiento"])
         
         with tab_gestion:
-            # 🔥 CAMBIO 5 y 7: Eliminados los cuadros de información (st.info) molestos
+            # 🔥 Sin cuadros celestes st.info en el Tablero
             c_f1, c_f2 = st.columns([1, 3])
             
-            # 🔥 CAMBIO 4: Filtro por Meses limpios
+            # 🔥 Filtro limpio por mes
             orden_meses_full = ["Todas", "Diciembre", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre"]
             with c_f1: filtro_mes = st.selectbox("Filtrar por Mes:", orden_meses_full, index=orden_meses_full.index(mes_de_hoy_full) if mes_de_hoy_full in orden_meses_full else 0)
             
@@ -677,7 +691,7 @@ else:
 
             df_mostrar = df_cmms.copy() if filtro_mes == "Todas" else df_cmms[df_cmms["Mes_Calc"] == filtro_mes].copy()
             
-            # 🔥 CAMBIO 2: Garantizamos que Taller/Laboratorio siempre aparezca
+            # 🔥 Taller (Laboratorio) siempre aparece
             tags_presentes = df_mostrar['TAG'].tolist()
             todos_los_tags = list(inventario_equipos.keys())
             tags_faltantes = [t for t in todos_los_tags if t not in tags_presentes]
@@ -733,11 +747,11 @@ else:
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "Mes_Calc": None, 
                     "S_Programada": None, 
-                    # 🔥 CAMBIO 6: Fechas con WK unidas (Programado)
+                    # 🔥 Fechas con WK unidas en Programación
                     "Día Programado": st.column_config.DateColumn("📆 Prog. para (Día y WK)", format="DD/MM/YYYY - [WK]WW", min_value=min_date_val, max_value=max_date_val, disabled=False),
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["N/A", "INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
                     "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["⚪ N/A", "⏳ Pendiente", "✅ Hecho", "🚨 F/S"], required=True),
-                    # 🔥 CAMBIO 6: Fechas con WK unidas (Ejecutado)
+                    # 🔥 Fechas con WK unidas en Ejecución
                     "S_Realizada": st.column_config.DateColumn("Día Ejecución (Día y WK) 📅", format="DD/MM/YYYY - [WK]WW", disabled=False),
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
@@ -792,7 +806,7 @@ else:
                         if not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
                         
                     n_fecha_prog = c3.date_input("📆 Día a Programar:", value=default_d, min_value=min_date_val, max_value=max_date_val)
-                    # 🔥 CAMBIO 7: Texto verde borrado
+                    # 🔥 Cero texto verde aquí.
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     
                     if st.form_submit_button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
@@ -885,7 +899,7 @@ else:
             st.markdown(html_cal, unsafe_allow_html=True)
 
         with tab_matriz:
-            # 🔥 CAMBIO 1 y 7: Matriz de vuelta, y se borró el st.info
+            # 🔥 Sin cuadros de información. Matriz Restaurada.
             df_pivot_base = df_cmms[df_cmms['Tipo'] != 'N/A'].copy()
             df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: str(x).split(" ")[1] if " " in str(x) else str(x))
             
@@ -944,7 +958,7 @@ else:
             def estilo_matriz_colores(val):
                 v = str(val).upper()
                 if not v or v == "NAN": return ''
-                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
+                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; font-size: 0.85em; '
                 if 'HECHO' in v: return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
                 if 'F/S' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
                 if 'PENDIENTE' in v: 
