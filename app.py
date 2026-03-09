@@ -252,13 +252,11 @@ def obtener_historial_global():
     except: pass
     return []
 
-# 🔥 NUEVA FUNCIÓN PARA EL ROL DE ADMINISTRADOR 🔥
 def eliminar_registro_intervencion(tag, fecha, tipo):
     try:
         sheet = get_sheet("intervenciones")
         if sheet:
             records = sheet.get_all_values()
-            # Buscamos desde abajo hacia arriba para borrar la más reciente que coincida
             for i in range(len(records)-1, 0, -1):
                 row = records[i]
                 if row[0] == tag and row[5] == fecha and row[15] == tipo:
@@ -516,7 +514,7 @@ default_states = {
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
     'input_reco': "", 'input_estado_eq': "Operativo", 'vista_firmas': False,
     'firma_tec_json': None, 'firma_tec_img': None,
-    'mostrar_firma_tec': False # 🔥 NUEVO ESTADO PARA EL BOTÓN CENTRAL 🔥
+    'mostrar_firma_tec': False 
 }
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
@@ -549,7 +547,8 @@ if not st.session_state.logged_in:
 else:
     with st.sidebar:
         # 🔥 IDENTIFICADOR DE ROL EN LA BARRA LATERAL 🔥
-        rol = "👑 Administrador" if st.session_state.usuario_actual in ADMIN_USERS else "🧑‍🔧 Técnico"
+        es_admin = st.session_state.usuario_actual in ADMIN_USERS
+        rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
         
         st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas Copco</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
         st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}<br><small style='color:#FF6600; font-weight:bold;'>{rol}</small>", unsafe_allow_html=True)
@@ -582,7 +581,6 @@ else:
         """, unsafe_allow_html=True)
         
         historial_global = obtener_historial_global()
-        es_admin = st.session_state.usuario_actual in ADMIN_USERS # 🔥 Chequeo de privilegios 🔥
 
         if not historial_global:
             st.info("Aún no hay reportes firmados y almacenados en la base de datos central.")
@@ -646,7 +644,7 @@ else:
                             )
                             st.markdown(html_card, unsafe_allow_html=True)
                             
-                            # 🔥 BOTÓN EXCLUSIVO PARA ADMINISTRADORES 🔥
+                            # 🔥 BOTÓN EXCLUSIVO PARA EL ROL ADMINISTRADOR 🔥
                             if es_admin:
                                 if st.button("🗑️ Eliminar Registro", key=f"del_hist_{item['tag']}_{item['fecha']}_{item['tipo']}_{idx}", use_container_width=True):
                                     exito = eliminar_registro_intervencion(item['tag'], item['fecha'], item['tipo'])
@@ -727,7 +725,6 @@ else:
                 
                 df_mostrar['S_Realizada'] = df_mostrar['S_Realizada'].apply(string_to_date)
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
-                df_mostrar.insert(0, "🗑️ Quitar", False)
 
                 tipo_visual_map = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03", "N/A": "⚪ N/A"}
                 map_visual_estado = {"✅ Hecho": "✅ Hecho", "⏳ Pendiente": "⏳ Pendiente", "🚨 F/S": "🚨 F/S", "N/A": "⚪ N/A"}
@@ -748,14 +745,19 @@ else:
                                     df_mostrar.at[int(idx_str), 'S_Programada'] = wk_calculada
                                 except: pass
 
-                columnas_ordenadas = ["🗑️ Quitar", "TAG", "Día Programado", "Tipo", "Estado", "S_Realizada", "Observacion", "Mes_Calc", "S_Programada"]
+                # 🔥 LÓGICA DE VISIBILIDAD DE BORRADO PARA ADMINISTRADORES EN LA TABLA 🔥
+                if es_admin:
+                    df_mostrar.insert(0, "🗑️ Quitar", False)
+                    columnas_ordenadas = ["🗑️ Quitar", "TAG", "Día Programado", "Tipo", "Estado", "S_Realizada", "Observacion", "Mes_Calc", "S_Programada"]
+                else:
+                    columnas_ordenadas = ["TAG", "Día Programado", "Tipo", "Estado", "S_Realizada", "Observacion", "Mes_Calc", "S_Programada"]
+                
                 df_mostrar = df_mostrar[columnas_ordenadas]
                 
                 opciones_visuales_tipo = list(tipo_visual_map.values())
                 opciones_estado_visual = list(map_visual_estado.values())
 
                 config_columnas = {
-                    "🗑️ Quitar": st.column_config.CheckboxColumn("Quitar", default=False),
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "Mes_Calc": None, "S_Programada": None, 
                     "Día Programado": st.column_config.DateColumn("📆 Prog. para (Día y WK)", format="DD/MM/YYYY - [WK]WW", min_value=min_date_val, max_value=max_date_val, disabled=False),
@@ -764,6 +766,9 @@ else:
                     "S_Realizada": st.column_config.DateColumn("Día Ejecución (Día y WK) 📅", format="DD/MM/YYYY - [WK]WW", disabled=False),
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
+                
+                # Solo se le añade la configuración de Checkbox al Admin
+                if es_admin: config_columnas["🗑️ Quitar"] = st.column_config.CheckboxColumn("Quitar", default=False)
                 
                 def color_estado(val):
                     if val == '✅ Hecho': return 'background-color: #063f22; color: #6ee7b7; font-weight: bold;'
@@ -789,6 +794,8 @@ else:
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
                     df_guardar = df_editado.copy()
+                    
+                    if not es_admin: df_guardar["🗑️ Quitar"] = False # Inyección segura para la lógica posterior
                     
                     inv_tipo_map = {v: k for k, v in tipo_visual_map.items()}
                     inv_estado_map = {v: k for k, v in map_visual_estado.items()}
@@ -1019,7 +1026,6 @@ else:
         
         if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
-            # 🔥 NUEVO SISTEMA SEGURO PARA EL TÉCNICO (Cero expansores, cero crasheos) 🔥
             _, c_btn_firma, _ = st.columns([1, 2, 1])
             with c_btn_firma:
                 if st.session_state.firma_tec_img is None:
@@ -1028,8 +1034,7 @@ else:
                         st.session_state.mostrar_firma_tec = not st.session_state.mostrar_firma_tec
                         st.rerun()
                 else:
-                    # Mostrar la firma guardada como imagen estática (Nunca se rompe)
-                    st.image(st.session_state.firma_tec_img, width=450)
+                    st.image(st.session_state.firma_tec_img, width=300)
                     st.markdown("<p style='color: #00e676; font-weight: bold; margin-top:-10px; text-align: center;'>✅ Firma lista para aplicar</p>", unsafe_allow_html=True)
                     if st.button("🔄 Cambiar Mi Firma", use_container_width=True):
                         st.session_state.firma_tec_img = None
@@ -1152,7 +1157,7 @@ else:
                     nombres_clientes = " y ".join(list(set([inf['cli'] for inf in informes_area if inf.get('cli')])))
                     if not nombres_clientes: nombres_clientes = "Cliente a cargo"
                     
-                    # 🔥 FIRMA DEL CLIENTE (GRANDE, CENTRADA, CON BASURERO)
+                    # 🔥 FIRMA DEL CLIENTE AL FINAL
                     st.markdown(f"<h2 style='text-align: center; color: white; margin-bottom: 5px;'>Firma de Aprobación Final</h2>", unsafe_allow_html=True)
                     st.markdown(f"<h4 style='text-align: center; color: #aeb9cc; margin-top: 0px; margin-bottom: 25px;'>Aprobador: <span style='color: white;'>{nombres_clientes}</span></h4>", unsafe_allow_html=True)
                     
@@ -1170,7 +1175,6 @@ else:
                             
                     st.markdown("<br>", unsafe_allow_html=True)
                     
-                    # 🔥 BOTÓN DE ENVÍO FINAL
                     _, col_btn_final, _ = st.columns([1, 2, 1])
                     with col_btn_final:
                         if st.button(f"🚀 Aprobar, Firmar y Subir Informes", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
@@ -1359,5 +1363,29 @@ else:
             datos_equipo = obtener_datos_equipo(tag_sel); cols_area = st.columns(2)
             for i, (k, v) in enumerate(datos_equipo.items()):
                 with cols_area[i % 2]: st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #FF6600;'><span style='color: #aeb9cc; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
-        st.markdown("<br><hr>", unsafe_allow_html=True); st.markdown("### 📋 Trazabilidad Histórica de Intervenciones"); df_hist = obtener_todo_el_historial(tag_sel)
-        if not df_hist.empty: st.dataframe(df_hist, use_container_width=True)
+        
+        # 🔥 TABLA DE HISTÓRICO CON BORRADO PARA ADMINISTRADORES 🔥
+        st.markdown("<br><hr>", unsafe_allow_html=True)
+        st.markdown("### 📋 Trazabilidad Histórica de Intervenciones")
+        df_hist = obtener_todo_el_historial(tag_sel)
+        
+        es_admin = st.session_state.usuario_actual in ADMIN_USERS
+        
+        if not df_hist.empty: 
+            if es_admin:
+                df_hist.insert(0, "🗑️ Borrar", False)
+                config_hist = {"🗑️ Borrar": st.column_config.CheckboxColumn("Seleccionar", default=False)}
+                df_edit_hist = st.data_editor(df_hist, hide_index=True, use_container_width=True, column_config=config_hist, key=f"hist_edit_{tag_sel}")
+                
+                if st.button("🚨 Eliminar Registros Históricos Seleccionados", type="primary"):
+                    borrados = df_edit_hist[df_edit_hist["🗑️ Borrar"] == True]
+                    if not borrados.empty:
+                        for _, row in borrados.iterrows():
+                            eliminar_registro_intervencion(tag_sel, row['fecha'], row['tipo_intervencion'])
+                        st.success("✅ Registros históricos eliminados.")
+                        time.sleep(1.5)
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ No seleccionaste ningún registro para borrar.")
+            else:
+                st.dataframe(df_hist, hide_index=True, use_container_width=True)
