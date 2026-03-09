@@ -122,7 +122,7 @@ inventario_equipos = {
     "55-GC-015": ["GA 30", "API501440", "planta borra", "Área Húmeda"],
     "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "Área Húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "Área Húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "Área Húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "Área Húmeda"],
     "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "Área Húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "Área Húmeda"],
-    "Taller": ["GA 18", "API335343", "Taller", "Laboratorio"]
+    "Taller": ["GA 18", "API335343", "Taller", "Laboratorio"] 
 }
 
 # =============================================================================
@@ -300,7 +300,6 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
 
-# --- FIN DE LA PARTE 1 ---
 # =============================================================================
 # 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO
 # =============================================================================
@@ -379,7 +378,7 @@ def get_semanas_mes_minero(mes_nombre):
     return f"WK{min_d.isocalendar()[1]:02d} a WK{max_d.isocalendar()[1]:02d}"
 
 # =============================================================================
-# 5. MOTOR CMMS CON DATOS REALES (LIMPIOS)
+# 5. MOTOR CMMS CON DATOS REALES LIMPIOS
 # =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
@@ -438,7 +437,7 @@ def cargar_cmms():
             else:
                 df_base = pd.DataFrame(datos_reales, columns=headers)
                 sheet.append_rows([headers] + df_base.values.tolist()); st.cache_data.clear(); return df_base
-    except Exception as e: print(f"Error cargando CMMS: {e}")
+    except Exception as e: print(f"Error cargando: {e}")
     return pd.DataFrame(datos_reales, columns=headers)
 
 def guardar_cmms(df):
@@ -754,8 +753,22 @@ else:
                     if val == '🚨 F/S': return 'background-color: #471015; color: #ff8a93; font-weight: bold;'
                     if val == '⚪ N/A': return 'color: #556b82; font-style: italic;'
                     return ''
-                try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado'])
-                except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado'])
+                    
+                # 🔥 NUEVO: Colores Premium para la columna "Intervención" (Tipo)
+                def color_tipo(val):
+                    if val == 'INSP': return 'background-color: #1e3a8a; color: #93c5fd; font-weight: bold; border-radius: 4px;'
+                    if val == 'P1': return 'background-color: #064e3b; color: #6ee7b7; font-weight: bold; border-radius: 4px;'
+                    if val == 'P2': return 'background-color: #78350f; color: #fdba74; font-weight: bold; border-radius: 4px;'
+                    if val == 'P3': return 'background-color: #4c1d95; color: #d8b4fe; font-weight: bold; border-radius: 4px;'
+                    if val == 'P4': return 'background-color: #7f1d1d; color: #fca5a5; font-weight: bold; border-radius: 4px;'
+                    if val == 'PM03': return 'background-color: #0f766e; color: #a7f3d0; font-weight: bold; border-radius: 4px;'
+                    if val == 'N/A': return 'color: #556b82; font-style: italic;'
+                    return ''
+                    
+                try: 
+                    df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado']).map(color_tipo, subset=['Tipo'])
+                except AttributeError: 
+                    df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado']).applymap(color_tipo, subset=['Tipo'])
                 
                 df_editado = st.data_editor(df_estilizado, key="kanban_table", hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
                 
@@ -949,7 +962,7 @@ else:
             def estilo_matriz_colores(val):
                 v = str(val).upper()
                 if not v or v == "NAN": return ''
-                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; font-size: 0.85em; '
+                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; '
                 if 'HECHO' in v: return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
                 if 'F/S' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
                 if 'PENDIENTE' in v: 
@@ -977,7 +990,6 @@ else:
         
         if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
-            # 🔥 FIRMA TÉCNICO CENTRADA Y PREMIUM
             st.markdown("<h3 style='text-align: center; color: #007CA6;'>🧑‍🔧 Configuración de Mi Firma Fija (Técnico)</h3>", unsafe_allow_html=True)
             _, col_canvas, _ = st.columns([1, 2, 1])
             with col_canvas:
@@ -1165,7 +1177,6 @@ else:
         with col_busqueda: busqueda = st.text_input("🔍 Buscar activo por TAG, Modelo o Área...", placeholder="Ejemplo: GA 250, 35-GC-006...").lower()
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # 🔥 CATÁLOGO AGRUPADO POR ÁREAS
         equipos_filtrados = {}
         for tag, (modelo, serie, area, ubicacion) in inventario_equipos.items():
             es_secador = "CD" in modelo.upper()
