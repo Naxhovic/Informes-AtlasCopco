@@ -417,36 +417,36 @@ def get_semanas_mes_minero(mes_nombre):
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
     datos_reales = [
-        {"TAG": "70-GC-013", "S_Programada": "WK51", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
-        {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
-        {"TAG": "70-GC-013", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
-        {"TAG": "70-GC-013", "S_Programada": "WK07", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-10", "Observacion": ""},
-        {"TAG": "70-GC-013", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "70-GC-014", "S_Programada": "WK52", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2025-12-22", "Observacion": ""},
-        {"TAG": "70-GC-014", "S_Programada": "WK02", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
-        {"TAG": "70-GC-014", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": ""}, 
-        {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
-        {"TAG": "70-GC-014", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-001", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-        {"TAG": "50-GC-001", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-21", "Observacion": ""},
-        {"TAG": "50-GC-001", "S_Programada": "WK09", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
-        {"TAG": "50-GC-001", "S_Programada": "WK10", "Tipo": "P3", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-002", "S_Programada": "WK01", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-        {"TAG": "50-GC-002", "S_Programada": "WK02", "Tipo": "P2", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-002", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
-        {"TAG": "50-GC-002", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-003", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-        {"TAG": "50-GC-003", "S_Programada": "WK07", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "50-GC-003", "S_Programada": "WK11", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "55-GC-015", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-        {"TAG": "55-GC-015", "S_Programada": "WK06", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-04", "Observacion": ""},
-        {"TAG": "55-GC-015", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""},
-        {"TAG": "65-GC-011", "S_Programada": "WK01", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-        {"TAG": "65-GC-011", "S_Programada": "WK05", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-28", "Observacion": ""},
-        {"TAG": "65-GC-011", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-03-09", "Observacion": ""},
-        {"TAG": "35-GC-006", "S_Programada": "WK01", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-        {"TAG": "35-GC-006", "S_Programada": "WK02", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
-        {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
+        {"TAG": "70-GC-013", "S_Programada": "WK51", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK04", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK07", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-02-10", "Observacion": ""},
+        {"TAG": "70-GC-013", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK52", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2025-12-22", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK02", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": ""}, 
+        {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
+        {"TAG": "70-GC-014", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK01", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK04", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-01-21", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK09", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
+        {"TAG": "50-GC-001", "S_Programada": "WK10", "Tipo": "P3", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-002", "S_Programada": "WK01", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "50-GC-002", "S_Programada": "WK02", "Tipo": "P2", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-002", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
+        {"TAG": "50-GC-002", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-003", "S_Programada": "WK01", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "50-GC-003", "S_Programada": "WK07", "Tipo": "P1", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "50-GC-003", "S_Programada": "WK11", "Tipo": "P1", "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "55-GC-015", "S_Programada": "WK01", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "55-GC-015", "S_Programada": "WK06", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-02-04", "Observacion": ""},
+        {"TAG": "55-GC-015", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-02-16", "Observacion": ""},
+        {"TAG": "65-GC-011", "S_Programada": "WK01", "Tipo": "P3", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "65-GC-011", "S_Programada": "WK05", "Tipo": "P1", "Estado": "✅ Hecho", "S_Realizada": "2026-01-28", "Observacion": ""},
+        {"TAG": "65-GC-011", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-03-09", "Observacion": ""},
+        {"TAG": "35-GC-006", "S_Programada": "WK01", "Tipo": "P3", "Estado": "✅ Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+        {"TAG": "35-GC-006", "S_Programada": "WK02", "Tipo": "P1", "Estado": "🚨 F/S", "S_Realizada": "", "Observacion": ""},
+        {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
     ]
 
     try:
@@ -572,7 +572,7 @@ else:
                 <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">Registro Histórico en Tiempo Real</p>
             </div>
         """, unsafe_allow_html=True)
-
+        
         historial_global = obtener_historial_global()
         if not historial_global:
             st.info("Aún no hay reportes firmados y almacenados en la base de datos central.")
@@ -659,9 +659,9 @@ else:
         
         df_kpi = df_cmms[(df_cmms["Mes_Calc"] == mes_visualizado) & (df_cmms["Tipo"] != "N/A") & (df_cmms["Tipo"] != "")]
         total_tareas = len(df_kpi)
-        hechas = len(df_kpi[df_kpi["Estado"] == "Hecho"])
-        fs = len(df_kpi[df_kpi["Estado"] == "F/S"])
-        pendientes = len(df_kpi[df_kpi["Estado"] == "Pendiente"])
+        hechas = len(df_kpi[df_kpi["Estado"] == "✅ Hecho"])
+        fs = len(df_kpi[df_kpi["Estado"] == "🚨 F/S"])
+        pendientes = len(df_kpi[df_kpi["Estado"] == "⏳ Pendiente"])
         
         total_evaluable = hechas + pendientes
         cumplimiento = int((hechas / total_evaluable * 100)) if total_evaluable > 0 else (100 if hechas > 0 else 0)
@@ -716,7 +716,7 @@ else:
                 df_mostrar.insert(0, "🗑️ Quitar", False)
 
                 tipo_visual_map = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03", "N/A": "⚪ N/A"}
-                map_visual_estado = {"Hecho": "✅ Hecho", "Pendiente": "⏳ Pendiente", "F/S": "🚨 F/S", "N/A": "⚪ N/A"}
+                map_visual_estado = {"✅ Hecho": "✅ Hecho", "⏳ Pendiente": "⏳ Pendiente", "🚨 F/S": "🚨 F/S", "⚪ N/A": "⚪ N/A"}
                 
                 df_mostrar['Tipo'] = df_mostrar['Tipo'].apply(lambda x: tipo_visual_map.get(str(x).strip(), "⚪ N/A"))
                 df_mostrar['Estado'] = df_mostrar['Estado'].apply(lambda x: map_visual_estado.get(str(x).strip(), "⚪ N/A"))
@@ -751,7 +751,27 @@ else:
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
                 
-                df_editado = st.data_editor(df_mostrar, key="kanban_table", hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
+                def color_estado(val):
+                    if val == '✅ Hecho': return 'background-color: #063f22; color: #6ee7b7; font-weight: bold;'
+                    if val == '⏳ Pendiente': return 'background-color: #423205; color: #fde047; font-weight: bold;'
+                    if val == '🚨 F/S': return 'background-color: #471015; color: #ff8a93; font-weight: bold;'
+                    if val == '⚪ N/A': return 'color: #556b82; font-style: italic;'
+                    return ''
+                    
+                def color_tipo(val):
+                    if 'INSP' in str(val): return 'background-color: #1e3a8a; color: #93c5fd; font-weight: bold;'
+                    if 'P1' in str(val): return 'background-color: #064e3b; color: #6ee7b7; font-weight: bold;'
+                    if 'P2' in str(val): return 'background-color: #78350f; color: #fdba74; font-weight: bold;'
+                    if 'P3' in str(val): return 'background-color: #4c1d95; color: #d8b4fe; font-weight: bold;'
+                    if 'P4' in str(val): return 'background-color: #7f1d1d; color: #fca5a5; font-weight: bold;'
+                    if 'PM03' in str(val): return 'background-color: #0f766e; color: #a7f3d0; font-weight: bold;'
+                    if 'N/A' in str(val): return 'color: #556b82; font-style: italic;'
+                    return ''
+                    
+                try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado']).map(color_tipo, subset=['Tipo'])
+                except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado']).applymap(color_tipo, subset=['Tipo'])
+
+                df_editado = st.data_editor(df_estilizado, key="kanban_table", hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
                     df_guardar = df_editado.copy()
@@ -975,7 +995,7 @@ else:
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-    # --- 7.2 VISTA DE FIRMAS (DISEÑO CORPORATIVO PREMIUM) ---
+    # --- 7.2 VISTA DE FIRMAS (DISEÑO CORPORATIVO PREMIUM - BUG FIX) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -985,36 +1005,34 @@ else:
         
         if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
-            # 🔥 1. CONFIGURACIÓN DE FIRMA DEL TÉCNICO (SUPERIOR, CENTRADA Y DESPLEGABLE)
+            # 🔥 1. FIRMA TÉCNICO CENTRADA Y AMPLIADA (CON BASURERO NATIVO)
             with st.expander("🧑‍🔧 Configuración de Mi Firma Fija (Técnico)", expanded=(st.session_state.firma_tec_json is None)):
+                _, col_canv, _ = st.columns([1, 2.5, 1])
                 
-                # Columnas para forzar el centrado absoluto
-                c_esp1, c_canv, c_esp2 = st.columns([1, 2, 1])
-                
-                with c_canv:
+                with col_canv:
                     st.markdown(f"""
                         <div class="firma-card" style="margin-bottom: 15px; padding: 20px;">
-                            <h4 style="margin-top:0; color: #007CA6; text-align: center;">Firma Fija del Técnico</h4>
-                            <p style="margin-bottom: 10px; font-size: 0.9em;">Dibuja tu firma una sola vez aquí.<br>Se aplicará automáticamente a todos los informes.</p>
+                            <p style="margin-bottom: 10px; font-size: 0.9em; text-align: center;">Dibuja tu firma una sola vez aquí. Se aplicará automáticamente a todos los informes que apruebes.</p>
                         </div>
                     """, unsafe_allow_html=True)
                     
                     with st.container(border=True):
-                        # Bug del basurero solucionado (display_toolbar=False)
+                        # display_toolbar=True devuelve el basurero
                         canvas_tec_global = st_canvas(
                             stroke_width=3, 
                             stroke_color="#000", 
                             background_color="#fff", 
-                            height=180, 
-                            width=400, 
+                            height=250, # Más grande
+                            width=550,  # Más grande
                             drawing_mode="freedraw", 
                             key="canvas_tec_global", 
-                            display_toolbar=False, 
+                            display_toolbar=True, 
                             initial_drawing=st.session_state.firma_tec_json if st.session_state.firma_tec_json else None
                         )
                     
-                    cb1, cb2 = st.columns(2)
-                    with cb1:
+                    # Botón central para guardar (sin el de limpiar, el basurero hace el trabajo)
+                    _, col_btn, _ = st.columns([1, 1, 1])
+                    with col_btn:
                         if st.button("💾 Guardar Mi Firma", use_container_width=True):
                             if canvas_tec_global.json_data is not None and len(canvas_tec_global.json_data.get("objects", [])) > 0:
                                 st.session_state.firma_tec_json = canvas_tec_global.json_data
@@ -1022,13 +1040,8 @@ else:
                                 st.success("✅ Firma guardada correctamente.")
                                 time.sleep(1); st.rerun()
                             else: st.warning("⚠️ Dibuja tu firma antes de guardar.")
-                    with cb2:
-                        if st.button("🔄 Limpiar", use_container_width=True):
-                            st.session_state.firma_tec_json = None
-                            st.session_state.firma_tec_img = None
-                            st.rerun()
 
-            st.markdown("<br><hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
 
             areas_agrupadas = {}
             for inf in st.session_state.informes_pendientes:
@@ -1124,102 +1137,89 @@ else:
                     nombres_clientes = " y ".join(list(set([inf['cli'] for inf in informes_area if inf.get('cli')])))
                     if not nombres_clientes: nombres_clientes = "Cliente a cargo"
                     
-                    # 🔥 2. FIRMA DE APROBACIÓN FINAL DEL CLIENTE (CENTRADA, SIN TÉCNICO AL LADO)
-                    st.markdown(f"<h3 style='text-align: center; color: #007CA6;'>Pizarra de Aprobación Final</h3>", unsafe_allow_html=True)
+                    # 🔥 2. FIRMA DE APROBACIÓN FINAL DEL CLIENTE (CENTRADA, MÁS GRANDE, CON BASURERO)
+                    st.markdown(f"<h3 style='text-align: center; color: #007CA6; font-size: 2em;'>Pizarra de Aprobación Final</h3>", unsafe_allow_html=True)
+                    st.markdown(f"<h4 style='text-align: center; color: #aeb9cc; font-size: 1.4em; margin-top: -15px;'>Aprobador: <span style='color: white;'>{nombres_clientes}</span></h4>", unsafe_allow_html=True)
                     
-                    _, col_firma_cli, _ = st.columns([1, 2, 1])
+                    _, col_firma_cli, _ = st.columns([1, 2.5, 1])
                     
                     with col_firma_cli:
-                        st.markdown(f"""
-                            <div class="firma-card" style="margin-bottom: 15px; padding: 20px;">
-                                <h4 style="margin-top:0; color: white; text-align: center;">Firma del Cliente</h4>
-                                <p style="margin-bottom: 5px; font-size: 0.9em;">Aprobador: {nombres_clientes}</p>
-                            </div>
-                        """, unsafe_allow_html=True)
-                        
                         with st.container(border=True):
-                            cli_key = f"cli_{macro_area}_{st.session_state.get(f'reset_cli_{macro_area}', 0)}"
-                            # Bug del basurero solucionado (display_toolbar=False)
+                            st.markdown("<p style='text-align: center; font-size: 0.9em; color: #aeb9cc; margin-bottom: 5px;'>Coloque su firma en el recuadro blanco</p>", unsafe_allow_html=True)
+                            cli_key = f"cli_{macro_area}"
                             canvas_cli = st_canvas(
                                 stroke_width=3, 
                                 stroke_color="#000", 
                                 background_color="#fff", 
-                                height=180, 
-                                width=400, 
+                                height=250, # Más grande
+                                width=550,  # Más grande
                                 drawing_mode="freedraw", 
                                 key=cli_key,
-                                display_toolbar=False
+                                display_toolbar=True # Retorna el basurero
                             )
-                        
-                        # Botón de limpiar nativo para el cliente
-                        if st.button("🔄 Limpiar Firma Cliente", use_container_width=True, key=f"btn_reset_cli_{macro_area}"):
-                            st.session_state[f'reset_cli_{macro_area}'] = st.session_state.get(f'reset_cli_{macro_area}', 0) + 1
-                            st.rerun()
-
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    
-                    # 🔥 BOTÓN DE ENVÍO FINAL CENTRADO
-                    _, col_btn_final, _ = st.columns([1, 2, 1])
-                    with col_btn_final:
-                        if st.button(f"🚀 Aprobar, Firmar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
                             
-                            tec_ok = st.session_state.firma_tec_img is not None 
-                            cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
-                            
-                            if not tec_ok: st.warning("⚠️ Debes guardar tu Firma de Técnico en el panel superior desplegable primero.")
-                            elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {nombres_clientes}.")
-                            else:
-                                def procesar_imagen_firma(img_data): img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
+                        # Botón de enviar centrado
+                        _, col_btn_final, _ = st.columns([1, 2, 1])
+                        with col_btn_final:
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            if st.button(f"🚀 Aprobar, Firmar y Subir Informes", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
                                 
-                                informes_finales = []
-                                with st.spinner(f"Generando documentos sellados para {macro_area}..."):
-                                    io_cli = procesar_imagen_firma(canvas_cli.image_data)
-                                    io_tec = procesar_imagen_firma(st.session_state.firma_tec_img)
-                                    try:
-                                        for inf in informes_area:
-                                            io_cli_local = io.BytesIO(io_cli.getvalue())
-                                            io_tec_local = io.BytesIO(io_tec.getvalue())
-                                            
-                                            doc = DocxTemplate(inf['file_plantilla']); context = inf['context']
-                                            
-                                            # Ambas firmas inyectadas automáticamente y de manera invisible
-                                            context['firma_cliente'] = InlineImage(doc, io_cli_local, width=Mm(40))
-                                            context['firma_tecnico'] = InlineImage(doc, io_tec_local, width=Mm(40))
+                                tec_ok = st.session_state.firma_tec_img is not None 
+                                cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
+                                
+                                if not tec_ok: st.warning("⚠️ Debes guardar tu Firma de Técnico en el panel desplegable de arriba primero.")
+                                elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {nombres_clientes}.")
+                                else:
+                                    def procesar_imagen_firma(img_data): img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
+                                    
+                                    informes_finales = []
+                                    with st.spinner(f"Generando documentos sellados para {macro_area}..."):
+                                        io_cli = procesar_imagen_firma(canvas_cli.image_data)
+                                        io_tec = procesar_imagen_firma(st.session_state.firma_tec_img)
+                                        try:
+                                            for inf in informes_area:
+                                                io_cli_local = io.BytesIO(io_cli.getvalue())
+                                                io_tec_local = io.BytesIO(io_tec.getvalue())
+                                                
+                                                doc = DocxTemplate(inf['file_plantilla']); context = inf['context']
+                                                
+                                                context['firma_cliente'] = InlineImage(doc, io_cli_local, width=Mm(40))
+                                                context['firma_tecnico'] = InlineImage(doc, io_tec_local, width=Mm(40))
+                                                context['show_tech_signature'] = True 
 
-                                            # Carpetas inteligentes por WK y Área
-                                            d_obj = parse_fecha(context['fecha'])
-                                            wk_str = f"WK{d_obj.isocalendar()[1]:02d}_{d_obj.year}"
-                                            fecha_corta = f"{d_obj.day}-{d_obj.month}-{d_obj.year}"
+                                                d_obj = parse_fecha(context['fecha'])
+                                                wk_str = f"WK{d_obj.isocalendar()[1]:02d}_{d_obj.year}"
+                                                fecha_corta = f"{d_obj.day}-{d_obj.month}-{d_obj.year}"
+                                                
+                                                dir_final = os.path.join(RUTA_APROBADOS, wk_str, macro_area, fecha_corta)
+                                                os.makedirs(dir_final, exist_ok=True)
+                                                
+                                                ruta_docx_final = os.path.join(dir_final, inf['nombre_archivo_base'])
+                                                doc.render(context); doc.save(ruta_docx_final)
+                                                
+                                                ruta_pdf_gen = convertir_a_pdf(ruta_docx_final)
+                                                
+                                                if ruta_pdf_gen: 
+                                                    ruta_final = ruta_pdf_gen
+                                                    nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
+                                                else: 
+                                                    ruta_final = ruta_docx_final
+                                                    nombre_final = inf['nombre_archivo_base']
+                                                
+                                                tupla_lista = list(inf['tupla_db']); tupla_lista[18] = ruta_final; guardar_registro(tuple(tupla_lista))
+                                                informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{macro_area}@@{inf['tag']}@@{nombre_final}"})
                                             
-                                            dir_final = os.path.join(RUTA_APROBADOS, wk_str, macro_area, fecha_corta)
-                                            os.makedirs(dir_final, exist_ok=True)
-                                            
-                                            ruta_docx_final = os.path.join(dir_final, inf['nombre_archivo_base'])
-                                            doc.render(context); doc.save(ruta_docx_final)
-                                            
-                                            ruta_pdf_gen = convertir_a_pdf(ruta_docx_final)
-                                            
-                                            if ruta_pdf_gen: 
-                                                ruta_final = ruta_pdf_gen
-                                                nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
-                                            else: 
-                                                ruta_final = ruta_docx_final
-                                                nombre_final = inf['nombre_archivo_base']
-                                            
-                                            tupla_lista = list(inf['tupla_db']); tupla_lista[18] = ruta_final; guardar_registro(tuple(tupla_lista))
-                                            informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{macro_area}@@{inf['tag']}@@{nombre_final}"})
-                                        
-                                        exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
-                                        if exito: 
-                                            st.success(f"✅ ¡Listos y enviados los reportes de {macro_area}!")
-                                            for inf_enviado in informes_area:
-                                                if inf_enviado in st.session_state.informes_pendientes: st.session_state.informes_pendientes.remove(inf_enviado)
-                                            guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
-                                            time.sleep(2)
-                                            if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
-                                            st.rerun()
-                                        else: st.error(f"Error de red: {mensaje_correo}")
-                                    except Exception as e: st.error(f"Error procesando los PDFs: {e}")
+                                            exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
+                                            if exito: 
+                                                st.success(f"✅ ¡Listos y enviados los reportes de {macro_area}!")
+                                                for inf_enviado in informes_area:
+                                                    if inf_enviado in st.session_state.informes_pendientes: st.session_state.informes_pendientes.remove(inf_enviado)
+                                                guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
+                                                time.sleep(2)
+                                                if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
+                                                st.rerun()
+                                            else: st.error(f"Error de red: {mensaje_correo}")
+                                        except Exception as e: st.error(f"Error procesando los PDFs: {e}")
                 st.markdown("<br><br>", unsafe_allow_html=True)
 
     # --- 7.3 VISTA CATÁLOGO AGRUPADO POR ÁREA ---
