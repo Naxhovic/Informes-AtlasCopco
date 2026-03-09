@@ -677,9 +677,9 @@ else:
         
         df_kpi = df_cmms[(df_cmms["Mes_Calc"] == mes_visualizado) & (df_cmms["Tipo"] != "N/A") & (df_cmms["Tipo"] != "")]
         total_tareas = len(df_kpi)
-        hechas = len(df_kpi[df_kpi["Estado"] == "✅ Hecho"])
-        fs = len(df_kpi[df_kpi["Estado"] == "🚨 F/S"])
-        pendientes = len(df_kpi[df_kpi["Estado"] == "⏳ Pendiente"])
+        hechas = len(df_kpi[df_kpi["Estado"] == "Hecho"])
+        fs = len(df_kpi[df_kpi["Estado"] == "F/S"])
+        pendientes = len(df_kpi[df_kpi["Estado"] == "Pendiente"])
         
         total_evaluable = hechas + pendientes
         cumplimiento = int((hechas / total_evaluable * 100)) if total_evaluable > 0 else (100 if hechas > 0 else 0)
@@ -714,12 +714,11 @@ else:
             todos_los_tags = list(inventario_equipos.keys())
             tags_faltantes = [t for t in todos_los_tags if t not in tags_presentes]
             
-            # 🔥 ANTI-LIMBO BUG: SI HAY FILAS NUEVAS O VACÍAS, SE ANCLAN A LA SEMANA ACTUAL DEL FILTRO 🔥
             if tags_faltantes:
                 wk_defecto = ""
                 if filtro_mes != "Todas" and min_date_val is not None:
                     wk_defecto = f"WK{min_date_val.isocalendar()[1]:02d}"
-                filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": wk_defecto, "Tipo": "⚪ N/A", "Estado": "⚪ N/A", "S_Realizada": None, "Observacion": "", "Mes_Calc": filtro_mes if filtro_mes != "Todas" else "Sin Asignar"} for t in tags_faltantes])
+                filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": wk_defecto, "Tipo": "N/A", "Estado": "N/A", "S_Realizada": None, "Observacion": "", "Mes_Calc": filtro_mes if filtro_mes != "Todas" else "Sin Asignar"} for t in tags_faltantes])
                 df_mostrar = pd.concat([df_mostrar, filas_vacias], ignore_index=True)
                 
             df_mostrar = df_mostrar.sort_values(by="TAG").reset_index(drop=True)
@@ -732,8 +731,9 @@ else:
                 df_mostrar['S_Realizada'] = df_mostrar['S_Realizada'].apply(string_to_date)
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
 
-                tipo_visual_map = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03", "N/A": "⚪ N/A"}
-                map_visual_estado = {"✅ Hecho": "✅ Hecho", "⏳ Pendiente": "⏳ Pendiente", "🚨 F/S": "🚨 F/S", "N/A": "⚪ N/A"}
+                # 🔥 DICCIONARIOS DE TRADUCCIÓN CORREGIDOS (LECTURA LIMPIA) 🔥
+                tipo_visual_map = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03", "N/A": "⚪ N/A", "": "⚪ N/A"}
+                map_visual_estado = {"Hecho": "✅ Hecho", "Pendiente": "⏳ Pendiente", "F/S": "🚨 F/S", "N/A": "⚪ N/A", "": "⚪ N/A"}
                 
                 df_mostrar['Tipo'] = df_mostrar['Tipo'].apply(lambda x: tipo_visual_map.get(str(x).strip(), "⚪ N/A"))
                 df_mostrar['Estado'] = df_mostrar['Estado'].apply(lambda x: map_visual_estado.get(str(x).strip(), "⚪ N/A"))
@@ -759,8 +759,8 @@ else:
                 
                 df_mostrar = df_mostrar[columnas_ordenadas]
                 
-                opciones_visuales_tipo = list(tipo_visual_map.values())
-                opciones_estado_visual = list(map_visual_estado.values())
+                opciones_visuales_tipo = list(set(tipo_visual_map.values()))
+                opciones_estado_visual = list(set(map_visual_estado.values()))
 
                 config_columnas = {
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
@@ -807,7 +807,6 @@ else:
                     df_guardar['Tipo'] = df_guardar['Tipo'].apply(lambda x: inv_tipo_map.get(str(x).strip(), "N/A"))
                     df_guardar['Estado'] = df_guardar['Estado'].apply(lambda x: inv_estado_map.get(str(x).strip(), "N/A"))
                     
-                    # 🔥 ANTI-LIMBO BUG AL GUARDAR 🔥
                     def get_final_wk(row):
                         d = row.get('Día Programado')
                         if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
