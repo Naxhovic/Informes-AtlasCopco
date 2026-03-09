@@ -60,7 +60,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (CSS LIMPIO Y 100% SEGURO PARA LA BARRA LATERAL)
+# 0.2 ESTILOS PREMIUM
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -69,8 +69,13 @@ def aplicar_estilos_premium():
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
         
-        /* 🔥 Dejamos intacta la cabecera nativa de Streamlit para que la flecha NUNCA falle 🔥 */
-        footer { display: none !important; } 
+        @keyframes cinematicFadeIn { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
+        .main .block-container { animation: cinematicFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        
+        [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
+        [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; } 
+        a[href*="github.com"] { display: none !important; visibility: hidden !important; }
+        [data-testid="viewerBadge"], div[class^="viewerBadge_container"], footer { display: none !important; }
         
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
@@ -85,9 +90,12 @@ def aplicar_estilos_premium():
 aplicar_estilos_premium()
 
 # =============================================================================
-# 1. DATOS MAESTROS E INVENTARIO
+# 1. DATOS MAESTROS, INVENTARIO Y ROLES (RBAC)
 # =============================================================================
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "yerko villarroel": "spence2026", "admin": "admin123"}
+# 🔥 SISTEMA DE ROLES 🔥
+ADMIN_USERS = ["ignacio morales", "admin"]
+
 DEFAULT_SPECS = {
     "GA 18": {"Litros de Aceite": "14.1 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1625 4800 00 / 1625 7525 01", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1630 2201 36 / 1625 2204 36", "Tipo de Aceite": "Roto Inject Fluid", "Manual": "manuales/manual_ga18.pdf"},
     "GA 30": {"Litros de Aceite": "14.6 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1613 6105 00", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1613 7407 00", "N° Parte Kit": "2901-0326-00 / 2901 0325 00", "Tipo de Aceite": "Indurance - Xtend Duty", "Manual": "manuales/manual_ga30.pdf"},
@@ -243,6 +251,22 @@ def obtener_historial_global():
             return hist
     except: pass
     return []
+
+# 🔥 NUEVA FUNCIÓN PARA EL ROL DE ADMINISTRADOR 🔥
+def eliminar_registro_intervencion(tag, fecha, tipo):
+    try:
+        sheet = get_sheet("intervenciones")
+        if sheet:
+            records = sheet.get_all_values()
+            # Buscamos desde abajo hacia arriba para borrar la más reciente que coincida
+            for i in range(len(records)-1, 0, -1):
+                row = records[i]
+                if row[0] == tag and row[5] == fecha and row[15] == tipo:
+                    sheet.delete_rows(i + 1)
+                    st.cache_data.clear()
+                    return True
+    except Exception as e: pass
+    return False
 
 def guardar_dato_equipo(tag, clave, valor):
     sheet = get_sheet("datos_equipo")
@@ -524,8 +548,11 @@ if not st.session_state.logged_in:
 # =============================================================================
 else:
     with st.sidebar:
+        # 🔥 IDENTIFICADOR DE ROL EN LA BARRA LATERAL 🔥
+        rol = "👑 Administrador" if st.session_state.usuario_actual in ADMIN_USERS else "🧑‍🔧 Técnico"
+        
         st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas Copco</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
-        st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}", unsafe_allow_html=True)
+        st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}<br><small style='color:#FF6600; font-weight:bold;'>{rol}</small>", unsafe_allow_html=True)
         st.markdown("---")
         
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
@@ -555,6 +582,8 @@ else:
         """, unsafe_allow_html=True)
         
         historial_global = obtener_historial_global()
+        es_admin = st.session_state.usuario_actual in ADMIN_USERS # 🔥 Chequeo de privilegios 🔥
+
         if not historial_global:
             st.info("Aún no hay reportes firmados y almacenados en la base de datos central.")
         else:
@@ -616,6 +645,15 @@ else:
                                 f"</div>"
                             )
                             st.markdown(html_card, unsafe_allow_html=True)
+                            
+                            # 🔥 BOTÓN EXCLUSIVO PARA ADMINISTRADORES 🔥
+                            if es_admin:
+                                if st.button("🗑️ Eliminar Registro", key=f"del_hist_{item['tag']}_{item['fecha']}_{item['tipo']}_{idx}", use_container_width=True):
+                                    exito = eliminar_registro_intervencion(item['tag'], item['fecha'], item['tipo'])
+                                    if exito:
+                                        st.success(f"Registro de {item['tag']} eliminado correctamente.")
+                                        time.sleep(1)
+                                        st.rerun()
 
     # --- 7.1 VISTA PLANIFICACIÓN REACTIVA E INTERACTIVA ---
     elif st.session_state.vista_actual == "planificacion":
@@ -971,7 +1009,7 @@ else:
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-    # --- 7.2 VISTA DE FIRMAS (ESTRATEGIA 100% SEGURA CON BOTÓN CENTRAL) ---
+    # --- 7.2 VISTA DE FIRMAS (SISTEMA DE BOTÓN ANTI-CRASH) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -981,31 +1019,29 @@ else:
         
         if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
-            # 🔥 NUEVO SISTEMA SEGURO PARA EL TÉCNICO (Sin Expander) 🔥
+            # 🔥 NUEVO SISTEMA SEGURO PARA EL TÉCNICO (Cero expansores, cero crasheos) 🔥
             _, c_btn_firma, _ = st.columns([1, 2, 1])
             with c_btn_firma:
                 if st.session_state.firma_tec_img is None:
-                    # Botón para abrir el panel si no hay firma
                     texto_btn = "👁️ Ocultar Panel de Firma" if st.session_state.mostrar_firma_tec else "🖌️ Configurar Mi Firma Fija (Técnico)"
                     if st.button(texto_btn, type="primary", use_container_width=True):
                         st.session_state.mostrar_firma_tec = not st.session_state.mostrar_firma_tec
                         st.rerun()
                 else:
-                    # Mostrar la firma guardada y un botón para cambiarla (A prueba de crash)
-                    st.image(st.session_state.firma_tec_img, width=300)
-                    st.markdown("<p style='color: #00e676; font-weight: bold; margin-top:-10px;'>✅ Firma lista para aplicar</p>", unsafe_allow_html=True)
+                    # Mostrar la firma guardada como imagen estática (Nunca se rompe)
+                    st.image(st.session_state.firma_tec_img, width=450)
+                    st.markdown("<p style='color: #00e676; font-weight: bold; margin-top:-10px; text-align: center;'>✅ Firma lista para aplicar</p>", unsafe_allow_html=True)
                     if st.button("🔄 Cambiar Mi Firma", use_container_width=True):
                         st.session_state.firma_tec_img = None
                         st.session_state.mostrar_firma_tec = True
                         st.rerun()
 
-            # Panel de dibujo que se muestra si el botón se presionó
             if st.session_state.mostrar_firma_tec and st.session_state.firma_tec_img is None:
                 st.markdown("<br>", unsafe_allow_html=True)
                 _, c_canvas_tec, _ = st.columns([1, 2.5, 1])
                 with c_canvas_tec:
                     with st.container(border=True):
-                        st.markdown("<h4 style='text-align: center; color: white;'>Dibuja tu firma</h4>", unsafe_allow_html=True)
+                        st.markdown("<h4 style='text-align: center; color: white;'>Dibuja tu firma técnica</h4>", unsafe_allow_html=True)
                         canvas_tec = st_canvas(
                             stroke_width=3, stroke_color="#000", background_color="#fff", 
                             height=200, width=500, drawing_mode="freedraw", 
@@ -1116,7 +1152,7 @@ else:
                     nombres_clientes = " y ".join(list(set([inf['cli'] for inf in informes_area if inf.get('cli')])))
                     if not nombres_clientes: nombres_clientes = "Cliente a cargo"
                     
-                    # 🔥 FIRMA DEL CLIENTE AL FINAL, GRANDE Y CENTRADA
+                    # 🔥 FIRMA DEL CLIENTE (GRANDE, CENTRADA, CON BASURERO)
                     st.markdown(f"<h2 style='text-align: center; color: white; margin-bottom: 5px;'>Firma de Aprobación Final</h2>", unsafe_allow_html=True)
                     st.markdown(f"<h4 style='text-align: center; color: #aeb9cc; margin-top: 0px; margin-bottom: 25px;'>Aprobador: <span style='color: white;'>{nombres_clientes}</span></h4>", unsafe_allow_html=True)
                     
@@ -1134,7 +1170,7 @@ else:
                             
                     st.markdown("<br>", unsafe_allow_html=True)
                     
-                    # 🔥 BOTÓN DE ENVÍO FINAL CENTRADO
+                    # 🔥 BOTÓN DE ENVÍO FINAL
                     _, col_btn_final, _ = st.columns([1, 2, 1])
                     with col_btn_final:
                         if st.button(f"🚀 Aprobar, Firmar y Subir Informes", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
