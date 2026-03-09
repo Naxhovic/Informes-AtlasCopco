@@ -413,7 +413,7 @@ def safe_date_str(x):
     except: return ""
 
 # =============================================================================
-# 5. MOTOR PLANIFICACIÓN (AHORA TOTALMENTE SEGURO CONTRA BORRADOS)
+# 5. MOTOR PLANIFICACIÓN CON AUTO-RECUPERACIÓN
 # =============================================================================
 DATOS_PLAN_BASE = [
     {"TAG": "70-GC-013", "S_Programada": "WK51", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
@@ -677,9 +677,9 @@ else:
         
         df_kpi = df_cmms[(df_cmms["Mes_Calc"] == mes_visualizado) & (df_cmms["Tipo"] != "N/A") & (df_cmms["Tipo"] != "")]
         total_tareas = len(df_kpi)
-        hechas = len(df_kpi[df_kpi["Estado"] == "Hecho"])
-        fs = len(df_kpi[df_kpi["Estado"] == "F/S"])
-        pendientes = len(df_kpi[df_kpi["Estado"] == "Pendiente"])
+        hechas = len(df_kpi[df_kpi["Estado"] == "✅ Hecho"])
+        fs = len(df_kpi[df_kpi["Estado"] == "🚨 F/S"])
+        pendientes = len(df_kpi[df_kpi["Estado"] == "⏳ Pendiente"])
         
         total_evaluable = hechas + pendientes
         cumplimiento = int((hechas / total_evaluable * 100)) if total_evaluable > 0 else (100 if hechas > 0 else 0)
@@ -714,9 +714,14 @@ else:
             todos_los_tags = list(inventario_equipos.keys())
             tags_faltantes = [t for t in todos_los_tags if t not in tags_presentes]
             
+            # 🔥 ANTI-LIMBO BUG: SI HAY FILAS NUEVAS O VACÍAS, SE ANCLAN A LA SEMANA ACTUAL DEL FILTRO 🔥
             if tags_faltantes:
-                filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": "", "Tipo": "⚪ N/A", "Estado": "⚪ N/A", "S_Realizada": None, "Observacion": "", "Mes_Calc": filtro_mes if filtro_mes != "Todas" else "Sin Asignar"} for t in tags_faltantes])
+                wk_defecto = ""
+                if filtro_mes != "Todas" and min_date_val is not None:
+                    wk_defecto = f"WK{min_date_val.isocalendar()[1]:02d}"
+                filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": wk_defecto, "Tipo": "⚪ N/A", "Estado": "⚪ N/A", "S_Realizada": None, "Observacion": "", "Mes_Calc": filtro_mes if filtro_mes != "Todas" else "Sin Asignar"} for t in tags_faltantes])
                 df_mostrar = pd.concat([df_mostrar, filas_vacias], ignore_index=True)
+                
             df_mostrar = df_mostrar.sort_values(by="TAG").reset_index(drop=True)
 
             if not df_mostrar.empty:
@@ -727,9 +732,8 @@ else:
                 df_mostrar['S_Realizada'] = df_mostrar['S_Realizada'].apply(string_to_date)
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
 
-                # 🔥 DICCIONARIOS DE TRADUCCIÓN CORREGIDOS (A PRUEBA DE FALLOS) 🔥
                 tipo_visual_map = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03", "N/A": "⚪ N/A"}
-                map_visual_estado = {"Hecho": "✅ Hecho", "Pendiente": "⏳ Pendiente", "F/S": "🚨 F/S", "N/A": "⚪ N/A"}
+                map_visual_estado = {"✅ Hecho": "✅ Hecho", "⏳ Pendiente": "⏳ Pendiente", "🚨 F/S": "🚨 F/S", "N/A": "⚪ N/A"}
                 
                 df_mostrar['Tipo'] = df_mostrar['Tipo'].apply(lambda x: tipo_visual_map.get(str(x).strip(), "⚪ N/A"))
                 df_mostrar['Estado'] = df_mostrar['Estado'].apply(lambda x: map_visual_estado.get(str(x).strip(), "⚪ N/A"))
@@ -803,12 +807,17 @@ else:
                     df_guardar['Tipo'] = df_guardar['Tipo'].apply(lambda x: inv_tipo_map.get(str(x).strip(), "N/A"))
                     df_guardar['Estado'] = df_guardar['Estado'].apply(lambda x: inv_estado_map.get(str(x).strip(), "N/A"))
                     
+                    # 🔥 ANTI-LIMBO BUG AL GUARDAR 🔥
                     def get_final_wk(row):
-                        d = row['Día Programado']
+                        d = row.get('Día Programado')
                         if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
                             if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
                             return f"WK{d.isocalendar()[1]:02d}"
-                        return row['S_Programada']
+                        
+                        wk_actual = str(row.get('S_Programada', '')).strip()
+                        if wk_actual == "" and filtro_mes != "Todas" and min_date_val is not None:
+                            return f"WK{min_date_val.isocalendar()[1]:02d}"
+                        return wk_actual
                         
                     df_guardar['S_Programada'] = df_guardar.apply(get_final_wk, axis=1)
                     df_guardar['S_Realizada'] = df_guardar['S_Realizada'].apply(safe_date_str)
@@ -855,11 +864,14 @@ else:
                                 df_editado_clean['Estado'] = df_editado_clean['Estado'].apply(lambda x: inv_estado_map.get(str(x).strip(), "N/A"))
                                 
                                 def get_final_wk_clean(row):
-                                    d = row['Día Programado']
+                                    d = row.get('Día Programado')
                                     if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
                                         if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
                                         return f"WK{d.isocalendar()[1]:02d}"
-                                    return row['S_Programada']
+                                    wk_actual = str(row.get('S_Programada', '')).strip()
+                                    if wk_actual == "" and filtro_mes != "Todas" and min_date_val is not None:
+                                        return f"WK{min_date_val.isocalendar()[1]:02d}"
+                                    return wk_actual
                                     
                                 df_editado_clean['S_Programada'] = df_editado_clean.apply(get_final_wk_clean, axis=1)
                                 df_editado_clean['S_Realizada'] = df_editado_clean['S_Realizada'].apply(safe_date_str)
@@ -881,7 +893,6 @@ else:
                             df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
                             guardar_cmms(df_cmms_final_extra); st.success("✅ Guardado."); time.sleep(1.5); st.rerun()
             
-            # 🔥 BOTÓN DE RECUPERACIÓN (AHORA SÍ FUNCIONA PERFECTO) 🔥
             with c_extra2:
                 if es_admin:
                     with st.expander("🚨 Zona de Peligro (Admin)", expanded=False):
@@ -1381,15 +1392,12 @@ else:
             for i, (k, v) in enumerate(datos_equipo.items()):
                 with cols_area[i % 2]: st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #FF6600;'><span style='color: #aeb9cc; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
         
-        # 🔥 TABLA DE HISTÓRICO CON BORRADO PARA ADMINISTRADORES 🔥
         st.markdown("<br><hr>", unsafe_allow_html=True)
         st.markdown("### 📋 Trazabilidad Histórica de Intervenciones")
         df_hist = obtener_todo_el_historial(tag_sel)
         
-        es_admin = st.session_state.usuario_actual in ADMIN_USERS
-        
         if not df_hist.empty: 
-            if es_admin:
+            if st.session_state.usuario_actual in ADMIN_USERS:
                 df_hist.insert(0, "🗑️ Borrar", False)
                 config_hist = {"🗑️ Borrar": st.column_config.CheckboxColumn("Seleccionar", default=False)}
                 df_edit_hist = st.data_editor(df_hist, hide_index=True, use_container_width=True, column_config=config_hist, key=f"hist_edit_{tag_sel}")
