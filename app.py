@@ -59,7 +59,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM Y CINEMÁTICA
+# 0.2 ESTILOS PREMIUM Y CINEMÁTICA FLUIDA
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -103,7 +103,7 @@ def aplicar_estilos_premium():
         .stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #2b3543; }
         .stTabs [aria-selected="true"] { color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; }
         
-        /* Estilo para la tarjeta de firma centrada */
+        /* Tarjeta de firma centrada */
         .firma-card {
             background-color: #1a212b;
             border-radius: 15px;
@@ -141,7 +141,6 @@ DEFAULT_SPECS = {
     "CD 630": {"Filtro de Gases": "DD/PD 630", "Desecante": "Alúmina", "Kit Válvulas": "2901 1625 00", "Silenciador": "1621 1235 00", "Manual": "manuales/manual_cd630.pdf"}
 }
 
-# 🔥 Taller pertenece a Laboratorio
 inventario_equipos = {
     "20-GC-001": ["GA 75", "AII482673", "truck shop", "Mina"], "20-GC-002": ["GA 75", "AII482674", "truck shop", "Mina"], "20-GC-003": ["GA 90", "AIF095178", "truck shop", "Mina"], "20-GC-004": ["GA 37", "AII390776", "truck shop", "Mina"],
     "35-GC-006": ["GA 250", "AIF095420", "chancado secundario", "Área Seca"], "35-GC-007": ["GA 250", "AIF095421", "chancado secundario", "Área Seca"], "35-GC-008": ["GA 250", "AIF095302", "chancado secundario", "Área Seca"],
@@ -327,7 +326,6 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
 
-# --- FIN DE LA PARTE 1 ---
 # =============================================================================
 # 4. FUNCIONES AUXILIARES Y CEREBRO MATEMÁTICO MINERO
 # =============================================================================
@@ -748,6 +746,12 @@ else:
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
                 df_mostrar.insert(0, "🗑️ Quitar", False)
                 
+                # 🔥 MOTOR DE COLORES INTERACTIVOS: Traducimos Tipo a Emojis VISUALES
+                tipo_visual_map = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03", "N/A": "⚪ N/A"}
+                
+                # Reemplazamos los valores puros por los valores visuales ANTES de enviarlos al editor
+                df_mostrar['Tipo'] = df_mostrar['Tipo'].apply(lambda x: tipo_visual_map.get(str(x).strip(), str(x)))
+
                 if "kanban_table" in st.session_state:
                     edits = st.session_state["kanban_table"].get("edited_rows", {})
                     for idx_str, changes in edits.items():
@@ -764,45 +768,50 @@ else:
                 columnas_ordenadas = ["🗑️ Quitar", "TAG", "Día Programado", "Tipo", "Estado", "S_Realizada", "Observacion", "Mes_Calc", "S_Programada"]
                 df_mostrar = df_mostrar[columnas_ordenadas]
                 
-                # 🔥 COLORES EN EL EDITOR DE DATOS
-                def color_estado(val):
-                    if val == '✅ Hecho': return 'background-color: #063f22; color: #6ee7b7; font-weight: bold;'
-                    if val == '⏳ Pendiente': return 'background-color: #423205; color: #fde047; font-weight: bold;'
-                    if val == '🚨 F/S': return 'background-color: #471015; color: #ff8a93; font-weight: bold;'
-                    if val == '⚪ N/A': return 'color: #556b82; font-style: italic;'
-                    return ''
+                # Le damos a SelectboxColumn exactamente las opciones visuales mapeadas
+                opciones_visuales_tipo = list(tipo_visual_map.values())
                 
-                def color_tipo(val):
-                    v_str = str(val)
-                    if 'INSP' in v_str: return 'background-color: #1e3a8a; color: #93c5fd; font-weight: bold;' # Azul
-                    if 'P1' in v_str: return 'background-color: #064e3b; color: #6ee7b7; font-weight: bold;' # Verde
-                    if 'P2' in v_str: return 'background-color: #78350f; color: #fdba74; font-weight: bold;' # Naranja
-                    if 'P3' in v_str: return 'background-color: #4c1d95; color: #d8b4fe; font-weight: bold;' # Púrpura
-                    if 'P4' in v_str: return 'background-color: #7f1d1d; color: #fca5a5; font-weight: bold;' # Rojo
-                    if 'PM03' in v_str: return 'background-color: #0f766e; color: #a7f3d0; font-weight: bold;' # Turquesa
-                    if 'N/A' in v_str: return 'color: #556b82; font-style: italic;' # Gris
-                    return ''
-
                 config_columnas = {
                     "🗑️ Quitar": st.column_config.CheckboxColumn("Quitar", default=False),
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "Mes_Calc": None, 
                     "S_Programada": None, 
                     "Día Programado": st.column_config.DateColumn("📆 Prog. para (Día y WK)", format="DD/MM/YYYY - [WK]WW", min_value=min_date_val, max_value=max_date_val, disabled=False),
-                    "Tipo": st.column_config.SelectboxColumn("Intervención", options=["N/A", "INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
+                    # 🔥 Ahora la columna asume las opciones con emojis
+                    "Tipo": st.column_config.SelectboxColumn("Intervención", options=opciones_visuales_tipo, disabled=False),
                     "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["⚪ N/A", "⏳ Pendiente", "✅ Hecho", "🚨 F/S"], required=True),
                     "S_Realizada": st.column_config.DateColumn("Día Ejecución (Día y WK) 📅", format="DD/MM/YYYY - [WK]WW", disabled=False),
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
-
-                try: 
-                    df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado']).map(color_tipo, subset=['Tipo'])
-                except AttributeError: 
-                    df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado']).applymap(color_tipo, subset=['Tipo'])
+                
+                # 🔥 PINTAMOS EL FONDO DE LA CELDA SEGÚN EL EMOJI ELEGIDO
+                def color_estado(val):
+                    if val == '✅ Hecho': return 'background-color: #063f22; color: #6ee7b7; font-weight: bold;'
+                    if val == '⏳ Pendiente': return 'background-color: #423205; color: #fde047; font-weight: bold;'
+                    if val == '🚨 F/S': return 'background-color: #471015; color: #ff8a93; font-weight: bold;'
+                    if val == '⚪ N/A': return 'color: #556b82; font-style: italic;'
+                    return ''
+                    
+                def color_tipo(val):
+                    if 'INSP' in str(val): return 'background-color: #1e3a8a; color: #93c5fd; font-weight: bold;' # Azul profundo
+                    if 'P1' in str(val): return 'background-color: #064e3b; color: #6ee7b7; font-weight: bold;' # Verde
+                    if 'P2' in str(val): return 'background-color: #78350f; color: #fdba74; font-weight: bold;' # Naranja
+                    if 'P3' in str(val): return 'background-color: #4c1d95; color: #d8b4fe; font-weight: bold;' # Púrpura
+                    if 'P4' in str(val): return 'background-color: #7f1d1d; color: #fca5a5; font-weight: bold;' # Rojo
+                    if 'PM03' in str(val): return 'background-color: #0f766e; color: #a7f3d0; font-weight: bold;' # Turquesa
+                    if 'N/A' in str(val): return 'color: #556b82; font-style: italic;'
+                    return ''
+                    
+                try: df_estilizado = df_mostrar.style.map(color_estado, subset=['Estado']).map(color_tipo, subset=['Tipo'])
+                except AttributeError: df_estilizado = df_mostrar.style.applymap(color_estado, subset=['Estado']).applymap(color_tipo, subset=['Tipo'])
                 
                 df_editado = st.data_editor(df_estilizado, key="kanban_table", hide_index=True, use_container_width=True, column_config=config_columnas, height=750)
                 
                 if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
+                    # 🔥 MOTOR DE LIMPIEZA: Quitamos el Emoji antes de guardar a Base de Datos
+                    inv_tipo_map = {v: k for k, v in tipo_visual_map.items()}
+                    df_editado['Tipo'] = df_editado['Tipo'].apply(lambda x: inv_tipo_map.get(str(x).strip(), str(x)))
+                    
                     def get_final_wk(row):
                         d = row['Día Programado']
                         if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
@@ -835,7 +844,10 @@ else:
                 with st.form("form_nueva_tarea"):
                     c1, c2, c3 = st.columns(3)
                     n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
-                    n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
+                    
+                    # Formulario de inyectar también usa las opciones visuales
+                    tipo_visual_map_iny = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03"}
+                    n_tipo_visual = c2.selectbox("Tipo de Tarea:", list(tipo_visual_map_iny.values()))
                     
                     default_d = datetime.date.today()
                     if min_date_val and max_date_val:
@@ -845,9 +857,15 @@ else:
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     
                     if st.form_submit_button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
+                        # Limpiamos el valor inyectado a puro
+                        n_tipo_puro = {v: k for k, v in tipo_visual_map_iny.items()}.get(n_tipo_visual, "INSP")
+                        
                         df_cmms_guardar = df_cmms.copy()
                         if not df_editado.empty:
+                            # Limpiar tabla actual antes de unir
                             df_editado_clean = df_editado.copy()
+                            df_editado_clean['Tipo'] = df_editado_clean['Tipo'].apply(lambda x: inv_tipo_map.get(str(x).strip(), str(x)))
+                            
                             def get_final_wk_clean(row):
                                 d = row['Día Programado']
                                 if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
@@ -867,7 +885,7 @@ else:
                                 df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
 
                         n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}"
-                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo, "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": n_obs}])
+                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo_puro, "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": n_obs}])
                         for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
                             if col in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=[col])
                         
@@ -924,12 +942,12 @@ else:
                             c_bg = "transparent"; c_tx = "#8c9eb5"; b_style = "1px dashed #455065" 
                             if t['est'] == '✅ Hecho': c_bg, c_tx, b_style = "#063f22", "#6ee7b7", "1px solid #10b981"
                             elif t['est'] == '🚨 F/S': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #ef4444"
-                            elif t['tipo'] == 'INSP': c_bg, c_tx, b_style = "#0c2d48", "#66c2ff", "1px solid #1a5c94" # Azul
-                            elif t['tipo'] == 'P1': c_bg, c_tx, b_style = "#064e3b", "#6ee7b7", "1px solid #047857" # Verde
-                            elif t['tipo'] == 'P2': c_bg, c_tx, b_style = "#4a2c00", "#ffb04c", "1px solid #8c5300" # Naranja
-                            elif t['tipo'] == 'P3': c_bg, c_tx, b_style = "#301047", "#d78aff", "1px solid #622291" # Púrpura
-                            elif t['tipo'] == 'P4': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #8e202a" # Rojo
-                            elif t['tipo'] == 'PM03': c_bg, c_tx, b_style = "#0f766e", "#a7f3d0", "1px solid #14b8a6" # Turquesa
+                            elif t['tipo'] == 'INSP': c_bg, c_tx, b_style = "#0c2d48", "#66c2ff", "1px solid #1a5c94"
+                            elif t['tipo'] == 'P1': c_bg, c_tx, b_style = "#064e3b", "#6ee7b7", "1px solid #047857"
+                            elif t['tipo'] == 'P2': c_bg, c_tx, b_style = "#4a2c00", "#ffb04c", "1px solid #8c5300"
+                            elif t['tipo'] == 'P3': c_bg, c_tx, b_style = "#301047", "#d78aff", "1px solid #622291"
+                            elif t['tipo'] == 'P4': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #8e202a"
+                            elif t['tipo'] == 'PM03': c_bg, c_tx, b_style = "#0f766e", "#a7f3d0", "1px solid #14b8a6"
                             html_cal += f'<div style="background:{c_bg}; color:{c_tx}; padding:4px; margin-bottom:4px; border-radius:4px; font-size:0.75rem; border: {b_style};"><b>{t["tag"]}</b> - {t["tipo"]}</div>'
                     html_cal += '</div>'
             html_cal += '</div>'
@@ -998,12 +1016,12 @@ else:
                 if 'HECHO' in v: return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
                 if 'F/S' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
                 if 'PENDIENTE' in v: 
-                    if 'INSP' in v: return base + 'background-color: #0c2d48; color: #66c2ff; font-weight: bold; border-left: 4px solid #eab308;' # Azul
-                    if 'P1' in v: return base + 'background-color: #064e3b; color: #6ee7b7; font-weight: bold; border-left: 4px solid #eab308;' # Verde
-                    if 'P2' in v: return base + 'background-color: #4a2c00; color: #ffb04c; font-weight: bold; border-left: 4px solid #eab308;' # Naranja
-                    if 'P3' in v: return base + 'background-color: #301047; color: #d78aff; font-weight: bold; border-left: 4px solid #eab308;' # Púrpura
-                    if 'P4' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #eab308;' # Rojo
-                    if 'PM03' in v: return base + 'background-color: #0f766e; color: #a7f3d0; font-weight: bold; border-left: 4px solid #eab308;' # Turquesa
+                    if 'INSP' in v: return base + 'background-color: #0c2d48; color: #66c2ff; font-weight: bold; border-left: 4px solid #eab308;'
+                    if 'P1' in v: return base + 'background-color: #064e3b; color: #6ee7b7; font-weight: bold; border-left: 4px solid #eab308;'
+                    if 'P2' in v: return base + 'background-color: #4a2c00; color: #ffb04c; font-weight: bold; border-left: 4px solid #eab308;'
+                    if 'P3' in v: return base + 'background-color: #301047; color: #d78aff; font-weight: bold; border-left: 4px solid #eab308;'
+                    if 'P4' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #eab308;'
+                    if 'PM03' in v: return base + 'background-color: #0f766e; color: #a7f3d0; font-weight: bold; border-left: 4px solid #eab308;'
                     return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
                 return base + 'color: #8c9eb5; font-style: italic;'
                 
@@ -1014,7 +1032,7 @@ else:
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-    # --- 7.2 VISTA DE FIRMAS (PANEL PREMIUM CENTRADO) ---
+    # --- 7.2 VISTA DE FIRMAS, EDICIÓN Y DESCARGAS ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -1024,33 +1042,27 @@ else:
         
         if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
-            # 🔥 FIRMA TÉCNICO CENTRADA Y PREMIUM
+            # 🔥 FIRMA DE TÉCNICO CENTRADA Y ERGONÓMICA
+            st.markdown("<h3 style='text-align: center; color: #007CA6;'>🧑‍🔧 Configuración de Mi Firma Fija (Técnico)</h3>", unsafe_allow_html=True)
             _, col_card, _ = st.columns([1, 2, 1])
             with col_card:
-                st.markdown(f"""
-                    <div class="firma-card">
-                        <h3>🧑‍🔧 Configuración de Mi Firma Fija</h3>
-                        <p>Dibuja tu firma una sola vez aquí.<br>Se aplicará automáticamente a todos los informes que apruebes.</p>
-                    </div>
-                """, unsafe_allow_html=True)
-                
                 with st.container(border=True):
+                    st.markdown("<p style='text-align: center; color: #8c9eb5; margin-bottom: 10px;'>Dibuja tu firma una sola vez aquí. Se aplicará automáticamente a todos los informes que apruebes.</p>", unsafe_allow_html=True)
                     canvas_tec_global = st_canvas(stroke_width=4, stroke_color="#000", background_color="#fff", height=180, width=400, drawing_mode="freedraw", key="canvas_tec_global", initial_drawing=st.session_state.firma_tec_json if st.session_state.firma_tec_json else None)
-                
-                c_btn1, c_btn2 = st.columns(2)
-                with c_btn1:
-                    if st.button("💾 Guardar Mi Firma", use_container_width=True):
-                        if canvas_tec_global.json_data is not None and len(canvas_tec_global.json_data.get("objects", [])) > 0:
-                            st.session_state.firma_tec_json = canvas_tec_global.json_data
-                            st.session_state.firma_tec_img = canvas_tec_global.image_data
-                            st.success("✅ Firma guardada correctamente.")
-                            time.sleep(1); st.rerun()
-                        else: st.warning("⚠️ Dibuja tu firma antes de guardar.")
-                with c_btn2:
-                    if st.button("🔄 Reiniciar Firma", use_container_width=True):
-                        st.session_state.firma_tec_json = None
-                        st.session_state.firma_tec_img = None
-                        st.rerun()
+                    c_btn1, c_btn2 = st.columns(2)
+                    with c_btn1:
+                        if st.button("💾 Guardar Mi Firma", use_container_width=True):
+                            if canvas_tec_global.json_data is not None and len(canvas_tec_global.json_data.get("objects", [])) > 0:
+                                st.session_state.firma_tec_json = canvas_tec_global.json_data
+                                st.session_state.firma_tec_img = canvas_tec_global.image_data
+                                st.success("✅ Firma guardada correctamente en la memoria.")
+                                time.sleep(1); st.rerun()
+                            else: st.warning("⚠️ Dibuja tu firma en el recuadro blanco antes de guardar.")
+                    with c_btn2:
+                        if st.button("🔄 Reiniciar Firma", use_container_width=True):
+                            st.session_state.firma_tec_json = None
+                            st.session_state.firma_tec_img = None
+                            st.rerun()
 
             st.markdown("<br><hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
 
@@ -1197,7 +1209,7 @@ else:
                                 except Exception as e: st.error(f"Error procesando los PDFs: {e}")
                 st.markdown("<br><br>", unsafe_allow_html=True)
 
-    # --- 7.3 VISTA CATÁLOGO AGRUPADO POR ÁREA ---
+    # --- 7.3 VISTA CATÁLOGO AGRUPADO ---
     elif st.session_state.vista_actual == "catalogo" and st.session_state.equipo_seleccionado is None:
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(0,124,166,0) 0%, rgba(0,124,166,0.1) 50%, rgba(0,124,166,0) 100%); padding: 20px; border-radius: 15px;">
@@ -1218,7 +1230,6 @@ else:
         with col_busqueda: busqueda = st.text_input("🔍 Buscar activo por TAG, Modelo o Área...", placeholder="Ejemplo: GA 250, 35-GC-006...").lower()
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # 🔥 CATÁLOGO AGRUPADO SUTILMENTE POR ÁREAS
         equipos_filtrados = {}
         for tag, (modelo, serie, area, ubicacion) in inventario_equipos.items():
             es_secador = "CD" in modelo.upper()
