@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 🔥 CONFIGURACIÓN DE PÁGINA: Debe ir en la línea 2 para efectos visuales inmediatos
+# 🔥 CONFIGURACIÓN DE PÁGINA
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
 from docxtpl import DocxTemplate, InlineImage
@@ -34,7 +34,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     msg['From'] = CORREO_REMITENTE
     msg['To'] = destinatario
     msg['Subject'] = f"REVISIÓN PREVIA: Reportes Atlas Copco - Firmados - {pd.Timestamp.now().strftime('%d/%m/%Y')}"
-    cuerpo = f"Estimado/a,\n\nSe adjuntan {len(lista_informes)} reportes de servicio técnico (Firmados) generados en la presente jornada para su revisión previa.\n\nEquipos intervenidos:\n"
+    cuerpo = f"Estimado/a,\n\nSe adjuntan {len(lista_informes)} reportes de servicio técnico (Firmados) generados en la presente jornada.\n\nEquipos intervenidos:\n"
     for item in lista_informes: cuerpo += f"- TAG: {item['tag']} | Orden: {item['tipo']}\n"
     cuerpo += "\nSaludos cordiales,\nSistema Integrado InforGem"
     msg.attach(MIMEText(cuerpo, 'plain'))
@@ -55,8 +55,8 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
         server.login(CORREO_REMITENTE, PASSWORD_APLICACION)
         server.send_message(msg)
         server.quit()
-        return True, "✅ Todos los informes fueron enviados a tu correo corporativo."
-    except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
+        return True, "✅ Enviado."
+    except Exception as e: return False, f"❌ Error: {e}"
 
 # =============================================================================
 # 0.2 ESTILOS PREMIUM
@@ -71,25 +71,11 @@ def aplicar_estilos_premium():
         header { background: transparent !important; }
         [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; } 
         [data-testid="stDecoration"] { display: none !important; }
-        [data-testid="collapsedControl"] {
-            display: flex !important; visibility: visible !important; opacity: 1 !important;
-            z-index: 999999 !important; background-color: var(--ac-blue) !important; 
-            border-radius: 8px !important; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4) !important;
-            margin-top: 15px !important; margin-left: 15px !important; transition: all 0.3s ease !important;
-        }
-        [data-testid="collapsedControl"]:hover { background-color: var(--bhp-orange) !important; transform: scale(1.05) !important; }
+        [data-testid="collapsedControl"] { display: flex !important; background-color: var(--ac-blue) !important; border-radius: 8px !important; margin-top: 15px !important; margin-left: 15px !important; }
         [data-testid="collapsedControl"] svg { fill: white !important; stroke: white !important; }
-        a[href*="github.com"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-        [data-testid="viewerBadge"] {display: none !important;}
-        div[class^="viewerBadge_container"] {display: none !important;}
         footer {display: none !important;} 
-        
-        div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
-        div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
-        [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 12px !important; border: 1px solid #2b3543 !important; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important; }
-        [data-testid="stVerticalBlockBorderWrapper"]:hover { transform: translateY(-6px) !important; box-shadow: 0 10px 25px rgba(0, 124, 166, 0.25) !important; border-color: var(--ac-blue) !important; }
-        .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select, .stDateInput>div>div>input { border-radius: 6px !important; border: 1px solid #2b3543 !important; background-color: #1e2530 !important; color: white !important; }
-        .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus, .stDateInput>div>div>input:focus { border-color: var(--bhp-orange) !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.3) !important; }
+        div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; }
+        [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 12px !important; border: 1px solid #2b3543 !important; }
         .stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #2b3543; }
         .stTabs [aria-selected="true"] { color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; }
         </style>
@@ -101,17 +87,17 @@ aplicar_estilos_premium()
 # =============================================================================
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "admin": "admin123"}
 DEFAULT_SPECS = {
-    "GA 18": {"Litros de Aceite": "14.1 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1625 4800 00 / 1625 7525 01", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1630 2201 36 / 1625 2204 36", "Tipo de Aceite": "Roto Inject Fluid", "Manual": "manuales/manual_ga18.pdf"},
-    "GA 30": {"Litros de Aceite": "14.6 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1613 6105 00", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1613 7407 00", "N° Parte Kit": "2901-0326-00 / 2901 0325 00", "Tipo de Aceite": "Indurance - Xtend Duty", "Manual": "manuales/manual_ga30.pdf"},
-    "GA 37": {"Litros de Aceite": "14.6 L", "N° Parte Filtro Aceite": "1613 6105 00", "N° Parte Filtro Aire": "1613 7407 00", "N° Parte Separador": "1613 7408 00", "N° Parte Kit": "2901 1626 00 / 10-1613 8397 02", "Tipo de Aceite": "Indurance - Xtend Duty", "Manual": "manuales/manual_ga37.pdf"},
-    "GA 45": {"Litros de Aceite": "17.9 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1613 6105 00", "Cant. Filtros Aire": "1", "N° Parte Kit": "2901-0326-00 / 2901 0325 00", "Tipo de Aceite": "Indurance - Xtend Duty", "Manual": "manuales/manual_ga45.pdf"},
+    "GA 18": {"Litros de Aceite": "14.1 L", "Manual": "manuales/manual_ga18.pdf"},
+    "GA 30": {"Litros de Aceite": "14.6 L", "Manual": "manuales/manual_ga30.pdf"},
+    "GA 37": {"Litros de Aceite": "14.6 L", "Manual": "manuales/manual_ga37.pdf"},
+    "GA 45": {"Litros de Aceite": "17.9 L", "Manual": "manuales/manual_ga45.pdf"},
     "GA 75": {"Litros de Aceite": "35.2 L", "Manual": "manuales/manual_ga75.pdf"},
-    "GA 90": {"Litros de Aceite": "69 L", "Cant. Filtros Aceite": "3", "N° Parte Filtro Aceite": "1613 6105 00", "N° Parte Filtro Aire": "2914 5077 00", "N° Parte Kit": "2901-0776-00", "Manual": "manuales/manual_ga90.pdf"},
-    "GA 132": {"Litros de Aceite": "93 L", "Cant. Filtros Aceite": "3", "N° Parte Filtro Aceite": "1613 6105 90", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "2914 5077 00", "N° Parte Kit": "2906 0604 00", "Tipo de Aceite": "Indurance / Indurance - Xtend Duty", "Manual": "manuales/manual_ga132.pdf"},
-    "GA 250": {"Litros de Aceite": "130 L", "Cant. Filtros Aceite": "3", "Cant. Filtros Aire": "2", "Tipo de Aceite": "Indurance", "Manual": "manuales/manual_ga250.pdf"},
-    "ZT 37": {"Litros de Aceite": "23 L", "Cant. Filtros Aceite": "1", "N° Parte Filtro Aceite": "1614 8747 00", "Cant. Filtros Aire": "1", "N° Parte Filtro Aire": "1613 7407 00", "N° Parte Kit": "2901-1122-00", "Tipo de Aceite": "Roto Z fluid", "Manual": "manuales/manual_zt37.pdf"},
-    "CD 80+": {"Filtro de Gases": "DD/PD 80", "Desecante": "Alúmina", "Kit Válvulas": "2901 1622 00", "Silenciador": "1621 1234 00", "Manual": "manuales/manual_cd80.pdf"},
-    "CD 630": {"Filtro de Gases": "DD/PD 630", "Desecante": "Alúmina", "Kit Válvulas": "2901 1625 00", "Silenciador": "1621 1235 00", "Manual": "manuales/manual_cd630.pdf"}
+    "GA 90": {"Litros de Aceite": "69 L", "Manual": "manuales/manual_ga90.pdf"},
+    "GA 132": {"Litros de Aceite": "93 L", "Manual": "manuales/manual_ga132.pdf"},
+    "GA 250": {"Litros de Aceite": "130 L", "Manual": "manuales/manual_ga250.pdf"},
+    "ZT 37": {"Litros de Aceite": "23 L", "Manual": "manuales/manual_zt37.pdf"},
+    "CD 80+": {"Manual": "manuales/manual_cd80.pdf"},
+    "CD 630": {"Manual": "manuales/manual_cd630.pdf"}
 }
 
 inventario_equipos = {
@@ -121,7 +107,7 @@ inventario_equipos = {
     "55-GC-015": ["GA 30", "API501440", "planta borra", "Área Húmeda"],
     "65-GC-009": ["GA 250", "APF253608", "patio de estanques", "Área Húmeda"], "65-GC-011": ["GA 250", "APF253581", "patio de estanques", "Área Húmeda"], "65-CD-011": ["CD 630", "WXF300015", "patio de estanques", "Área Húmeda"], "65-CD-012": ["CD 630", "WXF300016", "patio de estanques", "Área Húmeda"],
     "70-GC-013": ["GA 132", "AIF095296", "descarga de acido", "Área Húmeda"], "70-GC-014": ["GA 132", "AIF095297", "descarga de acido", "Área Húmeda"],
-    "Taller": ["GA 18", "API335343", "Taller", "Laboratorio"] # 🔥 Cambio: Laboratorio
+    "Taller": ["GA 18", "API335343", "Taller", "Laboratorio"] # 🔥 APLICADO: Laboratorio
 }
 
 # =============================================================================
@@ -347,7 +333,6 @@ def wk_to_date(wk_string):
         return datetime.date.fromisocalendar(2026, wk_num, 1)
     except: return None
 
-# 🔥 CEREBRO MINERO (Calcula el mes por nombre limpio)
 def calcular_mes_minero(wk_string):
     if pd.isna(wk_string) or str(wk_string).strip() == "": return "Sin Asignar"
     d = wk_to_date(wk_string)
@@ -368,12 +353,12 @@ def formatear_wk(wk_str):
     return str(wk_str).upper()
 
 # =============================================================================
-# 5. MOTOR CMMS CON DATOS REALES
+# 5. MOTOR CMMS CON DATOS REALES (LIMPIOS)
 # =============================================================================
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
     headers = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
-    # 🔥 CAMBIO APLICADO: Cero comentarios en la base de datos
+    # 🔥 APLICADO: Cero comentarios en la DB base
     datos_reales = [
         {"TAG": "70-GC-013", "S_Programada": "WK51", "Tipo": "P2", "Estado": "✅ Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
         {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "✅ Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
@@ -504,7 +489,7 @@ else:
         if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
         
-        # 🔥 CAMBIO APLICADO: Título lateral "Planificación" limpio
+        # 🔥 APLICADO: Sidebar dice "Planificación" solamente
         if st.button("📊 Planificación", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
         
@@ -627,7 +612,7 @@ else:
         df_cmms['Mes_Calc'] = df_cmms['S_Programada'].apply(calcular_mes_minero)
         mes_de_hoy_full = calcular_mes_minero(semana_actual)
         
-        # 🔥 CAMBIO APLICADO: Título "Panel de Control" limpio
+        # 🔥 APLICADO: Título "Panel de Control" sin CMMS
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
                 <h2 style="color: white; margin: 0;">📅 Panel de Control</h2>
@@ -652,14 +637,13 @@ else:
         
         st.markdown("---")
         
-        # 🔥 CAMBIO APLICADO: Pestañas limpias y sin Matriz
-        tab_gestion, tab_calendario = st.tabs(["📋 Tablero", "📆 Calendario"])
+        # 🔥 APLICADO: Matriz restaurada, Pestañas nombradas exactamente como pediste. Cero st.info.
+        tab_gestion, tab_calendario, tab_matriz = st.tabs(["📋 Tablero", "📆 Calendario", "📊 Matriz de Mantenimiento"])
         
         with tab_gestion:
-            st.info("💡 **Formato Unificado:** Las fechas de Programación y Ejecución calculan y muestran automáticamente su Semana (WK).")
             c_f1, c_f2 = st.columns([1, 3])
             
-            # 🔥 CAMBIO APLICADO: Filtro limpio por mes
+            # 🔥 APLICADO: Filtro por Meses limpios
             orden_meses_full = ["Todas", "Diciembre", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre"]
             with c_f1: filtro_mes = st.selectbox("Filtrar por Mes:", orden_meses_full, index=orden_meses_full.index(mes_de_hoy_full) if mes_de_hoy_full in orden_meses_full else 0)
             
@@ -677,7 +661,7 @@ else:
 
             df_mostrar = df_cmms.copy() if filtro_mes == "Todas" else df_cmms[df_cmms["Mes_Calc"] == filtro_mes].copy()
             
-            # 🔥 CAMBIO APLICADO: Taller siempre visible
+            # 🔥 APLICADO: Garantizamos que Taller / Laboratorio siempre aparezca
             tags_presentes = df_mostrar['TAG'].tolist()
             todos_los_tags = list(inventario_equipos.keys())
             tags_faltantes = [t for t in todos_los_tags if t not in tags_presentes]
@@ -689,6 +673,13 @@ else:
 
             df_editado = pd.DataFrame()
             
+            def safe_get_wk(x):
+                if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
+                try:
+                    if isinstance(x, str): x = datetime.datetime.strptime(x[:10], "%Y-%m-%d").date()
+                    return f"WK{x.isocalendar()[1]:02d}"
+                except: return ""
+
             def safe_date_str(x):
                 if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
                 try:
@@ -726,11 +717,11 @@ else:
                     "TAG": st.column_config.TextColumn("Equipo", disabled=True),
                     "Mes_Calc": None, 
                     "S_Programada": None, 
-                    # 🔥 CAMBIO APLICADO: Día Prog. fusionado
-                    "Día Programado": st.column_config.DateColumn("📆 Programación (Día y WK)", format="DD/MM/YYYY - [WK]WW", min_value=min_date_val, max_value=max_date_val, disabled=False),
+                    # 🔥 APLICADO: Fechas con WK unidas
+                    "Día Programado": st.column_config.DateColumn("📆 Prog. para (Día y WK)", format="DD/MM/YYYY - [WK]WW", min_value=min_date_val, max_value=max_date_val, disabled=False),
                     "Tipo": st.column_config.SelectboxColumn("Intervención", options=["N/A", "INSP", "P1", "P2", "P3", "P4", "PM03"], disabled=False),
                     "Estado": st.column_config.SelectboxColumn("Estado Actual", options=["⚪ N/A", "⏳ Pendiente", "✅ Hecho", "🚨 F/S"], required=True),
-                    # 🔥 CAMBIO APLICADO: Día Ejecución fusionado
+                    # 🔥 APLICADO: Fechas con WK unidas también en Ejecución
                     "S_Realizada": st.column_config.DateColumn("Día Ejecución (Día y WK) 📅", format="DD/MM/YYYY - [WK]WW", disabled=False),
                     "Observacion": st.column_config.TextColumn("Comentarios")
                 }
@@ -776,7 +767,6 @@ else:
             st.markdown("<br>", unsafe_allow_html=True)
             with st.expander("➕ Inyectar Tarea Extra", expanded=False):
                 with st.form("form_nueva_tarea"):
-                    st.write("*(Si editaste la tabla de arriba, este botón guardará todo automáticamente)*")
                     c1, c2, c3 = st.columns(3)
                     n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
                     n_tipo = c2.selectbox("Tipo de Tarea:", ["INSP", "P1", "P2", "P3", "P4", "PM03"])
@@ -786,7 +776,7 @@ else:
                         if not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
                         
                     n_fecha_prog = c3.date_input("📆 Día a Programar:", value=default_d, min_value=min_date_val, max_value=max_date_val)
-                    # 🔥 CAMBIO APLICADO: Texto verde de la semana borrado
+                    # 🔥 APLICADO: Texto verde "Quedará registrada..." borrado.
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     
                     if st.form_submit_button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
@@ -877,6 +867,84 @@ else:
                     html_cal += '</div>'
             html_cal += '</div>'
             st.markdown(html_cal, unsafe_allow_html=True)
+
+        # 🔥 APLICADO: Matriz Dinámica Restaurada Perfectamente (Cero st.info)
+        with tab_matriz:
+            df_pivot_base = df_cmms[df_cmms['Tipo'] != 'N/A'].copy()
+            df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: str(x).split(" ")[1] if " " in str(x) else str(x))
+            
+            c_mat1, c_mat2 = st.columns([1.5, 2])
+            with c_mat1: 
+                vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Mes (Zoom In)", "📆 Anual (Semanas WK)", "📅 Anual (Por Meses)"], horizontal=True)
+            
+            def map_mes_full(q):
+                if q == "Diciembre": return "dic-25"
+                meses = {"Enero":"ene-26", "Febrero":"feb-26", "Marzo":"mar-26", "Abril":"abr-26", "Mayo":"may-26", "Junio":"jun-26", "Julio":"jul-26", "Agosto":"ago-26", "Septiembre":"sept-26", "Octubre":"oct-26", "Noviembre":"nov-26"}
+                return meses.get(q, q)
+
+            df_pivot_base['Mes_Vista'] = df_pivot_base['Mes_Calc'].apply(map_mes_full)
+            
+            if vista_matriz == "📅 Anual (Por Meses)":
+                col_pivot = 'Mes_Vista'
+                cols_todas = ["dic-25", "ene-26", "feb-26", "mar-26", "abr-26", "may-26", "jun-26", "jul-26", "ago-26", "sept-26", "oct-26", "nov-26"]
+            else:
+                col_pivot = 'S_Programada'
+                semanas_brutas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
+                cols_todas = list(dict.fromkeys(semanas_brutas))
+                
+            df_pivot = df_pivot_base.groupby(['TAG', col_pivot])['Contenido'].apply(lambda x: '\n---\n'.join(x)).unstack().fillna("")
+            
+            lista_info = []
+            for t in df_pivot.index:
+                if t in inventario_equipos: eq, _, area, _ = inventario_equipos[t]; lista_info.append({"TAG": t, "Equipo": eq, "Área": area.title()})
+                else: lista_info.append({"TAG": t, "Equipo": "-", "Área": "-"})
+            
+            df_info = pd.DataFrame(lista_info).set_index("TAG")
+            df_matriz = pd.concat([df_info, df_pivot], axis=1).reset_index()
+            
+            cols_base = ['TAG', 'Equipo', 'Área']
+            
+            for c in cols_todas:
+                if c not in df_matriz.columns: df_matriz[c] = ""
+                
+            df_matriz = df_matriz[cols_base + cols_todas]
+            
+            cols_finales = cols_base.copy()
+            if vista_matriz == "🔍 Por Mes (Zoom In)":
+                wk_a_quincena = {wk: calcular_mes_minero(wk) for wk in cols_todas}
+                with c_mat2:
+                    orden_meses_zoom = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+                    q_unicas = list(set(wk_a_quincena.values()))
+                    q_unicas.sort(key=lambda x: orden_meses_zoom.index(x) if x in orden_meses_zoom else 99)
+                    quin_seleccionada = st.selectbox("Selecciona el Mes a enfocar:", q_unicas, index=q_unicas.index(mes_de_hoy_full) if mes_de_hoy_full in q_unicas else 0)
+                wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
+                cols_finales.extend(wks_mostrar)
+            else:
+                cols_finales.extend(cols_todas)
+                
+            df_matriz_final = df_matriz[cols_finales]
+            df_matriz_congelada = df_matriz_final.set_index(['TAG', 'Equipo', 'Área'])
+            
+            def estilo_matriz_colores(val):
+                v = str(val).upper()
+                if not v or v == "NAN": return ''
+                base = 'white-space: pre-wrap; line-height: 1.4; border-radius: 6px; padding: 6px; text-align: center; font-size: 0.85em; '
+                if 'HECHO' in v: return base + 'background-color: #063f22; color: #6ee7b7; font-weight: bold; border-left: 4px solid #10b981;'
+                if 'F/S' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #ef4444;'
+                if 'PENDIENTE' in v: 
+                    if 'P1' in v: return base + 'background-color: #0c2d48; color: #66c2ff; font-weight: bold; border-left: 4px solid #eab308;'
+                    if 'P2' in v: return base + 'background-color: #4a2c00; color: #ffb04c; font-weight: bold; border-left: 4px solid #eab308;'
+                    if 'P3' in v: return base + 'background-color: #301047; color: #d78aff; font-weight: bold; border-left: 4px solid #eab308;'
+                    if 'P4' in v: return base + 'background-color: #471015; color: #ff8a93; font-weight: bold; border-left: 4px solid #eab308;'
+                    return base + 'background-color: #423205; color: #fde047; font-weight: bold; border-left: 4px solid #eab308;'
+                return base + 'color: #8c9eb5; font-style: italic;'
+                
+            columnas_pintar = [c for c in cols_finales if c not in cols_base]
+            if len(columnas_pintar) > 0:
+                try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
+                except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
+            else:
+                st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
     # --- 7.2 VISTA DE FIRMAS, EDICIÓN Y DESCARGAS ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
