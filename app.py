@@ -60,7 +60,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (NUEVA ESTRATEGIA SEGURA PARA LA BARRA LATERAL)
+# 0.2 ESTILOS PREMIUM (CSS LIMPIO Y 100% SEGURO PARA LA BARRA LATERAL)
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -69,15 +69,8 @@ def aplicar_estilos_premium():
         :root { --ac-blue: #007CA6; --ac-dark: #005675; --bhp-orange: #FF6600; }
         html, body, p, h1, h2, h3, h4, h5, h6, span, div { font-family: 'Montserrat', sans-serif; }
         
-        /* 🔥 CINEMÁTICA DE TRANSICIÓN */
-        @keyframes cinematicFadeIn { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
-        .main .block-container { animation: cinematicFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-        
-        /* 🔥 OCULTAMOS SOLO LA BASURA, DEJAMOS LA CABECERA NATIVA INTACTA 🔥 */
-        [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
-        [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; } 
-        a[href*="github.com"] { display: none !important; visibility: hidden !important; }
-        [data-testid="viewerBadge"], div[class^="viewerBadge_container"], footer { display: none !important; }
+        /* 🔥 Dejamos intacta la cabecera nativa de Streamlit para que la flecha NUNCA falle 🔥 */
+        footer { display: none !important; } 
         
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
@@ -498,7 +491,8 @@ default_states = {
     'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
     'input_reco': "", 'input_estado_eq': "Operativo", 'vista_firmas': False,
-    'firma_tec_img': None
+    'firma_tec_json': None, 'firma_tec_img': None,
+    'mostrar_firma_tec': False # 🔥 NUEVO ESTADO PARA EL BOTÓN CENTRAL 🔥
 }
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
@@ -688,11 +682,6 @@ else:
                 df_mostrar = pd.concat([df_mostrar, filas_vacias], ignore_index=True)
             df_mostrar = df_mostrar.sort_values(by="TAG").reset_index(drop=True)
 
-            def safe_date_str(x):
-                if pd.isnull(x) or str(x).strip() in ["", "None", "NaT"]: return ""
-                try: return x[:10] if isinstance(x, str) else x.strftime("%Y-%m-%d")
-                except: return ""
-
             if not df_mostrar.empty:
                 def string_to_date(val):
                     try: return datetime.datetime.strptime(str(val).strip(), "%Y-%m-%d").date()
@@ -780,7 +769,7 @@ else:
                     df_guardar['S_Realizada'] = df_guardar['S_Realizada'].apply(safe_date_str)
                     
                     filas_validas = df_guardar[(df_guardar["🗑️ Quitar"] == False) & (df_guardar["Tipo"] != "N/A") & (df_guardar["Estado"] != "N/A") & (df_guardar["S_Programada"] != "")].copy()
-                    filas_validas.loc[(filas_validas['Estado'] == 'Hecho') & (filas_validas['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
+                    filas_validas.loc[(filas_validas['Estado'] == '✅ Hecho') & (filas_validas['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
                     
                     if filtro_mes == "Todas": df_cmms_final = filas_validas
                     else:
@@ -828,14 +817,14 @@ else:
                             df_editado_clean['S_Realizada'] = df_editado_clean['S_Realizada'].apply(safe_date_str)
                             
                             filas_validas_f = df_editado_clean[(df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A") & (df_editado_clean["Estado"] != "N/A") & (df_editado_clean["S_Programada"] != "")].copy()
-                            filas_validas_f.loc[(filas_validas_f['Estado'] == 'Hecho') & (filas_validas_f['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
+                            filas_validas_f.loc[(filas_validas_f['Estado'] == '✅ Hecho') & (filas_validas_f['S_Realizada'] == ""), 'S_Realizada'] = datetime.date.today().strftime("%Y-%m-%d")
                             if filtro_mes == "Todas": df_cmms_guardar = filas_validas_f
                             else:
                                 df_cmms_rest_f = df_cmms[df_cmms["Mes_Calc"] != filtro_mes]
                                 df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
 
                         n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}"
-                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo_puro, "Estado": "Pendiente", "S_Realizada": "", "Observacion": n_obs}])
+                        nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo_puro, "Estado": "⏳ Pendiente", "S_Realizada": "", "Observacion": n_obs}])
                         for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
                             if col in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=[col])
                         
@@ -862,7 +851,7 @@ else:
             for _, row in df_cmms.iterrows():
                 d_prog = wk_to_date(row['S_Programada'])
                 d_target = None
-                if row['Estado'] == 'Hecho' and str(row['S_Realizada']).strip() != "":
+                if row['Estado'] == '✅ Hecho' and str(row['S_Realizada']).strip() != "":
                     try: d_target = datetime.datetime.strptime(str(row['S_Realizada']).strip(), "%Y-%m-%d").date()
                     except: d_target = d_prog
                 else: d_target = d_prog
@@ -890,8 +879,8 @@ else:
                     if dia in tareas_por_fecha:
                         for t in tareas_por_fecha[dia]:
                             c_bg = "transparent"; c_tx = "#8c9eb5"; b_style = "1px dashed #455065" 
-                            if t['est'] == 'Hecho': c_bg, c_tx, b_style = "#063f22", "#6ee7b7", "1px solid #10b981"
-                            elif t['est'] == 'F/S': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #ef4444"
+                            if t['est'] == '✅ Hecho': c_bg, c_tx, b_style = "#063f22", "#6ee7b7", "1px solid #10b981"
+                            elif t['est'] == '🚨 F/S': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #ef4444"
                             elif t['tipo'] == 'INSP': c_bg, c_tx, b_style = "#1e3a8a", "#93c5fd", "1px solid #1a5c94"
                             elif t['tipo'] == 'P1': c_bg, c_tx, b_style = "#064e3b", "#6ee7b7", "1px solid #047857"
                             elif t['tipo'] == 'P2': c_bg, c_tx, b_style = "#78350f", "#fdba74", "1px solid #8c5300"
@@ -905,7 +894,7 @@ else:
 
         with tab_matriz:
             df_pivot_base = df_cmms[df_cmms['Tipo'] != 'N/A'].copy()
-            df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado']
+            df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: str(x).split(" ")[1] if " " in str(x) else str(x))
             
             c_mat1, c_mat2 = st.columns([1.5, 2])
             with c_mat1: 
@@ -982,7 +971,7 @@ else:
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-    # --- 7.2 VISTA DE FIRMAS (100% ESTABLE A PRUEBA DE BUGS) ---
+    # --- 7.2 VISTA DE FIRMAS (ESTRATEGIA 100% SEGURA CON BOTÓN CENTRAL) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -992,34 +981,44 @@ else:
         
         if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
-            
-            # 🔥 ESTRATEGIA ANTICRASH PARA EL TÉCNICO: Expander nativo pero con lógica de imagen estática
-            with st.expander("🧑‍🔧 Configuración de Mi Firma Fija (Técnico)", expanded=(st.session_state.firma_tec_img is None)):
-                st.markdown("<p style='text-align: center; color: #8c9eb5; margin-bottom: 15px;'>Dibuja tu firma una sola vez aquí. Se aplicará automáticamente a todos los informes que apruebes.</p>", unsafe_allow_html=True)
-                
-                _, col_canv, _ = st.columns([1, 2, 1])
-                with col_canv:
-                    if st.session_state.firma_tec_img is None:
-                        # MODO DIBUJO
-                        with st.container(border=True):
-                            canvas_tec_global = st_canvas(
-                                stroke_width=3, stroke_color="#000", background_color="#fff", 
-                                height=200, width=450, drawing_mode="freedraw", 
-                                key="canvas_tec_global", display_toolbar=True
-                            )
-                        if st.button("💾 Guardar Mi Firma", use_container_width=True):
-                            if canvas_tec_global.json_data is not None and len(canvas_tec_global.json_data.get("objects", [])) > 0:
-                                st.session_state.firma_tec_img = canvas_tec_global.image_data
+            # 🔥 NUEVO SISTEMA SEGURO PARA EL TÉCNICO (Sin Expander) 🔥
+            _, c_btn_firma, _ = st.columns([1, 2, 1])
+            with c_btn_firma:
+                if st.session_state.firma_tec_img is None:
+                    # Botón para abrir el panel si no hay firma
+                    texto_btn = "👁️ Ocultar Panel de Firma" if st.session_state.mostrar_firma_tec else "🖌️ Configurar Mi Firma Fija (Técnico)"
+                    if st.button(texto_btn, type="primary", use_container_width=True):
+                        st.session_state.mostrar_firma_tec = not st.session_state.mostrar_firma_tec
+                        st.rerun()
+                else:
+                    # Mostrar la firma guardada y un botón para cambiarla (A prueba de crash)
+                    st.image(st.session_state.firma_tec_img, width=300)
+                    st.markdown("<p style='color: #00e676; font-weight: bold; margin-top:-10px;'>✅ Firma lista para aplicar</p>", unsafe_allow_html=True)
+                    if st.button("🔄 Cambiar Mi Firma", use_container_width=True):
+                        st.session_state.firma_tec_img = None
+                        st.session_state.mostrar_firma_tec = True
+                        st.rerun()
+
+            # Panel de dibujo que se muestra si el botón se presionó
+            if st.session_state.mostrar_firma_tec and st.session_state.firma_tec_img is None:
+                st.markdown("<br>", unsafe_allow_html=True)
+                _, c_canvas_tec, _ = st.columns([1, 2.5, 1])
+                with c_canvas_tec:
+                    with st.container(border=True):
+                        st.markdown("<h4 style='text-align: center; color: white;'>Dibuja tu firma</h4>", unsafe_allow_html=True)
+                        canvas_tec = st_canvas(
+                            stroke_width=3, stroke_color="#000", background_color="#fff", 
+                            height=200, width=500, drawing_mode="freedraw", 
+                            key="canvas_tec_central", display_toolbar=True
+                        )
+                        if st.button("💾 Guardar Firma", use_container_width=True, type="primary"):
+                            if canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0:
+                                st.session_state.firma_tec_json = canvas_tec.json_data
+                                st.session_state.firma_tec_img = canvas_tec.image_data
+                                st.session_state.mostrar_firma_tec = False
                                 st.success("✅ Firma guardada correctamente.")
                                 time.sleep(1); st.rerun()
-                            else: st.warning("⚠️ Dibuja tu firma antes de guardar.")
-                    else:
-                        # MODO GUARDADO (Imagen Estática, NUNCA se traba)
-                        st.image(st.session_state.firma_tec_img, width=450)
-                        st.markdown("<p style='color: #00e676; text-align: center; font-weight: bold;'>✅ Firma lista para aplicar</p>", unsafe_allow_html=True)
-                        if st.button("🔄 Cambiar / Nueva Firma", use_container_width=True):
-                            st.session_state.firma_tec_img = None
-                            st.rerun()
+                            else: st.warning("⚠️ Por favor dibuja tu firma.")
 
             st.markdown("<br><hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
 
@@ -1117,24 +1116,20 @@ else:
                     nombres_clientes = " y ".join(list(set([inf['cli'] for inf in informes_area if inf.get('cli')])))
                     if not nombres_clientes: nombres_clientes = "Cliente a cargo"
                     
-                    # 🔥 FIRMA DEL CLIENTE AL FINAL, GRANDE Y CENTRADA (CON BASURERO NATIVO)
+                    # 🔥 FIRMA DEL CLIENTE AL FINAL, GRANDE Y CENTRADA
                     st.markdown(f"<h2 style='text-align: center; color: white; margin-bottom: 5px;'>Firma de Aprobación Final</h2>", unsafe_allow_html=True)
                     st.markdown(f"<h4 style='text-align: center; color: #aeb9cc; margin-top: 0px; margin-bottom: 25px;'>Aprobador: <span style='color: white;'>{nombres_clientes}</span></h4>", unsafe_allow_html=True)
                     
                     _, col_firma_cli, _ = st.columns([1, 2.5, 1])
+                    
                     with col_firma_cli:
                         with st.container(border=True):
                             st.markdown("<p style='text-align: center; font-size: 0.9em; color: #aeb9cc; margin-bottom: 5px;'>Coloque su firma en el recuadro blanco</p>", unsafe_allow_html=True)
                             cli_key = f"cli_{macro_area}"
                             canvas_cli = st_canvas(
-                                stroke_width=3, 
-                                stroke_color="#000", 
-                                background_color="#fff", 
-                                height=250, 
-                                width=550, 
-                                drawing_mode="freedraw", 
-                                key=cli_key,
-                                display_toolbar=True
+                                stroke_width=3, stroke_color="#000", background_color="#fff", 
+                                height=250, width=550, drawing_mode="freedraw", 
+                                key=cli_key, display_toolbar=True
                             )
                             
                     st.markdown("<br>", unsafe_allow_html=True)
@@ -1147,7 +1142,7 @@ else:
                             tec_ok = st.session_state.firma_tec_img is not None 
                             cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
                             
-                            if not tec_ok: st.warning("⚠️ Debes guardar tu Firma de Técnico en el panel superior primero.")
+                            if not tec_ok: st.warning("⚠️ Debes configurar tu Firma de Técnico en el botón azul de arriba primero.")
                             elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {nombres_clientes}.")
                             else:
                                 def procesar_imagen_firma(img_data): img = Image.fromarray(img_data.astype('uint8'), 'RGBA'); img_io = io.BytesIO(); img.save(img_io, format='PNG'); img_io.seek(0); return img_io
