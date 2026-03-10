@@ -311,7 +311,7 @@ def guardar_especificacion_db(modelo, clave, valor):
 
 # --- FIN DE LA PARTE 1 ---
 # =============================================================================
-# 4. FUNCIONES AUXILIARES GLOBALES Y CEREBRO DE FECHAS (SOPORTE HASTA 2027)
+# 4. FUNCIONES AUXILIARES GLOBALES Y CEREBRO DE FECHAS
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -371,7 +371,6 @@ def guardar_pendientes(usuario, pendientes):
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
-# 🔥 MOTOR DE FECHAS MEJORADO (AÑOS DINÁMICOS HASTA 2027) 🔥
 def wk_to_date(wk_string):
     try:
         s = str(wk_string).strip().upper()
@@ -667,7 +666,7 @@ else:
                                         time.sleep(1)
                                         st.rerun()
 
-    # --- 7.1 VISTA PLANIFICACIÓN ---
+    # --- 7.1 VISTA PLANIFICACIÓN REACTIVA E INTERACTIVA ---
     elif st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -709,10 +708,8 @@ else:
         
         with tab_gestion:
             c_f1, c_f2 = st.columns([1, 3])
-            # 🔥 ORDEN DE MESES AHORA INCLUYE 2026 Y 2027 🔥
             orden_meses_full = ["Todas", "Diciembre 2025", "Enero 2026", "Febrero 2026", "Marzo 2026", "Abril 2026", "Mayo 2026", "Junio 2026", "Julio 2026", "Agosto 2026", "Septiembre 2026", "Octubre 2026", "Noviembre 2026", "Diciembre 2026", "Enero 2027"]
             
-            # Autocorrección si el filtro actual ya no es válido en la nueva lista
             if st.session_state.filtro_mes_activo not in orden_meses_full:
                 st.session_state.filtro_mes_activo = "Todas"
 
@@ -751,7 +748,6 @@ else:
                 df_mostrar['S_Realizada'] = df_mostrar['S_Realizada'].apply(string_to_date)
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
 
-                # 🔥 DICCIONARIOS DE TRADUCCIÓN CORREGIDOS (A PRUEBA DE FALLOS Y EMOJIS) 🔥
                 tipo_visual_map = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03", "N/A": "⚪ N/A", "": "⚪ N/A"}
                 map_visual_estado = {"Hecho": "✅ Hecho", "Pendiente": "⏳ Pendiente", "F/S": "🚨 F/S", "N/A": "⚪ N/A", "": "⚪ N/A"}
                 
@@ -926,14 +922,16 @@ else:
         with tab_calendario:
             opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]] + ["Enero 2027"]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
-            with c_cal_tit: st.markdown("### 📆 Calendario")
+            
             with c_cal_sel:
                 hoy_cal = datetime.date.today()
+                meses_nombres_cal = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
                 mes_str = f"Diciembre 2025" if hoy_cal.year == 2025 and hoy_cal.month == 12 else f"{meses_nombres_cal[hoy_cal.month - 1]} {hoy_cal.year}" if hoy_cal.year in [2026, 2027] else "Enero 2026"
                 mes_sel = st.selectbox("📅 Mes a visualizar:", opciones_meses_calendario, index=opciones_meses_calendario.index(mes_str) if mes_str in opciones_meses_calendario else 1)
                 
+            with c_cal_tit: st.markdown("### 📆 Calendario")
+            
             cal_year = int(mes_sel.split(" ")[1])
-            meses_nombres_cal = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
             cal_month = meses_nombres_cal.index(mes_sel.split(" ")[0]) + 1
                 
             cal = calendar.Calendar(calendar.MONDAY)
