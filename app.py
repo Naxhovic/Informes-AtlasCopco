@@ -572,13 +572,12 @@ for key, value in default_states.items():
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 6. INTERFAZ: LOGIN (ACTUALIZADA: LIMPIA, CIRCULAR Y MINIMALISTA)
+# 6. INTERFAZ: LOGIN (ACTUALIZADA: LIMPIA, CIRCULAR Y SIN INSTRUCCIONES)
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     _, col_centro, _ = st.columns([1, 1.2, 1])
     with col_centro:
-        # Estilos CSS inyectados específicamente para redondear el Login de forma elegante
         st.markdown("""
             <style>
                 /* Marco principal en forma de píldora/circular amplio */
@@ -602,6 +601,12 @@ if not st.session_state.logged_in:
                     padding: 12px !important;
                     font-size: 1.1em !important;
                     margin-top: 15px !important;
+                }
+                /* 🔥 OCULTAR AVISO "Press Enter to submit form" 🔥 */
+                [data-testid="InputInstructions"], 
+                div[data-testid="stForm"] small { 
+                    display: none !important; 
+                    visibility: hidden !important; 
                 }
             </style>
         """, unsafe_allow_html=True)
@@ -657,8 +662,7 @@ else:
     if st.session_state.vista_actual == "historial":
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(255,102,0,0) 0%, rgba(255,102,0,0.15) 50%, rgba(255,102,0,0) 100%); padding: 20px; border-radius: 15px;">
-                <h1 style="color: #FF6600; font-size: 3.5em; font-weight: 800; margin: 0; letter-spacing: -1px; text-transform: uppercase;">Muro de Intervenciones</h1>
-                <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">Registro Histórico</p>
+                <h1 style="color: #FF6600; font-size: 3.5em; font-weight: 800; margin: 0; letter-spacing: -1px; text-transform: uppercase;">Registro Histórico</h1>
             </div>
         """, unsafe_allow_html=True)
         
@@ -757,9 +761,9 @@ else:
         
         df_kpi = df_cmms[(df_cmms["Mes_Calc"] == mes_visualizado) & (df_cmms["Tipo"] != "N/A") & (df_cmms["Tipo"] != "")]
         total_tareas = len(df_kpi)
-        hechas = len(df_kpi[df_kpi["Estado"] == "Hecho"])
-        fs = len(df_kpi[df_kpi["Estado"] == "F/S"])
-        pendientes = len(df_kpi[df_kpi["Estado"] == "Pendiente"])
+        hechas = len(df_kpi[df_kpi["Estado"] == "✅ Hecho"])
+        fs = len(df_kpi[df_kpi["Estado"] == "🚨 F/S"])
+        pendientes = len(df_kpi[df_kpi["Estado"] == "⏳ Pendiente"])
         
         total_evaluable = hechas + pendientes
         cumplimiento = int((hechas / total_evaluable * 100)) if total_evaluable > 0 else (100 if hechas > 0 else 0)
