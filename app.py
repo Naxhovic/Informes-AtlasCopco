@@ -1171,7 +1171,7 @@ else:
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-    # --- 7.3 VISTA DE FIRMAS (SISTEMA DE BOTÓN ANTI-CRASH) ---
+    # --- 7.3 VISTA DE FIRMAS ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -1481,22 +1481,67 @@ else:
                 guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
                 st.success(f"✅ Datos guardados. El equipo se anotó como '{est_eq}' en tu Base de Datos y el informe se fue a la Bandeja de {ubi_d.title()}."); st.session_state.equipo_seleccionado = None; st.rerun()
                     
+        # 🔥 TABLA 2: FICHA TÉCNICA CATEGORIZADA Y ORDENADA 🔥
         with tab2:
             st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
             with st.expander("✏️ Agregar o Corregir Datos Faltantes"):
                 with st.form(key=f"form_specs_{tag_sel}"):
-                    c_e1, c_e2 = st.columns(2); opc_claves = ["N° Parte Filtro Aceite", "N° Parte Filtro Aire", "N° Parte Kit", "N° Parte Separador", "Litros de Aceite", "Tipo de Aceite", "Cant. Filtros Aceite", "Cant. Filtros Aire", "Otro dato nuevo..."]; clave_sel = c_e1.selectbox("¿Qué dato vas a ingresar?", opc_claves); clave_final = c_e1.text_input("Escribe el nombre del dato:") if clave_sel == "Otro dato nuevo..." else clave_sel; valor_final = c_e2.text_input("Ingresa el valor:")
+                    c_e1, c_e2 = st.columns(2)
+                    opc_claves = ["N° Parte Filtro Aceite", "N° Parte Filtro Aire", "N° Parte Kit", "N° Parte Separador", "Litros de Aceite", "Tipo de Aceite", "Cant. Filtros Aceite", "Cant. Filtros Aire", "Otro dato nuevo..."]
+                    clave_sel = c_e1.selectbox("¿Qué dato vas a ingresar?", opc_claves)
+                    clave_final = c_e1.text_input("Escribe el nombre del dato:") if clave_sel == "Otro dato nuevo..." else clave_sel
+                    valor_final = c_e2.text_input("Ingresa el valor:")
                     if st.form_submit_button("💾 Guardar en Base de Datos", use_container_width=True):
                         if clave_final and valor_final: guardar_especificacion_db(mod_d, clave_final.strip(), valor_final.strip()); st.success("✅ ¡Dato guardado!"); st.rerun()
+            
             if mod_d in ESPECIFICACIONES:
                 specs = {k: v for k, v in ESPECIFICACIONES[mod_d].items() if k != "Manual"}
                 if specs:
-                    cols = st.columns(3)
-                    for i, (k, v) in enumerate(specs.items()):
-                        with cols[i % 3]: st.markdown(f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
-                st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### 📥 Documentación y Manuales")
+                    # Agrupación Inteligente de Datos
+                    cat_aceite = ["Tipo de Aceite", "Litros de Aceite", "Cant. Filtros Aceite", "N° Parte Filtro Aceite"]
+                    cat_aire = ["Cant. Filtros Aire", "N° Parte Filtro Aire", "N° Parte Separador", "Filtro de Gases"]
+                    cat_kits = ["N° Parte Kit", "Desecante", "Kit Válvulas", "Silenciador"]
+                    
+                    conocidos = set(cat_aceite + cat_aire + cat_kits)
+                    otros = [k for k in specs.keys() if k not in conocidos]
+                    
+                    c_col1, c_col2, c_col3 = st.columns(3)
+                    
+                    def draw_card(k, v):
+                        return f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>"
+                    
+                    with c_col1:
+                        st.markdown("<h5 style='color:#FF6600; margin-bottom: 15px;'>🛢️ Sistema de Aceite</h5>", unsafe_allow_html=True)
+                        has_a = False
+                        for k in cat_aceite:
+                            if k in specs: 
+                                st.markdown(draw_card(k, specs[k]), unsafe_allow_html=True)
+                                has_a = True
+                        if not has_a: st.markdown("<p style='color:gray; font-size:0.8em; font-style:italic;'>No aplica / Sin datos</p>", unsafe_allow_html=True)
+                        
+                    with c_col2:
+                        st.markdown("<h5 style='color:#FF6600; margin-bottom: 15px;'>💨 Sistema de Aire / Gases</h5>", unsafe_allow_html=True)
+                        has_ai = False
+                        for k in cat_aire:
+                            if k in specs: 
+                                st.markdown(draw_card(k, specs[k]), unsafe_allow_html=True)
+                                has_ai = True
+                        if not has_ai: st.markdown("<p style='color:gray; font-size:0.8em; font-style:italic;'>No aplica / Sin datos</p>", unsafe_allow_html=True)
+                        
+                    with c_col3:
+                        st.markdown("<h5 style='color:#FF6600; margin-bottom: 15px;'>🔧 Kits y Otros Componentes</h5>", unsafe_allow_html=True)
+                        has_k = False
+                        for k in cat_kits + otros:
+                            if k in specs: 
+                                st.markdown(draw_card(k, specs[k]), unsafe_allow_html=True)
+                                has_k = True
+                        if not has_k: st.markdown("<p style='color:gray; font-size:0.8em; font-style:italic;'>No aplica / Sin datos</p>", unsafe_allow_html=True)
+
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.markdown("### 📥 Documentación y Manuales")
                 if "Manual" in ESPECIFICACIONES[mod_d] and os.path.exists(ESPECIFICACIONES[mod_d]["Manual"]):
                     with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f: st.download_button(label=f"📕 Descargar Manual de {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
+        
         with tab3:
             st.markdown(f"### 🔍 Bitácora Permanente del Equipo: {tag_sel}")
             with st.form(key=f"form_obs_{tag_sel}"):
@@ -1511,16 +1556,13 @@ else:
                     with col_del:
                         if st.button("🗑️", key=f"del_obs_{row['id']}"): eliminar_observacion(row['id']); st.rerun()
         
-        # 🔥 TAB 4: GESTIÓN DE ÁREA PROTEGIDA Y OPTIMIZADA 🔥
         with tab4:
             st.markdown(f"### 👤 Información de Contactos y Seguridad del Área: {tag_sel}")
             
-            # Solo Administradores pueden editar o agregar información a esta pestaña
             if es_admin:
                 with st.expander("👑 Agregar Información de Contacto (Admin)"):
                     with st.form(key=f"form_area_{tag_sel}"):
                         c_a1, c_a2 = st.columns(2)
-                        # Opciones limpias y seguras
                         opc_area = ["Dueño de Área (Turno 1-3)", "Dueño de Área (Turno 2-4)", "PEA", "Frecuencia Radial", "➕ Agregar cargo manual..."]
                         clave_sel_area = c_a1.selectbox("¿Qué dato vas a ingresar?", opc_area)
                         
@@ -1534,7 +1576,6 @@ else:
                                 time.sleep(1)
                                 st.rerun()
             
-            # La lectura de los datos está disponible para todos los técnicos
             datos_equipo = obtener_datos_equipo(tag_sel)
             cols_area = st.columns(2)
             for i, (k, v) in enumerate(datos_equipo.items()):
