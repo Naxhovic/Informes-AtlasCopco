@@ -621,7 +621,6 @@ if not st.session_state.logged_in:
 # 7. INTERFAZ PRINCIPAL
 # =============================================================================
 else:
-    # 🔥 CARGAR TEXTOS DINÁMICOS 🔥
     textos_ui = obtener_textos_config()
     
     with st.sidebar:
@@ -647,7 +646,6 @@ else:
             if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"): 
                 st.session_state.vista_firmas = True; st.session_state.vista_actual = "firmas"; st.session_state.equipo_seleccionado = None; st.rerun()
                 
-        # 🔥 BOTÓN DE CONFIGURACIÓN UI SOLO PARA ADMINS 🔥
         if es_admin:
             st.markdown("---")
             if st.button("⚙️ Configuración de Textos", use_container_width=True, type="primary" if st.session_state.vista_actual == "config_ui" else "secondary"):
@@ -656,7 +654,6 @@ else:
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.0 VISTA: CONFIGURACIÓN DE TEXTOS (ADMIN) ---
     if st.session_state.vista_actual == "config_ui" and es_admin:
         st.markdown("## ⚙️ Panel de Configuración de Textos (Admin)")
         st.info("Aquí puedes editar los títulos y textos de la aplicación. Los cambios se guardarán en la Base de Datos para todos los usuarios al instante.")
@@ -680,7 +677,6 @@ else:
                         time.sleep(1)
                         st.rerun()
 
-    # --- 7.1 VISTA: ÚLTIMAS INTERVENCIONES ---
     elif st.session_state.vista_actual == "historial":
         titulo_muro = textos_ui.get("titulo_muro", "Muro de Intervenciones")
         st.markdown(f"""
@@ -762,7 +758,6 @@ else:
                                         time.sleep(1)
                                         st.rerun()
 
-    # --- 7.2 VISTA PLANIFICACIÓN ---
     elif st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -1515,14 +1510,33 @@ else:
                     with col_obs: st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #FF6600;'><small style='color: #aeb9cc;'><b>👤 Técnico: {row['usuario']}</b> &nbsp;|&nbsp; 📅 Fecha: {row['fecha']}</small><br><span style='color: white; font-size: 1.05em;'>{row['texto']}</span></div>", unsafe_allow_html=True)
                     with col_del:
                         if st.button("🗑️", key=f"del_obs_{row['id']}"): eliminar_observacion(row['id']); st.rerun()
+        
+        # 🔥 TAB 4: GESTIÓN DE ÁREA PROTEGIDA Y OPTIMIZADA 🔥
         with tab4:
             st.markdown(f"### 👤 Información de Contactos y Seguridad del Área: {tag_sel}")
-            with st.expander("✏️ Editar o Agregar Contacto / Dato de Seguridad"):
-                with st.form(key=f"form_area_{tag_sel}"):
-                    c_a1, c_a2 = st.columns(2); opc_area = ["Dueño de Área (Turno 1-3)", "Dueño de Área (Turno 2-4)", "PEA", "Frecuencia Radial", "Supervisor a cargo", "Jefe de Turno", "Otro cargo..."]; clave_sel_area = c_a1.selectbox("¿Qué dato vas a ingresar?", opc_area); clave_final_area = c_a1.text_input("Escribe el nombre del cargo:") if clave_sel_area == "Otro cargo..." else clave_sel_area; valor_final_area = c_a2.text_input("Ingresa la información:")
-                    if st.form_submit_button("💾 Guardar Información", use_container_width=True):
-                        if clave_final_area and valor_final_area: guardar_dato_equipo(tag_sel, clave_final_area.strip(), valor_final_area.strip()); st.success("✅ Dato actualizado!"); st.rerun()
-            datos_equipo = obtener_datos_equipo(tag_sel); cols_area = st.columns(2)
+            
+            # Solo Administradores pueden editar o agregar información a esta pestaña
+            if es_admin:
+                with st.expander("👑 Agregar Información de Contacto (Admin)"):
+                    with st.form(key=f"form_area_{tag_sel}"):
+                        c_a1, c_a2 = st.columns(2)
+                        # Opciones limpias y seguras
+                        opc_area = ["Dueño de Área (Turno 1-3)", "Dueño de Área (Turno 2-4)", "PEA", "Frecuencia Radial", "➕ Agregar cargo manual..."]
+                        clave_sel_area = c_a1.selectbox("¿Qué dato vas a ingresar?", opc_area)
+                        
+                        clave_final_area = c_a1.text_input("Escribe el nombre del nuevo cargo:") if clave_sel_area == "➕ Agregar cargo manual..." else clave_sel_area
+                        valor_final_area = c_a2.text_input("Ingresa la información:")
+                        
+                        if st.form_submit_button("💾 Guardar Información", use_container_width=True):
+                            if clave_final_area and valor_final_area: 
+                                guardar_dato_equipo(tag_sel, clave_final_area.strip(), valor_final_area.strip())
+                                st.success("✅ Dato actualizado!")
+                                time.sleep(1)
+                                st.rerun()
+            
+            # La lectura de los datos está disponible para todos los técnicos
+            datos_equipo = obtener_datos_equipo(tag_sel)
+            cols_area = st.columns(2)
             for i, (k, v) in enumerate(datos_equipo.items()):
                 with cols_area[i % 2]: st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #FF6600;'><span style='color: #aeb9cc; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
         
@@ -1531,7 +1545,7 @@ else:
         df_hist = obtener_todo_el_historial(tag_sel)
         
         if not df_hist.empty: 
-            if st.session_state.usuario_actual in ADMIN_USERS:
+            if es_admin:
                 df_hist.insert(0, "🗑️ Borrar", False)
                 config_hist = {"🗑️ Borrar": st.column_config.CheckboxColumn("Seleccionar", default=False)}
                 df_edit_hist = st.data_editor(df_hist, hide_index=True, use_container_width=True, column_config=config_hist, key=f"hist_edit_{tag_sel}")
