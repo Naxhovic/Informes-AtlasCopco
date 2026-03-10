@@ -559,7 +559,8 @@ default_states = {
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
     'input_reco': "", 'input_estado_eq': "Operativo", 'vista_firmas': False,
     'firma_tec_json': None, 'firma_tec_img': None,
-    'mostrar_firma_tec': False 
+    'mostrar_firma_tec': False,
+    'filtro_area': "Todas" 
 }
 for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
@@ -1351,15 +1352,33 @@ else:
         with col_busqueda: busqueda = st.text_input("🔍 Buscar activo por TAG, Modelo o Área...", placeholder="Ejemplo: GA 250, 35-GC-006...").lower()
         st.markdown("<br>", unsafe_allow_html=True)
         
+        # 🔥 NUEVO: BOTONES DE FILTRO RÁPIDO POR ÁREA 🔥
+        st.markdown("<h5 style='color: #8c9eb5; margin-bottom: 15px;'>📍 Filtro Rápido por Área:</h5>", unsafe_allow_html=True)
+        c_a1, c_a2, c_a3, c_a4, c_a5 = st.columns(5)
+        
+        def set_area(a): st.session_state.filtro_area = a
+        
+        c_a1.button("🌍 Todas", use_container_width=True, type="primary" if st.session_state.filtro_area == "Todas" else "secondary", on_click=set_area, args=("Todas",))
+        c_a2.button("⛏️ Mina", use_container_width=True, type="primary" if st.session_state.filtro_area == "Mina" else "secondary", on_click=set_area, args=("Mina",))
+        c_a3.button("🏜️ Área Seca", use_container_width=True, type="primary" if st.session_state.filtro_area == "Área Seca" else "secondary", on_click=set_area, args=("Área Seca",))
+        c_a4.button("💧 Área Húmeda", use_container_width=True, type="primary" if st.session_state.filtro_area == "Área Húmeda" else "secondary", on_click=set_area, args=("Área Húmeda",))
+        c_a5.button("🔬 Laboratorio", use_container_width=True, type="primary" if st.session_state.filtro_area == "Laboratorio" else "secondary", on_click=set_area, args=("Laboratorio",))
+        
+        st.markdown("<hr style='border-color: #2b3543; margin-top: 5px;'>", unsafe_allow_html=True)
+        
         equipos_filtrados = {}
         for tag, (modelo, serie, area, ubicacion) in inventario_equipos.items():
             es_secador = "CD" in modelo.upper()
             if filtro_tipo == "Compresores" and es_secador: continue
             if filtro_tipo == "Secadores" and not es_secador: continue
+            
+            area_macro = ubicacion.title()
+            if st.session_state.filtro_area != "Todas" and area_macro != st.session_state.filtro_area:
+                continue
+            
             if busqueda in tag.lower() or busqueda in area.lower() or busqueda in modelo.lower() or busqueda in ubicacion.lower():
-                area_format = ubicacion.title()
-                if area_format not in equipos_filtrados: equipos_filtrados[area_format] = []
-                equipos_filtrados[area_format].append((tag, modelo, area))
+                if area_macro not in equipos_filtrados: equipos_filtrados[area_macro] = []
+                equipos_filtrados[area_macro].append((tag, modelo, area))
 
         for area, equipos in sorted(equipos_filtrados.items()):
             st.markdown(f"<h4 style='color: #8c9eb5; margin-top: 25px; margin-bottom: 15px; border-bottom: 1px solid #2b3543; padding-bottom: 5px;'>📍 Área: {area}</h4>", unsafe_allow_html=True)
@@ -1418,7 +1437,6 @@ else:
                 guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
                 st.success(f"✅ Datos guardados. El equipo se anotó como '{est_eq}' en tu Base de Datos y el informe se fue a la Bandeja de {ubi_d.title()}."); st.session_state.equipo_seleccionado = None; st.rerun()
                     
-        # 🔥 TAB 2: FICHA TÉCNICA CATEGORIZADA Y ORDENADA 🔥
         with tab2:
             st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
             with st.expander("✏️ Agregar o Corregir Datos Faltantes"):
