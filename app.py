@@ -60,7 +60,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM
+# 0.2 ESTILOS PREMIUM (BORDES CIRCULARES)
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -77,11 +77,15 @@ def aplicar_estilos_premium():
         a[href*="github.com"] { display: none !important; visibility: hidden !important; }
         [data-testid="viewerBadge"], div[class^="viewerBadge_container"], footer { display: none !important; }
         
-        div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
+        div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 20px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
-        [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 12px !important; border: 1px solid #2b3543 !important; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important; }
+        
+        /* 🔥 BORDES REDONDEADOS / CIRCULARES PARA PANELES Y FORMULARIOS 🔥 */
+        [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 30px !important; border: 1px solid #2b3543 !important; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important; }
         [data-testid="stVerticalBlockBorderWrapper"]:hover { transform: translateY(-6px) !important; box-shadow: 0 10px 25px rgba(0, 124, 166, 0.25) !important; border-color: var(--ac-blue) !important; }
-        .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select, .stDateInput>div>div>input { border-radius: 6px !important; border: 1px solid #2b3543 !important; background-color: #1e2530 !important; color: white !important; }
+        [data-testid="stForm"] { border-radius: 25px !important; border: 1px solid #2b3543 !important; }
+        
+        .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select, .stDateInput>div>div>input { border-radius: 12px !important; border: 1px solid #2b3543 !important; background-color: #1e2530 !important; color: white !important; }
         .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus, .stDateInput>div>div>input:focus { border-color: var(--bhp-orange) !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.3) !important; }
         .stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #2b3543; }
         .stTabs [aria-selected="true"] { color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; }
@@ -568,21 +572,23 @@ for key, value in default_states.items():
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 6. INTERFAZ: LOGIN
+# 6. INTERFAZ: LOGIN (ENTRADA INTEGRAL RENOVADA)
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     _, col_centro, _ = st.columns([1, 1.5, 1])
     with col_centro:
         with st.container(border=True):
-            st.markdown("<h1 style='text-align: center; border-bottom:none;'>⚙️ <span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h1>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: gray;'>Sistema de Gestión de Reportes Técnicos - Atlas Copco</p>", unsafe_allow_html=True)
+            # 🔥 TITULO LIMPIO Y SUBTITULO INTEGRAL 🔥
+            st.markdown("<h1 style='text-align: center; border-bottom:none;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h1>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: gray;'>Plataforma Integral de Planificación, Mantenimiento e Históricos - Atlas Copco</p>", unsafe_allow_html=True)
             st.markdown("---")
             with st.form("form_login"):
                 u_in = st.text_input("Usuario Corporativo").lower()
                 p_in = st.text_input("Contraseña", type="password")
                 st.markdown("<br>", unsafe_allow_html=True)
-                if st.form_submit_button("Acceder de forma segura", type="primary", use_container_width=True):
+                # 🔥 BOTON SIMPLE 🔥
+                if st.form_submit_button("Acceder", type="primary", use_container_width=True):
                     if u_in in USUARIOS and USUARIOS[u_in] == p_in: 
                         st.session_state.update({'logged_in': True, 'usuario_actual': u_in}); st.session_state.informes_pendientes = cargar_pendientes(u_in); st.rerun()
                     else: st.error("❌ Credenciales inválidas.")
@@ -1336,7 +1342,6 @@ else:
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(0,124,166,0) 0%, rgba(0,124,166,0.1) 50%, rgba(0,124,166,0) 100%); padding: 20px; border-radius: 15px;">
                 <h1 style="color: #007CA6; font-size: 4em; font-weight: 800; margin: 0; letter-spacing: -1px; text-transform: uppercase;">CATÁLOGO DE ACTIVOS</h1>
-                <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">Sistema Integrado de Control de Activos • Hidrometalurgia</p>
             </div>
         """, unsafe_allow_html=True)
         estados_db = obtener_estados_actuales(); total_equipos = len(inventario_equipos); operativos = sum(1 for tag in inventario_equipos.keys() if estados_db.get(tag, "Operativo") == "Operativo"); fuera_servicio = total_equipos - operativos
@@ -1347,7 +1352,7 @@ else:
         with m3: st.markdown(f"<div style='background: #1e2530; border-left: 5px solid #ff1744; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(255,23,68,0.1); text-align: center;'><p style='color: #8c9eb5; margin:0; font-size:1rem; font-weight:600; text-transform:uppercase;'>🔴 Fuera de Servicio</p><h2 style='color: #ff1744; margin:0; font-size:2.5rem; font-weight:800;'>{fuera_servicio}</h2></div>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # 🔥 NUEVO: PANEL DE FILTRADO ERGONÓMICO Y PROFESIONAL 🔥
+        # 🔥 PANEL DE FILTRADO ERGONÓMICO Y PROFESIONAL 🔥
         with st.container(border=True):
             st.markdown("<p style='color: #8c9eb5; margin-bottom: 10px; font-weight: 600; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px;'>⚙️ Controles de Búsqueda</p>", unsafe_allow_html=True)
             
