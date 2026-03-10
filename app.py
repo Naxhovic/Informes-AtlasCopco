@@ -572,13 +572,13 @@ for key, value in default_states.items():
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 6. INTERFAZ: LOGIN (ACTUALIZADA: CIRCULAR Y ESTÉTICA)
+# 6. INTERFAZ: LOGIN (ACTUALIZADA: CIRCULAR, ESTÉTICA Y NUEVO TEXTO)
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     _, col_centro, _ = st.columns([1, 1.5, 1])
     with col_centro:
-        # 🔥 PANELES Y FORMULARIOS CIRCULARES AVANZADOS 🔥
+        # 🔥 PANELES Y FORMULARIOS CIRCULARES AVANZADOS CON EFECTO DE VIDRIO Y LUZ 🔥
         with st.container(border=True, height=550): 
             st.markdown("""
                 <style>
@@ -587,19 +587,41 @@ if not st.session_state.logged_in:
                         border: 2px solid #007CA6 !important; /* 🔥 Borde azul brillante 🔥 */
                         padding: 50px !important; /* 🔥 Añadir espacio interior 🔥 */
                         margin-bottom: 20px !important; /* 🔥 Añadir espacio exterior 🔥 */
+                        
+                        /* 🔥 EFECTOS DE VIDRIO Y LUZ FUTURISTA 🔥 */
+                        background: rgba(16, 21, 28, 0.8) !important; /* Fondo oscuro translúcido */
+                        box-shadow: 0 0 25px rgba(0, 124, 166, 0.5) !important; /* Resplandor de luz azul suave */
+                        backdrop-filter: blur(10px) !important; /* Ligero efecto de vidrio esmerilado */
+                    }
+                    
+                    /* 🔥 ESTILO PREMIUM PARA EL TÍTULO ATLAS SPENCE 🔥 */
+                    h1 {
+                        font-weight: 800;
+                        margin-bottom: -15px;
+                    }
+                    
+                    /* 🔥 ESTILO PARA EL SUBTÍTULO "GESTIÓN ACTIVOS HIDROMETALURGIA" 🔥 */
+                    .subtitulo-gestion {
+                        text-align: center; 
+                        color: rgba(255, 255, 255, 0.9); 
+                        font-size: 1.2em; 
+                        font-weight: 600;
+                        margin-top: -10px;
+                        margin-bottom: 25px;
                     }
                 </style>
             """, unsafe_allow_html=True)
             
-            # 🔥 TITULO LIMPIO Y SUBTITULO CATCHY 🔥
+            # 🔥 TITULO LIMPIO Y SUBTITULO Catchy RENOVADO 🔥
             st.markdown("<h1 style='text-align: center; border-bottom:none;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h1>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: gray; font-size: 1.2em;'>Tu activo, bajo control total.</p>", unsafe_allow_html=True)
+            # 🔥 NUEVO TEXTO SOLICITADO 🔥
+            st.markdown("<p class='subtitulo-gestion'>Gestión Activos Hidrometalurgia</p>", unsafe_allow_html=True)
             st.markdown("---")
             with st.form("form_login"):
                 u_in = st.text_input("Usuario Corporativo", label_visibility="collapsed", placeholder="Ingresa tu usuario").lower()
                 p_in = st.text_input("Contraseña", label_visibility="collapsed", placeholder="Ingresa tu contraseña", type="password")
                 st.markdown("<br>", unsafe_allow_html=True)
-                # 🔥 BOTON SIMPLE 🔥
+                # 🔥 BOTON SIMPLE "ACCEDER" 🔥
                 if st.form_submit_button("Acceder", type="primary", use_container_width=True):
                     if u_in in USUARIOS and USUARIOS[u_in] == p_in: 
                         st.session_state.update({'logged_in': True, 'usuario_actual': u_in}); st.session_state.informes_pendientes = cargar_pendientes(u_in); st.rerun()
