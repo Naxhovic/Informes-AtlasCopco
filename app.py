@@ -311,7 +311,7 @@ def guardar_especificacion_db(modelo, clave, valor):
 
 # --- FIN DE LA PARTE 1 ---
 # =============================================================================
-# 4. FUNCIONES AUXILIARES GLOBALES Y CEREBRO DE FECHAS
+# 4. FUNCIONES AUXILIARES GLOBALES Y CEREBRO DE FECHAS (SOPORTE HASTA 2027)
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -371,11 +371,17 @@ def guardar_pendientes(usuario, pendientes):
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
     except: pass
 
+# 🔥 MOTOR DE FECHAS MEJORADO (AÑOS DINÁMICOS HASTA 2027) 🔥
 def wk_to_date(wk_string):
     try:
-        wk_num = int(re.sub(r'\D', '', str(wk_string)))
-        if wk_num >= 50: return datetime.date.fromisocalendar(2025, wk_num, 1)
-        return datetime.date.fromisocalendar(2026, wk_num, 1)
+        s = str(wk_string).strip().upper()
+        year_match = re.search(r'(202\d)', s)
+        y = int(year_match.group(1)) if year_match else None
+        nums = re.findall(r'\d+', s)
+        wk_num = int(nums[0])
+        if not y:
+            y = 2025 if wk_num >= 50 else 2026
+        return datetime.date.fromisocalendar(y, wk_num, 1)
     except: return None
 
 def calcular_mes_minero(wk_string):
@@ -383,30 +389,37 @@ def calcular_mes_minero(wk_string):
     d = wk_to_date(wk_string)
     if not d: return "Sin Asignar"
     meses_full = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-    if d.day <= 15: return meses_full[d.month - 1]
-    else: return meses_full[d.month if d.month < 12 else 0]
+    m_idx = d.month - 1 if d.day <= 15 else (d.month if d.month < 12 else 0)
+    y = d.year
+    if d.month == 12 and d.day > 15: y += 1
+    return f"{meses_full[m_idx]} {y}"
 
 def get_current_wk():
     hoy = datetime.date.today()
-    wk_num = hoy.isocalendar()[1]
-    return f"WK{wk_num:02d}"
+    return f"WK{hoy.isocalendar()[1]:02d}_{hoy.year}"
 
 def formatear_wk(wk_str):
     if pd.isna(wk_str) or str(wk_str).strip() == "": return ""
-    nums = re.findall(r'\d+', str(wk_str))
-    if nums: return f"WK{int(nums[0]):02d}"
-    return str(wk_str).upper()
+    s = str(wk_str).strip().upper()
+    nums = re.findall(r'\d+', s)
+    if not nums: return s
+    wk = int(nums[0])
+    if len(nums) > 1 and int(nums[-1]) > 2000:
+        return f"WK{wk:02d}_{nums[-1]}"
+    return f"WK{wk:02d}"
 
 def get_semanas_mes_minero(mes_nombre):
     if mes_nombre == "Todas" or mes_nombre == "Sin Asignar": return "Todas"
-    meses_map_full = {"Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12}
-    if mes_nombre not in meses_map_full: return ""
-    m_num = meses_map_full[mes_nombre]
-    y_num = 2025 if m_num == 12 else 2026
-    if m_num == 1: min_d = datetime.date(y_num - 1, 12, 16)
-    else: min_d = datetime.date(y_num, m_num - 1, 16)
-    max_d = datetime.date(y_num, m_num, 15)
-    return f"WK{min_d.isocalendar()[1]:02d} a WK{max_d.isocalendar()[1]:02d}"
+    try:
+        parts = mes_nombre.split(" ")
+        m_str, y_num = parts[0], int(parts[1])
+        meses_map_full = {"Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12}
+        m_num = meses_map_full[m_str]
+        if m_num == 1: min_d = datetime.date(y_num - 1, 12, 16)
+        else: min_d = datetime.date(y_num, m_num - 1, 16)
+        max_d = datetime.date(y_num, m_num, 15)
+        return f"WK{min_d.isocalendar()[1]:02d} a WK{max_d.isocalendar()[1]:02d}"
+    except: return ""
 
 def safe_date_str(x):
     try: return x[:10] if isinstance(x, str) else x.strftime("%Y-%m-%d")
@@ -416,36 +429,36 @@ def safe_date_str(x):
 # 5. MOTOR PLANIFICACIÓN CON AUTO-RECUPERACIÓN
 # =============================================================================
 DATOS_PLAN_BASE = [
-    {"TAG": "70-GC-013", "S_Programada": "WK51", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
-    {"TAG": "70-GC-013", "S_Programada": "WK02", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
-    {"TAG": "70-GC-013", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
-    {"TAG": "70-GC-013", "S_Programada": "WK07", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-10", "Observacion": ""},
-    {"TAG": "70-GC-013", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-    {"TAG": "70-GC-014", "S_Programada": "WK52", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2025-12-22", "Observacion": ""},
-    {"TAG": "70-GC-014", "S_Programada": "WK02", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
-    {"TAG": "70-GC-014", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": ""}, 
-    {"TAG": "70-GC-014", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
-    {"TAG": "70-GC-014", "S_Programada": "WK10", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-    {"TAG": "50-GC-001", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-    {"TAG": "50-GC-001", "S_Programada": "WK04", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-21", "Observacion": ""},
-    {"TAG": "50-GC-001", "S_Programada": "WK09", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
-    {"TAG": "50-GC-001", "S_Programada": "WK10", "Tipo": "P3", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-    {"TAG": "50-GC-002", "S_Programada": "WK01", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-    {"TAG": "50-GC-002", "S_Programada": "WK02", "Tipo": "P2", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
-    {"TAG": "50-GC-002", "S_Programada": "WK04", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
-    {"TAG": "50-GC-002", "S_Programada": "WK09", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-    {"TAG": "50-GC-003", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-    {"TAG": "50-GC-003", "S_Programada": "WK07", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
-    {"TAG": "50-GC-003", "S_Programada": "WK11", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-    {"TAG": "55-GC-015", "S_Programada": "WK01", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-    {"TAG": "55-GC-015", "S_Programada": "WK06", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-04", "Observacion": ""},
-    {"TAG": "55-GC-015", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""},
-    {"TAG": "65-GC-011", "S_Programada": "WK01", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-    {"TAG": "65-GC-011", "S_Programada": "WK05", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-28", "Observacion": ""},
-    {"TAG": "65-GC-011", "S_Programada": "WK11", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-03-09", "Observacion": ""},
-    {"TAG": "35-GC-006", "S_Programada": "WK01", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
-    {"TAG": "35-GC-006", "S_Programada": "WK02", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
-    {"TAG": "35-GC-006", "S_Programada": "WK08", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
+    {"TAG": "70-GC-013", "S_Programada": "WK51_2025", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
+    {"TAG": "70-GC-013", "S_Programada": "WK02_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
+    {"TAG": "70-GC-013", "S_Programada": "WK04_2026", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
+    {"TAG": "70-GC-013", "S_Programada": "WK07_2026", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-10", "Observacion": ""},
+    {"TAG": "70-GC-013", "S_Programada": "WK11_2026", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+    {"TAG": "70-GC-014", "S_Programada": "WK52_2025", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2025-12-22", "Observacion": ""},
+    {"TAG": "70-GC-014", "S_Programada": "WK02_2026", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
+    {"TAG": "70-GC-014", "S_Programada": "WK04_2026", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": ""}, 
+    {"TAG": "70-GC-014", "S_Programada": "WK09_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
+    {"TAG": "70-GC-014", "S_Programada": "WK10_2026", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+    {"TAG": "50-GC-001", "S_Programada": "WK01_2026", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+    {"TAG": "50-GC-001", "S_Programada": "WK04_2026", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-21", "Observacion": ""},
+    {"TAG": "50-GC-001", "S_Programada": "WK09_2026", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
+    {"TAG": "50-GC-001", "S_Programada": "WK10_2026", "Tipo": "P3", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+    {"TAG": "50-GC-002", "S_Programada": "WK01_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+    {"TAG": "50-GC-002", "S_Programada": "WK02_2026", "Tipo": "P2", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
+    {"TAG": "50-GC-002", "S_Programada": "WK04_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
+    {"TAG": "50-GC-002", "S_Programada": "WK09_2026", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+    {"TAG": "50-GC-003", "S_Programada": "WK01_2026", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+    {"TAG": "50-GC-003", "S_Programada": "WK07_2026", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
+    {"TAG": "50-GC-003", "S_Programada": "WK11_2026", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
+    {"TAG": "55-GC-015", "S_Programada": "WK01_2026", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+    {"TAG": "55-GC-015", "S_Programada": "WK06_2026", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-04", "Observacion": ""},
+    {"TAG": "55-GC-015", "S_Programada": "WK08_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""},
+    {"TAG": "65-GC-011", "S_Programada": "WK01_2026", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+    {"TAG": "65-GC-011", "S_Programada": "WK05_2026", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-28", "Observacion": ""},
+    {"TAG": "65-GC-011", "S_Programada": "WK11_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-03-09", "Observacion": ""},
+    {"TAG": "35-GC-006", "S_Programada": "WK01_2026", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+    {"TAG": "35-GC-006", "S_Programada": "WK02_2026", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
+    {"TAG": "35-GC-006", "S_Programada": "WK08_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
 ]
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -654,7 +667,7 @@ else:
                                         time.sleep(1)
                                         st.rerun()
 
-    # --- 7.1 VISTA PLANIFICACIÓN REACTIVA E INTERACTIVA ---
+    # --- 7.1 VISTA PLANIFICACIÓN ---
     elif st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -696,17 +709,24 @@ else:
         
         with tab_gestion:
             c_f1, c_f2 = st.columns([1, 3])
-            orden_meses_full = ["Todas", "Diciembre", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre"]
+            # 🔥 ORDEN DE MESES AHORA INCLUYE 2026 Y 2027 🔥
+            orden_meses_full = ["Todas", "Diciembre 2025", "Enero 2026", "Febrero 2026", "Marzo 2026", "Abril 2026", "Mayo 2026", "Junio 2026", "Julio 2026", "Agosto 2026", "Septiembre 2026", "Octubre 2026", "Noviembre 2026", "Diciembre 2026", "Enero 2027"]
+            
+            # Autocorrección si el filtro actual ya no es válido en la nueva lista
+            if st.session_state.filtro_mes_activo not in orden_meses_full:
+                st.session_state.filtro_mes_activo = "Todas"
+
             filtro_mes = c_f1.selectbox("Filtrar por Mes:", orden_meses_full, key="filtro_mes_activo")
             
             min_date_val, max_date_val = None, None
             if filtro_mes != "Todas":
+                mes_nombre = filtro_mes.split(" ")[0]
+                y_num = int(filtro_mes.split(" ")[1])
                 meses_map_full = {"Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12}
-                if filtro_mes in meses_map_full:
-                    m_num = meses_map_full[filtro_mes]
-                    y_num = 2025 if m_num == 12 else 2026
-                    min_date_val = datetime.date(y_num - 1, 12, 16) if m_num == 1 else datetime.date(y_num, m_num - 1, 16)
-                    max_date_val = datetime.date(y_num, m_num, 15)
+                m_num = meses_map_full[mes_nombre]
+                if m_num == 1: min_date_val = datetime.date(y_num - 1, 12, 16)
+                else: min_date_val = datetime.date(y_num, m_num - 1, 16)
+                max_date_val = datetime.date(y_num, m_num, 15)
 
             df_mostrar = df_cmms.copy() if filtro_mes == "Todas" else df_cmms[df_cmms["Mes_Calc"] == filtro_mes].copy()
             
@@ -717,7 +737,7 @@ else:
             if tags_faltantes:
                 wk_defecto = ""
                 if filtro_mes != "Todas" and min_date_val is not None:
-                    wk_defecto = f"WK{min_date_val.isocalendar()[1]:02d}"
+                    wk_defecto = f"WK{min_date_val.isocalendar()[1]:02d}_{min_date_val.year}"
                 filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": wk_defecto, "Tipo": "N/A", "Estado": "N/A", "S_Realizada": None, "Observacion": "", "Mes_Calc": filtro_mes if filtro_mes != "Todas" else "Sin Asignar"} for t in tags_faltantes])
                 df_mostrar = pd.concat([df_mostrar, filas_vacias], ignore_index=True)
                 
@@ -731,7 +751,7 @@ else:
                 df_mostrar['S_Realizada'] = df_mostrar['S_Realizada'].apply(string_to_date)
                 df_mostrar['Día Programado'] = df_mostrar['S_Programada'].apply(wk_to_date)
 
-                # 🔥 DICCIONARIOS DE TRADUCCIÓN CORREGIDOS (LECTURA LIMPIA) 🔥
+                # 🔥 DICCIONARIOS DE TRADUCCIÓN CORREGIDOS (A PRUEBA DE FALLOS Y EMOJIS) 🔥
                 tipo_visual_map = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03", "N/A": "⚪ N/A", "": "⚪ N/A"}
                 map_visual_estado = {"Hecho": "✅ Hecho", "Pendiente": "⏳ Pendiente", "F/S": "🚨 F/S", "N/A": "⚪ N/A", "": "⚪ N/A"}
                 
@@ -747,7 +767,7 @@ else:
                                 try:
                                     if isinstance(val, str): new_date = datetime.datetime.strptime(val[:10], "%Y-%m-%d").date()
                                     else: new_date = val
-                                    wk_calculada = f"WK{new_date.isocalendar()[1]:02d}"
+                                    wk_calculada = f"WK{new_date.isocalendar()[1]:02d}_{new_date.year}"
                                     df_mostrar.at[int(idx_str), 'S_Programada'] = wk_calculada
                                 except: pass
 
@@ -801,8 +821,8 @@ else:
                     
                     if not es_admin: df_guardar["🗑️ Quitar"] = False 
                     
-                    inv_tipo_map = {v: k for k, v in tipo_visual_map.items()}
-                    inv_estado_map = {v: k for k, v in map_visual_estado.items()}
+                    inv_tipo_map = {v: k for k, v in tipo_visual_map.items() if k not in ["", "N/A"]}
+                    inv_estado_map = {v: k for k, v in map_visual_estado.items() if k not in ["", "N/A"]}
                     
                     df_guardar['Tipo'] = df_guardar['Tipo'].apply(lambda x: inv_tipo_map.get(str(x).strip(), "N/A"))
                     df_guardar['Estado'] = df_guardar['Estado'].apply(lambda x: inv_estado_map.get(str(x).strip(), "N/A"))
@@ -811,11 +831,11 @@ else:
                         d = row.get('Día Programado')
                         if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
                             if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
-                            return f"WK{d.isocalendar()[1]:02d}"
+                            return f"WK{d.isocalendar()[1]:02d}_{d.year}"
                         
                         wk_actual = str(row.get('S_Programada', '')).strip()
                         if wk_actual == "" and filtro_mes != "Todas" and min_date_val is not None:
-                            return f"WK{min_date_val.isocalendar()[1]:02d}"
+                            return f"WK{min_date_val.isocalendar()[1]:02d}_{min_date_val.year}"
                         return wk_actual
                         
                     df_guardar['S_Programada'] = df_guardar.apply(get_final_wk, axis=1)
@@ -866,10 +886,10 @@ else:
                                     d = row.get('Día Programado')
                                     if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
                                         if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
-                                        return f"WK{d.isocalendar()[1]:02d}"
+                                        return f"WK{d.isocalendar()[1]:02d}_{d.year}"
                                     wk_actual = str(row.get('S_Programada', '')).strip()
                                     if wk_actual == "" and filtro_mes != "Todas" and min_date_val is not None:
-                                        return f"WK{min_date_val.isocalendar()[1]:02d}"
+                                        return f"WK{min_date_val.isocalendar()[1]:02d}_{min_date_val.year}"
                                     return wk_actual
                                     
                                 df_editado_clean['S_Programada'] = df_editado_clean.apply(get_final_wk_clean, axis=1)
@@ -884,7 +904,7 @@ else:
                                     df_cmms_rest_f = df_cmms[df_cmms["Mes_Calc"] != filtro_mes]
                                     df_cmms_guardar = pd.concat([df_cmms_rest_f, filas_validas_f], ignore_index=True)
 
-                            n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}"
+                            n_sem_format = f"WK{n_fecha_prog.isocalendar()[1]:02d}_{n_fecha_prog.year}"
                             nueva_fila = pd.DataFrame([{"TAG": n_tag, "S_Programada": n_sem_format, "Tipo": n_tipo_puro, "Estado": "Pendiente", "S_Realizada": "", "Observacion": n_obs}])
                             for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
                                 if col in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=[col])
@@ -904,15 +924,15 @@ else:
                             time.sleep(1.5); st.rerun()
 
         with tab_calendario:
-            opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]]
+            opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]] + ["Enero 2027"]
             c_cal_tit, c_cal_sel = st.columns([2, 1])
             with c_cal_tit: st.markdown("### 📆 Calendario")
             with c_cal_sel:
                 hoy_cal = datetime.date.today()
-                mes_str = f"Diciembre 2025" if hoy_cal.year == 2025 and hoy_cal.month == 12 else f"{opciones_meses_calendario[hoy_cal.month]}" if hoy_cal.year == 2026 else "Enero 2026"
+                mes_str = f"Diciembre 2025" if hoy_cal.year == 2025 and hoy_cal.month == 12 else f"{meses_nombres_cal[hoy_cal.month - 1]} {hoy_cal.year}" if hoy_cal.year in [2026, 2027] else "Enero 2026"
                 mes_sel = st.selectbox("📅 Mes a visualizar:", opciones_meses_calendario, index=opciones_meses_calendario.index(mes_str) if mes_str in opciones_meses_calendario else 1)
                 
-            cal_year = 2025 if "2025" in mes_sel else 2026
+            cal_year = int(mes_sel.split(" ")[1])
             meses_nombres_cal = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
             cal_month = meses_nombres_cal.index(mes_sel.split(" ")[0]) + 1
                 
@@ -938,6 +958,7 @@ else:
                 
             for semana in semanas_mes:
                 wk_num = semana[0].isocalendar()[1]
+                # Corrección de fin de año
                 if cal_year == 2025 and semana[0].month == 12: wk_num = semana[0].isocalendar()[1] 
                 
                 html_cal += f'<div style="display:flex; align-items:center; justify-content:center; background:#2b3543; border-radius:8px; border-left: 4px solid #FF6600; color:white; font-weight:bold; font-size:0.85rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); height: 120px;">WK{wk_num:02d}</div>'
@@ -973,17 +994,22 @@ else:
                 vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Mes (Zoom In)", "📆 Anual (Semanas WK)", "📅 Anual (Por Meses)"], horizontal=True)
             
             def map_mes_full(q):
-                if q == "Diciembre": return "dic-25"
-                meses = {"Enero":"ene-26", "Febrero":"feb-26", "Marzo":"mar-26", "Abril":"abr-26", "Mayo":"may-26", "Junio":"jun-26", "Julio":"jul-26", "Agosto":"ago-26", "Septiembre":"sept-26", "Octubre":"oct-26", "Noviembre":"nov-26"}
-                return meses.get(q, q)
+                mapping = {
+                    "Diciembre 2025": "dic-25", "Enero 2026": "ene-26", "Febrero 2026": "feb-26", "Marzo 2026": "mar-26", 
+                    "Abril 2026": "abr-26", "Mayo 2026": "may-26", "Junio 2026": "jun-26", "Julio 2026": "jul-26", 
+                    "Agosto 2026": "ago-26", "Septiembre 2026": "sept-26", "Octubre 2026": "oct-26", "Noviembre 2026": "nov-26",
+                    "Diciembre 2026": "dic-26", "Enero 2027": "ene-27"
+                }
+                return mapping.get(q, str(q))
 
             df_pivot_base['Mes_Vista'] = df_pivot_base['Mes_Calc'].apply(map_mes_full)
             
             if vista_matriz == "📅 Anual (Por Meses)":
                 col_pivot = 'Mes_Vista'
-                cols_todas = ["dic-25", "ene-26", "feb-26", "mar-26", "abr-26", "may-26", "jun-26", "jul-26", "ago-26", "sept-26", "oct-26", "nov-26"]
+                cols_todas = ["dic-25", "ene-26", "feb-26", "mar-26", "abr-26", "may-26", "jun-26", "jul-26", "ago-26", "sept-26", "oct-26", "nov-26", "dic-26", "ene-27"]
             else:
-                col_pivot = 'S_Programada'
+                df_pivot_base['WK_Clean'] = df_pivot_base['S_Programada'].apply(lambda x: str(x)[:4])
+                col_pivot = 'WK_Clean'
                 semanas_brutas = ["WK51", "WK52"] + [f"WK{i:02d}" for i in range(1, 53)]
                 cols_todas = list(dict.fromkeys(semanas_brutas))
                 
@@ -1010,7 +1036,7 @@ else:
                 with c_mat2:
                     orden_meses_zoom = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
                     q_unicas = list(set(wk_a_quincena.values()))
-                    q_unicas.sort(key=lambda x: orden_meses_zoom.index(x) if x in orden_meses_zoom else 99)
+                    q_unicas.sort(key=lambda x: orden_meses_zoom.index(x.split(" ")[0]) if len(x.split(" "))>0 and x.split(" ")[0] in orden_meses_zoom else 99)
                     quin_seleccionada = st.selectbox("Selecciona el Mes a enfocar:", q_unicas, index=q_unicas.index(mes_visualizado) if mes_visualizado in q_unicas else 0)
                 wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
                 cols_finales.extend(wks_mostrar)
