@@ -572,60 +572,56 @@ for key, value in default_states.items():
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 6. INTERFAZ: LOGIN (ACTUALIZADA: CIRCULAR, ESTÉTICA Y NUEVO TEXTO)
+# 6. INTERFAZ: LOGIN (ACTUALIZADA: LIMPIA, CIRCULAR Y MINIMALISTA)
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
-    _, col_centro, _ = st.columns([1, 1.5, 1])
+    _, col_centro, _ = st.columns([1, 1.2, 1])
     with col_centro:
-        # 🔥 PANELES Y FORMULARIOS CIRCULARES AVANZADOS CON EFECTO DE VIDRIO Y LUZ 🔥
-        with st.container(border=True, height=550): 
-            st.markdown("""
-                <style>
-                    [data-testid="stVerticalBlockBorderWrapper"], [data-testid="stForm"] { 
-                        border-radius: 50% !important; /* 🔥 Forzar círculo/ovalo 🔥 */
-                        border: 2px solid #007CA6 !important; /* 🔥 Borde azul brillante 🔥 */
-                        padding: 50px !important; /* 🔥 Añadir espacio interior 🔥 */
-                        margin-bottom: 20px !important; /* 🔥 Añadir espacio exterior 🔥 */
-                        
-                        /* 🔥 EFECTOS DE VIDRIO Y LUZ FUTURISTA 🔥 */
-                        background: rgba(16, 21, 28, 0.8) !important; /* Fondo oscuro translúcido */
-                        box-shadow: 0 0 25px rgba(0, 124, 166, 0.5) !important; /* Resplandor de luz azul suave */
-                        backdrop-filter: blur(10px) !important; /* Ligero efecto de vidrio esmerilado */
-                    }
-                    
-                    /* 🔥 ESTILO PREMIUM PARA EL TÍTULO ATLAS SPENCE 🔥 */
-                    h1 {
-                        font-weight: 800;
-                        margin-bottom: -15px;
-                    }
-                    
-                    /* 🔥 ESTILO PARA EL SUBTÍTULO "GESTIÓN ACTIVOS HIDROMETALURGIA" 🔥 */
-                    .subtitulo-gestion {
-                        text-align: center; 
-                        color: rgba(255, 255, 255, 0.9); 
-                        font-size: 1.2em; 
-                        font-weight: 600;
-                        margin-top: -10px;
-                        margin-bottom: 25px;
-                    }
-                </style>
-            """, unsafe_allow_html=True)
+        # Estilos CSS inyectados específicamente para redondear el Login de forma elegante
+        st.markdown("""
+            <style>
+                /* Marco principal en forma de píldora/circular amplio */
+                div[data-testid="stForm"] { 
+                    border-radius: 40px !important; 
+                    border: 1px solid #2b3543 !important; 
+                    padding: 45px 35px !important; 
+                    background: linear-gradient(145deg, #151a22, #1a212b) !important;
+                    box-shadow: 0 15px 35px rgba(0,0,0,0.5) !important;
+                }
+                /* Inputs redondeados */
+                .stTextInput>div>div>input { 
+                    border-radius: 25px !important; 
+                    padding: 12px 20px !important;
+                    font-size: 1.05em !important;
+                    text-align: center !important;
+                }
+                /* Botón redondeado principal */
+                div.stButton > button {
+                    border-radius: 25px !important;
+                    padding: 12px !important;
+                    font-size: 1.1em !important;
+                    margin-top: 15px !important;
+                }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("<h1 style='text-align: center; border-bottom:none; font-weight: 800; font-size: 3.5em; margin-bottom: -15px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #8c9eb5; font-size: 1.1em; font-weight: 500; margin-bottom: 30px; letter-spacing: 0.5px;'>Gestión Activos Hidrometalurgia</p>", unsafe_allow_html=True)
+        
+        with st.form("form_login"):
+            st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+            u_in = st.text_input("Usuario", label_visibility="collapsed", placeholder="👤 Usuario Corporativo").lower()
+            p_in = st.text_input("Contraseña", label_visibility="collapsed", placeholder="🔒 Contraseña", type="password")
             
-            # 🔥 TITULO LIMPIO Y SUBTITULO Catchy RENOVADO 🔥
-            st.markdown("<h1 style='text-align: center; border-bottom:none;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h1>", unsafe_allow_html=True)
-            # 🔥 NUEVO TEXTO SOLICITADO 🔥
-            st.markdown("<p class='subtitulo-gestion'>Gestión Activos Hidrometalurgia</p>", unsafe_allow_html=True)
-            st.markdown("---")
-            with st.form("form_login"):
-                u_in = st.text_input("Usuario Corporativo", label_visibility="collapsed", placeholder="Ingresa tu usuario").lower()
-                p_in = st.text_input("Contraseña", label_visibility="collapsed", placeholder="Ingresa tu contraseña", type="password")
-                st.markdown("<br>", unsafe_allow_html=True)
-                # 🔥 BOTON SIMPLE "ACCEDER" 🔥
-                if st.form_submit_button("Acceder", type="primary", use_container_width=True):
-                    if u_in in USUARIOS and USUARIOS[u_in] == p_in: 
-                        st.session_state.update({'logged_in': True, 'usuario_actual': u_in}); st.session_state.informes_pendientes = cargar_pendientes(u_in); st.rerun()
-                    else: st.error("❌ Credenciales inválidas.")
+            if st.form_submit_button("Acceder", type="primary", use_container_width=True):
+                if u_in in USUARIOS and USUARIOS[u_in] == p_in: 
+                    st.session_state.update({'logged_in': True, 'usuario_actual': u_in})
+                    st.session_state.informes_pendientes = cargar_pendientes(u_in)
+                    st.rerun()
+                else: 
+                    st.error("❌ Credenciales inválidas.")
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # =============================================================================
 # 7. INTERFAZ PRINCIPAL
@@ -1386,7 +1382,6 @@ else:
         with m3: st.markdown(f"<div style='background: #1e2530; border-left: 5px solid #ff1744; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(255,23,68,0.1); text-align: center;'><p style='color: #8c9eb5; margin:0; font-size:1rem; font-weight:600; text-transform:uppercase;'>🔴 Fuera de Servicio</p><h2 style='color: #ff1744; margin:0; font-size:2.5rem; font-weight:800;'>{fuera_servicio}</h2></div>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # 🔥 PANEL DE FILTRADO ERGONÓMICO Y PROFESIONAL 🔥
         with st.container(border=True):
             st.markdown("<p style='color: #8c9eb5; margin-bottom: 10px; font-weight: 600; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px;'>⚙️ Controles de Búsqueda</p>", unsafe_allow_html=True)
             
