@@ -622,7 +622,7 @@ else:
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(255,102,0,0) 0%, rgba(255,102,0,0.15) 50%, rgba(255,102,0,0) 100%); padding: 20px; border-radius: 15px;">
                 <h1 style="color: #FF6600; font-size: 3.5em; font-weight: 800; margin: 0; letter-spacing: -1px; text-transform: uppercase;">Muro de Intervenciones</h1>
-                <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">Registro Histórico en Tiempo Real</p>
+                <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">Registro Histórico</p>
             </div>
         """, unsafe_allow_html=True)
         
@@ -1335,7 +1335,7 @@ else:
     elif st.session_state.vista_actual == "catalogo" and st.session_state.equipo_seleccionado is None:
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(0,124,166,0) 0%, rgba(0,124,166,0.1) 50%, rgba(0,124,166,0) 100%); padding: 20px; border-radius: 15px;">
-                <h1 style="color: #007CA6; font-size: 4em; font-weight: 800; margin: 0; letter-spacing: -1px; text-transform: uppercase;">Atlas Copco <span style="color: #FF6600;">Spence</span></h1>
+                <h1 style="color: #007CA6; font-size: 4em; font-weight: 800; margin: 0; letter-spacing: -1px; text-transform: uppercase;">CATÁLOGO DE ACTIVOS</h1>
                 <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">Sistema Integrado de Control de Activos • Hidrometalurgia</p>
             </div>
         """, unsafe_allow_html=True)
@@ -1345,26 +1345,29 @@ else:
         with m1: st.markdown(f"<div style='background: #1e2530; border-left: 5px solid #8c9eb5; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center;'><p style='color: #8c9eb5; margin:0; font-size:1rem; font-weight:600; text-transform:uppercase;'>📦 Total Activos</p><h2 style='color: white; margin:0; font-size:2.5rem; font-weight:800;'>{total_equipos}</h2></div>", unsafe_allow_html=True)
         with m2: st.markdown(f"<div style='background: #1e2530; border-left: 5px solid #00e676; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,230,118,0.1); text-align: center;'><p style='color: #8c9eb5; margin:0; font-size:1rem; font-weight:600; text-transform:uppercase;'>🟢 Operativos</p><h2 style='color: #00e676; margin:0; font-size:2.5rem; font-weight:800;'>{operativos}</h2></div>", unsafe_allow_html=True)
         with m3: st.markdown(f"<div style='background: #1e2530; border-left: 5px solid #ff1744; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(255,23,68,0.1); text-align: center;'><p style='color: #8c9eb5; margin:0; font-size:1rem; font-weight:600; text-transform:uppercase;'>🔴 Fuera de Servicio</p><h2 style='color: #ff1744; margin:0; font-size:2.5rem; font-weight:800;'>{fuera_servicio}</h2></div>", unsafe_allow_html=True)
-        st.markdown("<br><hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
-        
-        col_filtro, col_busqueda = st.columns([1.2, 2])
-        with col_filtro: filtro_tipo = st.radio("🗂️ Categoría de Equipo:", ["Todos", "Compresores", "Secadores"], horizontal=True)
-        with col_busqueda: busqueda = st.text_input("🔍 Buscar activo por TAG, Modelo o Área...", placeholder="Ejemplo: GA 250, 35-GC-006...").lower()
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # 🔥 NUEVO: BOTONES DE FILTRO RÁPIDO POR ÁREA 🔥
-        st.markdown("<h5 style='color: #8c9eb5; margin-bottom: 15px;'>📍 Filtro Rápido por Área:</h5>", unsafe_allow_html=True)
-        c_a1, c_a2, c_a3, c_a4, c_a5 = st.columns(5)
+        # 🔥 NUEVO: PANEL DE FILTRADO ERGONÓMICO Y PROFESIONAL 🔥
+        with st.container(border=True):
+            st.markdown("<p style='color: #8c9eb5; margin-bottom: 10px; font-weight: 600; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px;'>⚙️ Controles de Búsqueda</p>", unsafe_allow_html=True)
+            
+            col_filtro, col_busqueda = st.columns([1, 2])
+            with col_filtro: 
+                filtro_tipo = st.radio("Categoría de Equipo:", ["Todos", "Compresores", "Secadores"], horizontal=True, label_visibility="collapsed")
+            with col_busqueda: 
+                busqueda = st.text_input("🔍 Buscar...", placeholder="Buscar activo por TAG, Modelo o Área (Ej: GA 250, Mina...)", label_visibility="collapsed").lower()
+            
+            st.markdown("<hr style='border-color: #2b3543; margin: 15px 0;'>", unsafe_allow_html=True)
+            
+            c_a1, c_a2, c_a3, c_a4, c_a5 = st.columns(5)
+            def set_area(a): st.session_state.filtro_area = a
+            c_a1.button("🌍 Todas", use_container_width=True, type="primary" if st.session_state.filtro_area == "Todas" else "secondary", on_click=set_area, args=("Todas",))
+            c_a2.button("⛏️ Mina", use_container_width=True, type="primary" if st.session_state.filtro_area == "Mina" else "secondary", on_click=set_area, args=("Mina",))
+            c_a3.button("🏜️ Área Seca", use_container_width=True, type="primary" if st.session_state.filtro_area == "Área Seca" else "secondary", on_click=set_area, args=("Área Seca",))
+            c_a4.button("💧 Área Húmeda", use_container_width=True, type="primary" if st.session_state.filtro_area == "Área Húmeda" else "secondary", on_click=set_area, args=("Área Húmeda",))
+            c_a5.button("🔬 Laboratorio", use_container_width=True, type="primary" if st.session_state.filtro_area == "Laboratorio" else "secondary", on_click=set_area, args=("Laboratorio",))
         
-        def set_area(a): st.session_state.filtro_area = a
-        
-        c_a1.button("🌍 Todas", use_container_width=True, type="primary" if st.session_state.filtro_area == "Todas" else "secondary", on_click=set_area, args=("Todas",))
-        c_a2.button("⛏️ Mina", use_container_width=True, type="primary" if st.session_state.filtro_area == "Mina" else "secondary", on_click=set_area, args=("Mina",))
-        c_a3.button("🏜️ Área Seca", use_container_width=True, type="primary" if st.session_state.filtro_area == "Área Seca" else "secondary", on_click=set_area, args=("Área Seca",))
-        c_a4.button("💧 Área Húmeda", use_container_width=True, type="primary" if st.session_state.filtro_area == "Área Húmeda" else "secondary", on_click=set_area, args=("Área Húmeda",))
-        c_a5.button("🔬 Laboratorio", use_container_width=True, type="primary" if st.session_state.filtro_area == "Laboratorio" else "secondary", on_click=set_area, args=("Laboratorio",))
-        
-        st.markdown("<hr style='border-color: #2b3543; margin-top: 5px;'>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         
         equipos_filtrados = {}
         for tag, (modelo, serie, area, ubicacion) in inventario_equipos.items():
@@ -1452,7 +1455,6 @@ else:
             if mod_d in ESPECIFICACIONES:
                 specs = {k: v for k, v in ESPECIFICACIONES[mod_d].items() if k != "Manual"}
                 if specs:
-                    # Agrupación Inteligente de Datos
                     cat_aceite = ["Tipo de Aceite", "Litros de Aceite", "Cant. Filtros Aceite", "N° Parte Filtro Aceite"]
                     cat_aire = ["Cant. Filtros Aire", "N° Parte Filtro Aire", "Filtro de Gases"]
                     cat_kits = ["N° Parte Kit", "N° Parte Separador", "Desecante", "Kit Válvulas", "Silenciador"]
