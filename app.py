@@ -425,7 +425,7 @@ def safe_date_str(x):
     except: return ""
 
 # =============================================================================
-# 5. MOTOR PLANIFICACIÓN CON AUTO-RECUPERACIÓN
+# 5. MOTOR PLANIFICACIÓN (AUTO-RECUPERACIÓN Y MATRIZ ANUAL)
 # =============================================================================
 DATOS_PLAN_BASE = [
     {"TAG": "70-GC-013", "S_Programada": "WK51_2025", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
@@ -459,6 +459,38 @@ DATOS_PLAN_BASE = [
     {"TAG": "35-GC-006", "S_Programada": "WK02_2026", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
     {"TAG": "35-GC-006", "S_Programada": "WK08_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
 ]
+
+# 🔥 ALGORITMO INTELIGENTE PARA GENERAR LA MATRIZ DE ABRIL 2026 A ENERO 2027 🔥
+def generar_plan_futuro():
+    PATRONES = {
+        "P4_I_P1": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP"],
+        "I_P3_I_P1": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4"],
+        "P3_I_P1": ["P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP"],
+        "I_P3_I_P1_alt": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
+        "I_P4_I_P1": ["INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
+        "I_I_I_P2": ["INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4"],
+        "P1_I_P2": ["P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4", "INSP"],
+        "I_P1_I_P1": ["INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1"],
+        "I_P2_I_I": ["INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP"],
+        "P1_P1_P2": ["P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1"],
+        "P2_P1_P1": ["P2", "P1", "P1", "P1", "P1", "P1", "P4", "P1", "P1", "P2"],
+        "P1_P2_P1": ["P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1"],
+        "I_P4_I_I": ["INSP", "P4", "INSP", "INSP", "P1", "INSP", "INSP", "P2", "INSP", "INSP"]
+    }
+    MAP = {
+        "20-GC-001": "P4_I_P1", "20-GC-002": "I_P3_I_P1", "20-GC-003": "P3_I_P1", "20-GC-004": "I_P3_I_P1_alt",
+        "35-GC-006": "P4_I_P1", "35-GC-007": "I_P4_I_P1", "35-GC-008": "I_I_I_P2", "50-CD-001": "I_I_I_P2", 
+        "50-CD-002": "P4_I_P1", "50-GC-001": "P1_I_P2", "50-GC-002": "I_P1_I_P1", "50-GC-003": "I_P2_I_I", 
+        "50-GC-004": "I_P2_I_I", "55-GC-015": "P1_P1_P2", "65-CD-011": "P2_P1_P1", "65-CD-012": "P1_P2_P1", 
+        "65-GC-009": "I_P4_I_I", "65-GC-011": "P4_I_P1", "70-GC-013": "P4_I_P1", "70-GC-014": "P4_I_P1", "Taller": "P4_I_P1"
+    }
+    WKS = ["WK15_2026", "WK19_2026", "WK24_2026", "WK28_2026", "WK32_2026", "WK37_2026", "WK41_2026", "WK45_2026", "WK50_2026", "WK02_2027"]
+    
+    datos = []
+    for tag, p in MAP.items():
+        for wk, tipo in zip(WKS, PATRONES[p]):
+            datos.append({"TAG": tag, "S_Programada": wk, "Tipo": tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""})
+    return pd.DataFrame(datos)
 
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_cmms():
@@ -910,13 +942,26 @@ else:
             
             with c_extra2:
                 if es_admin:
-                    with st.expander("🚨 Zona de Peligro (Admin)", expanded=False):
-                        st.warning("Usa esto solo si la base de datos se borró por completo y necesitas restaurar los valores base.")
-                        if st.button("🚑 Recuperar Planificación a Valores de Fábrica", use_container_width=True):
+                    with st.expander("👑 Control de Base de Datos Anual (Admin)", expanded=False):
+                        st.info("Inyectar las tareas anuales (Abr 2026 a Ene 2027) desde tu Excel original. **No borrará tus datos actuales de Marzo.**")
+                        if st.button("🚀 Inyectar Programación Anual", use_container_width=True):
+                            df_base_actual = cargar_cmms()
+                            df_nuevos = generar_plan_futuro()
+                            df_combinado = pd.concat([df_base_actual, df_nuevos], ignore_index=True)
+                            df_combinado = df_combinado.drop_duplicates(subset=['TAG', 'S_Programada'], keep='first')
+                            for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
+                                if col in df_combinado.columns: df_combinado = df_combinado.drop(columns=[col])
+                            guardar_cmms(df_combinado)
+                            st.success("✅ Programación anual inyectada correctamente.")
+                            time.sleep(1.5); st.rerun()
+                            
+                        st.markdown("---")
+                        st.warning("Usa esto solo si la base de datos se corrompe por completo (Reseteo de Fábrica).")
+                        if st.button("🚑 Resetear Todo a Valores Iniciales", use_container_width=True):
                             headers_b = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
                             df_rec = pd.DataFrame(DATOS_PLAN_BASE, columns=headers_b)
                             guardar_cmms(df_rec)
-                            st.success("Base de datos restaurada.")
+                            st.success("Base de datos restaurada de fábrica.")
                             time.sleep(1.5); st.rerun()
 
         with tab_calendario:
