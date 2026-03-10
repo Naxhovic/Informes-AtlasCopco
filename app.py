@@ -572,20 +572,32 @@ for key, value in default_states.items():
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 6. INTERFAZ: LOGIN (ENTRADA INTEGRAL RENOVADA)
+# 6. INTERFAZ: LOGIN (ACTUALIZADA: CIRCULAR Y ESTÉTICA)
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     _, col_centro, _ = st.columns([1, 1.5, 1])
     with col_centro:
-        with st.container(border=True):
-            # 🔥 TITULO LIMPIO Y SUBTITULO INTEGRAL 🔥
+        # 🔥 PANELES Y FORMULARIOS CIRCULARES AVANZADOS 🔥
+        with st.container(border=True, height=550): 
+            st.markdown("""
+                <style>
+                    [data-testid="stVerticalBlockBorderWrapper"], [data-testid="stForm"] { 
+                        border-radius: 50% !important; /* 🔥 Forzar círculo/ovalo 🔥 */
+                        border: 2px solid #007CA6 !important; /* 🔥 Borde azul brillante 🔥 */
+                        padding: 50px !important; /* 🔥 Añadir espacio interior 🔥 */
+                        margin-bottom: 20px !important; /* 🔥 Añadir espacio exterior 🔥 */
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+            
+            # 🔥 TITULO LIMPIO Y SUBTITULO CATCHY 🔥
             st.markdown("<h1 style='text-align: center; border-bottom:none;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h1>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: gray;'>Plataforma Integral de Planificación, Mantenimiento e Históricos - Atlas Copco</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: gray; font-size: 1.2em;'>Tu activo, bajo control total.</p>", unsafe_allow_html=True)
             st.markdown("---")
             with st.form("form_login"):
-                u_in = st.text_input("Usuario Corporativo").lower()
-                p_in = st.text_input("Contraseña", type="password")
+                u_in = st.text_input("Usuario Corporativo", label_visibility="collapsed", placeholder="Ingresa tu usuario").lower()
+                p_in = st.text_input("Contraseña", label_visibility="collapsed", placeholder="Ingresa tu contraseña", type="password")
                 st.markdown("<br>", unsafe_allow_html=True)
                 # 🔥 BOTON SIMPLE 🔥
                 if st.form_submit_button("Acceder", type="primary", use_container_width=True):
