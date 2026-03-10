@@ -93,7 +93,6 @@ aplicar_estilos_premium()
 # 1. DATOS MAESTROS, INVENTARIO Y ROLES (RBAC)
 # =============================================================================
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "yerko villarroel": "spence2026", "admin": "admin123"}
-# 🔥 SISTEMA DE ROLES 🔥
 ADMIN_USERS = ["ignacio morales", "admin"]
 
 DEFAULT_SPECS = {
@@ -140,8 +139,39 @@ def get_sheet(sheet_name):
     except Exception as e: return None
 
 # =============================================================================
-# 3. FUNCIONES DE BASE DE DATOS
+# 3. FUNCIONES DE BASE DE DATOS Y CONFIGURACIÓN UI
 # =============================================================================
+@st.cache_data(ttl=120, show_spinner=False)
+def obtener_textos_config():
+    textos = {
+        "titulo_ficha": "Ficha de Serviço",
+        "titulo_muro": "Muro de Intervenciones",
+        "subtitulo_app": "Sistema Integrado de Control de Activos • Hidrometalurgia",
+        "titulo_planificacion": "Panel de Control"
+    }
+    try:
+        sheet = get_sheet("config_ui")
+        if sheet:
+            data = sheet.get_all_values()
+            for row in data:
+                if len(row) >= 2: textos[row[0]] = row[1]
+    except: pass
+    return textos
+
+def guardar_texto_config(clave, valor):
+    try:
+        sheet = get_sheet("config_ui")
+        if sheet:
+            registros = sheet.get_all_values(); fila_encontrada = -1
+            for i, fila in enumerate(registros):
+                if len(fila) > 0 and fila[0] == clave: 
+                    fila_encontrada = i + 1
+                    break
+            if fila_encontrada != -1: sheet.update_cell(fila_encontrada, 2, valor)
+            else: sheet.append_row([clave, valor])
+            st.cache_data.clear()
+    except Exception as e: pass
+
 @st.cache_data(ttl=120, show_spinner=False)
 def obtener_estados_actuales():
     estados = {}
@@ -425,7 +455,7 @@ def safe_date_str(x):
     except: return ""
 
 # =============================================================================
-# 5. MOTOR PLANIFICACIÓN (AUTO-RECUPERACIÓN Y MATRIZ ANUAL)
+# 5. MOTOR PLANIFICACIÓN
 # =============================================================================
 DATOS_PLAN_BASE = [
     {"TAG": "70-GC-013", "S_Programada": "WK51_2025", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
@@ -460,7 +490,6 @@ DATOS_PLAN_BASE = [
     {"TAG": "35-GC-006", "S_Programada": "WK08_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
 ]
 
-# 🔥 ALGORITMO INTELIGENTE PARA GENERAR LA MATRIZ DE ABRIL 2026 A ENERO 2027 🔥
 def generar_plan_futuro():
     PATRONES = {
         "P4_I_P1": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP"],
@@ -592,6 +621,9 @@ if not st.session_state.logged_in:
 # 7. INTERFAZ PRINCIPAL
 # =============================================================================
 else:
+    # 🔥 CARGAR TEXTOS DINÁMICOS 🔥
+    textos_ui = obtener_textos_config()
+    
     with st.sidebar:
         es_admin = st.session_state.usuario_actual in ADMIN_USERS
         rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
@@ -614,14 +646,46 @@ else:
             st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
             if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"): 
                 st.session_state.vista_firmas = True; st.session_state.vista_actual = "firmas"; st.session_state.equipo_seleccionado = None; st.rerun()
+                
+        # 🔥 BOTÓN DE CONFIGURACIÓN UI SOLO PARA ADMINS 🔥
+        if es_admin:
+            st.markdown("---")
+            if st.button("⚙️ Configuración de Textos", use_container_width=True, type="primary" if st.session_state.vista_actual == "config_ui" else "secondary"):
+                st.session_state.vista_actual = "config_ui"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
+                
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión", use_container_width=True): st.session_state.logged_in = False; st.rerun()
 
-    # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES ---
-    if st.session_state.vista_actual == "historial":
-        st.markdown("""
+    # --- 7.0 VISTA: CONFIGURACIÓN DE TEXTOS (ADMIN) ---
+    if st.session_state.vista_actual == "config_ui" and es_admin:
+        st.markdown("## ⚙️ Panel de Configuración de Textos (Admin)")
+        st.info("Aquí puedes editar los títulos y textos de la aplicación. Los cambios se guardarán en la Base de Datos para todos los usuarios al instante.")
+        
+        dic_textos = {
+            "titulo_ficha": "Título de la Ficha de Equipo (Ej: Ficha de Serviço)",
+            "titulo_muro": "Título del Muro Histórico (Ej: Muro de Intervenciones)",
+            "subtitulo_app": "Subtítulo del Panel Principal (Ej: Sistema Integrado de Control...)",
+            "titulo_planificacion": "Título del Panel de Planificación (Ej: Panel de Control)"
+        }
+        
+        for clave, descripcion in dic_textos.items():
+            with st.container(border=True):
+                c1, c2 = st.columns([4, 1])
+                nuevo_val = c1.text_input(descripcion, value=textos_ui.get(clave, ""), key=f"in_{clave}")
+                with c2:
+                    st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+                    if st.button("💾 Guardar", key=f"btn_{clave}", use_container_width=True):
+                        guardar_texto_config(clave, nuevo_val)
+                        st.success("¡Guardado!")
+                        time.sleep(1)
+                        st.rerun()
+
+    # --- 7.1 VISTA: ÚLTIMAS INTERVENCIONES ---
+    elif st.session_state.vista_actual == "historial":
+        titulo_muro = textos_ui.get("titulo_muro", "Muro de Intervenciones")
+        st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(255,102,0,0) 0%, rgba(255,102,0,0.15) 50%, rgba(255,102,0,0) 100%); padding: 20px; border-radius: 15px;">
-                <h1 style="color: #FF6600; font-size: 3.5em; font-weight: 800; margin: 0; letter-spacing: -1px; text-transform: uppercase;">Muro de Intervenciones</h1>
+                <h1 style="color: #FF6600; font-size: 3.5em; font-weight: 800; margin: 0; letter-spacing: -1px; text-transform: uppercase;">{titulo_muro}</h1>
                 <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">Registro Histórico en Tiempo Real</p>
             </div>
         """, unsafe_allow_html=True)
@@ -698,7 +762,7 @@ else:
                                         time.sleep(1)
                                         st.rerun()
 
-    # --- 7.1 VISTA PLANIFICACIÓN REACTIVA E INTERACTIVA ---
+    # --- 7.2 VISTA PLANIFICACIÓN ---
     elif st.session_state.vista_actual == "planificacion":
         df_cmms = cargar_cmms()
         semana_actual = get_current_wk()
@@ -712,9 +776,10 @@ else:
         mes_visualizado = st.session_state.filtro_mes_activo if st.session_state.filtro_mes_activo != "Todas" else mes_de_hoy_full
         rango_semanas_header = get_semanas_mes_minero(mes_visualizado)
         
+        titulo_planificacion = textos_ui.get("titulo_planificacion", "Panel de Control")
         st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 1rem; background: linear-gradient(90deg, rgba(0,124,166,0.1) 0%, rgba(0,124,166,0.2) 50%, rgba(0,124,166,0.1) 100%); padding: 20px; border-radius: 15px; border-left: 5px solid var(--ac-blue);">
-                <h2 style="color: white; margin: 0;">📅 Panel de Control</h2>
+                <h2 style="color: white; margin: 0;">📅 {titulo_planificacion}</h2>
                 <p style="color: #8c9eb5; margin: 0; font-weight: 600;">Semanas del Mes: {rango_semanas_header} &nbsp;|&nbsp; Planificación Activa: {mes_visualizado}</p>
             </div>
         """, unsafe_allow_html=True)
@@ -1001,7 +1066,6 @@ else:
                 
             for semana in semanas_mes:
                 wk_num = semana[0].isocalendar()[1]
-                # Corrección de fin de año
                 if cal_year == 2025 and semana[0].month == 12: wk_num = semana[0].isocalendar()[1] 
                 
                 html_cal += f'<div style="display:flex; align-items:center; justify-content:center; background:#2b3543; border-radius:8px; border-left: 4px solid #FF6600; color:white; font-weight:bold; font-size:0.85rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); height: 120px;">WK{wk_num:02d}</div>'
@@ -1112,7 +1176,7 @@ else:
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-    # --- 7.2 VISTA DE FIRMAS (SISTEMA DE BOTÓN ANTI-CRASH) ---
+    # --- 7.3 VISTA DE FIRMAS (SISTEMA DE BOTÓN ANTI-CRASH) ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -1253,7 +1317,6 @@ else:
                     nombres_clientes = " y ".join(list(set([inf['cli'] for inf in informes_area if inf.get('cli')])))
                     if not nombres_clientes: nombres_clientes = "Cliente a cargo"
                     
-                    # 🔥 FIRMA DEL CLIENTE AL FINAL
                     st.markdown(f"<h2 style='text-align: center; color: white; margin-bottom: 5px;'>Firma de Aprobación Final</h2>", unsafe_allow_html=True)
                     st.markdown(f"<h4 style='text-align: center; color: #aeb9cc; margin-top: 0px; margin-bottom: 25px;'>Aprobador: <span style='color: white;'>{nombres_clientes}</span></h4>", unsafe_allow_html=True)
                     
@@ -1333,12 +1396,13 @@ else:
                                     except Exception as e: st.error(f"Error procesando los PDFs: {e}")
                 st.markdown("<br><br>", unsafe_allow_html=True)
 
-    # --- 7.3 VISTA CATÁLOGO AGRUPADO POR ÁREA ---
+    # --- 7.4 VISTA CATÁLOGO AGRUPADO POR ÁREA ---
     elif st.session_state.vista_actual == "catalogo" and st.session_state.equipo_seleccionado is None:
-        st.markdown("""
+        subtitulo_app = textos_ui.get("subtitulo_app", "Sistema Integrado de Control de Activos • Hidrometalurgia")
+        st.markdown(f"""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(0,124,166,0) 0%, rgba(0,124,166,0.1) 50%, rgba(0,124,166,0) 100%); padding: 20px; border-radius: 15px;">
                 <h1 style="color: #007CA6; font-size: 4em; font-weight: 800; margin: 0; letter-spacing: -1px; text-transform: uppercase;">Atlas Copco <span style="color: #FF6600;">Spence</span></h1>
-                <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">Sistema Integrado de Control de Activos • Hidrometalurgia</p>
+                <p style="color: #8c9eb5; font-size: 1.2em; font-weight: 300; margin-top: -10px;">{subtitulo_app}</p>
             </div>
         """, unsafe_allow_html=True)
         estados_db = obtener_estados_actuales(); total_equipos = len(inventario_equipos); operativos = sum(1 for tag in inventario_equipos.keys() if estados_db.get(tag, "Operativo") == "Operativo"); fuera_servicio = total_equipos - operativos
@@ -1382,7 +1446,9 @@ else:
         tag_sel = st.session_state.equipo_seleccionado; mod_d, ser_d, area_d, ubi_d = inventario_equipos[tag_sel]
         c_btn, c_tit = st.columns([1, 4])
         with c_btn: st.button("⬅️ Volver", on_click=volver_catalogo, use_container_width=True)
-        with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ Ficha de Serviço: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
+        
+        titulo_ficha = textos_ui.get("titulo_ficha", "Ficha de Serviço")
+        with c_tit: st.markdown(f"<h1 style='margin-top:-15px;'>⚙️ {titulo_ficha}: <span style='color:#007CA6;'>{tag_sel}</span></h1>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         
         ESPECIFICACIONES = obtener_especificaciones(DEFAULT_SPECS)
