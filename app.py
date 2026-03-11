@@ -1,7 +1,7 @@
 import streamlit as st
 
 # 🔥 CONFIGURACIÓN DE PÁGINA (Debe ser la línea 2)
-st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Atlas Spence | Gestión Activos", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
 from docxtpl import DocxTemplate, InlineImage
 from docx.shared import Mm
@@ -60,7 +60,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (BORDES CIRCULARES)
+# 0.2 ESTILOS PREMIUM GLOBALES
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -77,18 +77,21 @@ def aplicar_estilos_premium():
         a[href*="github.com"] { display: none !important; visibility: hidden !important; }
         [data-testid="viewerBadge"], div[class^="viewerBadge_container"], footer { display: none !important; }
         
-        div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 20px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
+        div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
-        
-        /* 🔥 BORDES REDONDEADOS / CIRCULARES PARA PANELES Y FORMULARIOS 🔥 */
-        [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 30px !important; border: 1px solid #2b3543 !important; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important; }
+        [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 12px !important; border: 1px solid #2b3543 !important; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important; }
         [data-testid="stVerticalBlockBorderWrapper"]:hover { transform: translateY(-6px) !important; box-shadow: 0 10px 25px rgba(0, 124, 166, 0.25) !important; border-color: var(--ac-blue) !important; }
-        [data-testid="stForm"] { border-radius: 25px !important; border: 1px solid #2b3543 !important; }
-        
-        .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select, .stDateInput>div>div>input { border-radius: 12px !important; border: 1px solid #2b3543 !important; background-color: #1e2530 !important; color: white !important; }
+        .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>select, .stDateInput>div>div>input { border-radius: 6px !important; border: 1px solid #2b3543 !important; background-color: #1e2530 !important; color: white !important; }
         .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus, .stSelectbox>div>div>select:focus, .stDateInput>div>div>input:focus { border-color: var(--bhp-orange) !important; box-shadow: 0 0 8px rgba(255, 102, 0, 0.3) !important; }
         .stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #2b3543; }
         .stTabs [aria-selected="true"] { color: var(--bhp-orange) !important; border-bottom: 3px solid var(--bhp-orange) !important; }
+        
+        /* 🔥 OCULTAR AVISO DE "Press Enter to apply" EN LOS NÚMEROS Y TEXTOS 🔥 */
+        div[data-testid="InputInstructions"], 
+        div[data-testid="stNumberInput"] small { 
+            display: none !important; 
+            visibility: hidden !important; 
+        }
         </style>
     """, unsafe_allow_html=True)
 aplicar_estilos_premium()
@@ -279,10 +282,9 @@ def guardar_registro(data_tuple):
             sheet = get_sheet("intervenciones")
             if sheet is not None:
                 row = [str(x) for x in data_tuple]
-                num_filas = len(sheet.get_all_values()) + 1
-                sheet.insert_row(row, index=num_filas)
+                sheet.insert_row(row, index=len(sheet.get_all_values()) + 1)
                 st.cache_data.clear(); return True
-        except Exception as e: time.sleep(5)
+        except: time.sleep(5)
     return False
 
 def agregar_observacion(tag, usuario, texto):
@@ -541,6 +543,8 @@ def guardar_cmms(df):
 def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
+    
+    # 🔥 MEMORIA DE TEXTOS RESTAURADA 🔥
     if reg:
         st.session_state.input_cliente = reg[1]; st.session_state.input_tec1 = reg[5]; st.session_state.input_tec2 = reg[6]
         st.session_state.input_estado_eq = reg[12] if reg[12] else "Operativo"
@@ -550,8 +554,12 @@ def seleccionar_equipo(tag):
         except: st.session_state.input_p_carga = "7.0"
         try: st.session_state.input_p_descarga = str(reg[8]).split()[0].replace(',', '.')
         except: st.session_state.input_p_descarga = "7.5"
-    else: st.session_state.update({'input_estado_eq': "Operativo"})
-    st.session_state.input_estado = ""; st.session_state.input_reco = ""
+        
+        # Leemos la Condición Final y Recomendaciones del historial
+        st.session_state.input_estado = str(reg[3]) if reg[3] else ""
+        st.session_state.input_reco = str(reg[11]) if reg[11] else ""
+    else: 
+        st.session_state.update({'input_estado_eq': "Operativo", 'input_estado': "", 'input_reco': ""})
 
 def volver_catalogo(): 
     st.session_state.equipo_seleccionado = None; st.session_state.vista_firmas = False; st.session_state.vista_actual = "catalogo"
@@ -572,7 +580,7 @@ for key, value in default_states.items():
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 6. INTERFAZ: LOGIN (ACTUALIZADA: LIMPIA, CIRCULAR Y SIN INSTRUCCIONES)
+# 6. INTERFAZ: LOGIN (ACTUALIZADA: LIMPIA Y CIRCULAR)
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
@@ -580,7 +588,6 @@ if not st.session_state.logged_in:
     with col_centro:
         st.markdown("""
             <style>
-                /* Marco principal en forma de píldora/circular amplio */
                 div[data-testid="stForm"] { 
                     border-radius: 40px !important; 
                     border: 1px solid #2b3543 !important; 
@@ -588,25 +595,17 @@ if not st.session_state.logged_in:
                     background: linear-gradient(145deg, #151a22, #1a212b) !important;
                     box-shadow: 0 15px 35px rgba(0,0,0,0.5) !important;
                 }
-                /* Inputs redondeados */
                 .stTextInput>div>div>input { 
                     border-radius: 25px !important; 
                     padding: 12px 20px !important;
                     font-size: 1.05em !important;
                     text-align: center !important;
                 }
-                /* Botón redondeado principal */
                 div.stButton > button {
                     border-radius: 25px !important;
                     padding: 12px !important;
                     font-size: 1.1em !important;
                     margin-top: 15px !important;
-                }
-                /* 🔥 OCULTAR AVISO "Press Enter to submit form" 🔥 */
-                [data-testid="InputInstructions"], 
-                div[data-testid="stForm"] small { 
-                    display: none !important; 
-                    visibility: hidden !important; 
                 }
             </style>
         """, unsafe_allow_html=True)
@@ -761,9 +760,9 @@ else:
         
         df_kpi = df_cmms[(df_cmms["Mes_Calc"] == mes_visualizado) & (df_cmms["Tipo"] != "N/A") & (df_cmms["Tipo"] != "")]
         total_tareas = len(df_kpi)
-        hechas = len(df_kpi[df_kpi["Estado"] == "✅ Hecho"])
-        fs = len(df_kpi[df_kpi["Estado"] == "🚨 F/S"])
-        pendientes = len(df_kpi[df_kpi["Estado"] == "⏳ Pendiente"])
+        hechas = len(df_kpi[df_kpi["Estado"] == "Hecho"])
+        fs = len(df_kpi[df_kpi["Estado"] == "F/S"])
+        pendientes = len(df_kpi[df_kpi["Estado"] == "Pendiente"])
         
         total_evaluable = hechas + pendientes
         cumplimiento = int((hechas / total_evaluable * 100)) if total_evaluable > 0 else (100 if hechas > 0 else 0)
