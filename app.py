@@ -1,7 +1,7 @@
 import streamlit as st
 
-# 🔥 CONFIGURACIÓN DE PÁGINA: Barra lateral inicia CERRADA por defecto para mostrar el botón
-st.set_page_config(page_title="Atlas Spence | Gestión Activos", layout="wide", page_icon="⚙️", initial_sidebar_state="collapsed")
+# 🔥 CONFIGURACIÓN DE PÁGINA: Barra lateral inicia ABIERTA por defecto
+st.set_page_config(page_title="Atlas Spence | Gestión Activos", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
 
 from docxtpl import DocxTemplate, InlineImage
 from docx.shared import Mm
@@ -93,7 +93,7 @@ def aplicar_estilos_premium():
             visibility: hidden !important; 
         }
         
-        /* 🚀 BOTÓN FÍSICO FLOTANTE PARA ABRIR LA BARRA LATERAL 🚀 */
+        /* 🚀 BOTÓN FÍSICO FLOTANTE DE RESCATE (Solo visible si cierran la barra) 🚀 */
         [data-testid="collapsedControl"] {
             background: linear-gradient(135deg, var(--bhp-orange) 0%, #cc5200 100%) !important;
             border-radius: 50% !important;
@@ -172,7 +172,7 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. CONEXIÓN A GOOGLE SHEETS
+# 2. CONEXIÓN A GOOGLE SHEETS Y MOTOR DB
 # =============================================================================
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
@@ -190,9 +190,6 @@ def get_sheet(sheet_name):
         except gspread.exceptions.WorksheetNotFound: return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e: return None
 
-# =============================================================================
-# 3. FUNCIONES DE BASE DE DATOS
-# =============================================================================
 @st.cache_data(ttl=120, show_spinner=False)
 def obtener_estados_actuales():
     estados = {}
