@@ -1,7 +1,7 @@
 import streamlit as st
 
-# 🔥 CONFIGURACIÓN DE PÁGINA: Barra lateral inicia ABIERTA por defecto
-st.set_page_config(page_title="Atlas Spence | Gestión Activos", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
+# 🔥 CONFIGURACIÓN DE PÁGINA: Ocultamos el estado de la barra porque ya no la usaremos
+st.set_page_config(page_title="Atlas Spence | Gestión Activos", layout="wide", page_icon="⚙️", initial_sidebar_state="collapsed")
 
 from docxtpl import DocxTemplate, InlineImage
 from docx.shared import Mm
@@ -60,7 +60,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM GLOBALES
+# 0.2 ESTILOS PREMIUM GLOBALES Y OCULTAMIENTOS
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -77,6 +77,10 @@ def aplicar_estilos_premium():
         a[href*="github.com"] { display: none !important; visibility: hidden !important; }
         [data-testid="viewerBadge"], div[class^="viewerBadge_container"], footer { display: none !important; }
         
+        /* 🔥 OCULTAMOS LA BARRA LATERAL PROBLEMATICA POR DEFECTO 🔥 */
+        [data-testid="collapsedControl"] { display: none !important; visibility: hidden !important; }
+        [data-testid="stSidebar"] { display: none !important; }
+        
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
         [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 12px !important; border: 1px solid #2b3543 !important; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important; }
@@ -91,51 +95,6 @@ def aplicar_estilos_premium():
         div[data-testid="stNumberInput"] small { 
             display: none !important; 
             visibility: hidden !important; 
-        }
-        
-        /* 🚀 BOTÓN FÍSICO FLOTANTE PARA ABRIR LA BARRA LATERAL (SI LA CIERRAN) 🚀 */
-        [data-testid="collapsedControl"] {
-            background: linear-gradient(135deg, var(--bhp-orange) 0%, #cc5200 100%) !important;
-            border-radius: 50% !important;
-            box-shadow: 0 4px 15px rgba(255, 102, 0, 0.5) !important;
-            top: 25px !important;
-            left: 25px !important;
-            width: 45px !important;
-            height: 45px !important;
-            z-index: 999999 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: transform 0.3s ease !important;
-            opacity: 1 !important;
-        }
-        [data-testid="collapsedControl"]:hover {
-            transform: scale(1.1) !important;
-            background: linear-gradient(135deg, #ff7a22 0%, var(--bhp-orange) 100%) !important;
-        }
-        [data-testid="collapsedControl"] svg {
-            fill: white !important;
-            color: white !important;
-            width: 25px !important;
-            height: 25px !important;
-        }
-        
-        /* 🚀 BOTÓN FÍSICO PARA CERRAR DENTRO DE LA BARRA LATERAL 🚀 */
-        [data-testid="stSidebar"] button[kind="header"] {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            border-radius: 50% !important;
-            width: 35px !important;
-            height: 35px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: background-color 0.3s !important;
-        }
-        [data-testid="stSidebar"] button[kind="header"]:hover {
-            background-color: var(--bhp-orange) !important;
-        }
-        [data-testid="stSidebar"] button[kind="header"] svg {
-            fill: white !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -359,7 +318,8 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
 
-    # =============================================================================
+# --- FIN DE LA PARTE 1 ---
+# =============================================================================
 # 4. FUNCIONES AUXILIARES GLOBALES Y CEREBRO DE FECHAS
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
@@ -596,7 +556,6 @@ def seleccionar_equipo(tag):
     st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
     
-    # 🔥 MEMORIA DE TEXTOS RESTAURADA Y SEGURA 🔥
     if reg:
         st.session_state.input_cliente = reg[1]
         st.session_state.input_tec1 = reg[5]
@@ -684,48 +643,59 @@ if not st.session_state.logged_in:
             st.markdown("</div>", unsafe_allow_html=True)
 
 # =============================================================================
-# 7. INTERFAZ PRINCIPAL
+# 7. INTERFAZ PRINCIPAL (NUEVO MENÚ SUPERIOR FIJO)
 # =============================================================================
 else:
-    with st.sidebar:
-        es_admin = st.session_state.usuario_actual in ADMIN_USERS
-        rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
+    es_admin = st.session_state.usuario_actual in ADMIN_USERS
+    rol = "👑 Admin" if es_admin else "🧑‍🔧 Técnico"
+    
+    # 🔥 ENCABEZADO Y MENÚ SUPERIOR 🔥
+    st.markdown(f"<h3 style='margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span> <span style='font-size: 0.5em; color: #8c9eb5; font-weight: normal; margin-left: 10px;'>| 👤 Usuario: {st.session_state.usuario_actual.title()} ({rol})</span></h3>", unsafe_allow_html=True)
+    
+    tiene_pendientes = len(st.session_state.informes_pendientes) > 0
+    if tiene_pendientes:
+        c1, c2, c3, c4, c5 = st.columns(5)
+    else:
+        c1, c2, c3, c4 = st.columns(4)
+        c5 = None
         
-        st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas Copco</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
-        st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}<br><small style='color:#FF6600; font-weight:bold;'>{rol}</small>", unsafe_allow_html=True)
-        st.markdown("---")
-        
-        if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
+    with c1:
+        if st.button("🏭 Catálogo Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"
             st.session_state.vista_firmas = False
             st.session_state.equipo_seleccionado = None
             st.rerun()
-        
+    with c2:
         if st.button("📊 Planificación", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"
             st.session_state.vista_firmas = False
             st.session_state.equipo_seleccionado = None
             st.rerun()
-        
-        if st.button("📜 Últimas Intervenciones", use_container_width=True, type="primary" if st.session_state.vista_actual == "historial" else "secondary"):
+    with c3:
+        if st.button("📜 Historial", use_container_width=True, type="primary" if st.session_state.vista_actual == "historial" else "secondary"):
             st.session_state.vista_actual = "historial"
             st.session_state.vista_firmas = False
             st.session_state.equipo_seleccionado = None
             st.rerun()
             
-        if len(st.session_state.informes_pendientes) > 0:
-            st.markdown("---")
-            st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
-            if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"): 
+    if tiene_pendientes:
+        with c4:
+            if st.button(f"✍️ Firmas ({len(st.session_state.informes_pendientes)})", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"):
                 st.session_state.vista_firmas = True
                 st.session_state.vista_actual = "firmas"
                 st.session_state.equipo_seleccionado = None
                 st.rerun()
+        with c5:
+            if st.button("🚪 Salir", use_container_width=True):
+                st.session_state.logged_in = False
+                st.rerun()
+    else:
+        with c4:
+            if st.button("🚪 Salir", use_container_width=True):
+                st.session_state.logged_in = False
+                st.rerun()
                 
-        st.markdown("---")
-        if st.button("🚪 Cerrar Sesión", use_container_width=True): 
-            st.session_state.logged_in = False
-            st.rerun()
+    st.markdown("<hr style='margin-top: 5px; border-color: #2b3543;'>", unsafe_allow_html=True)
 
     # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES ---
     if st.session_state.vista_actual == "historial":
@@ -1649,7 +1619,9 @@ else:
                         ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}")
                         doc_prev.save(ruta_prev_docx)
                         ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
-                        
+                        if ruta_prev_pdf: 
+                            inf['ruta_prev_pdf'] = ruta_prev_pdf
+                            
                     st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf})
                     guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes)
                     st.success(f"✅ Datos guardados. El equipo se anotó como '{est_eq}' en tu Base de Datos y el informe se fue a la Bandeja de {ubi_d.title()}.")
