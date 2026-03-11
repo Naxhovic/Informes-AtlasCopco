@@ -60,7 +60,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM GLOBALES
+# 0.2 ESTILOS PREMIUM GLOBALES Y BOTÓN FLOTANTE
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -91,6 +91,51 @@ def aplicar_estilos_premium():
         div[data-testid="stNumberInput"] small { 
             display: none !important; 
             visibility: hidden !important; 
+        }
+        
+        /* 🚀 NUEVO: BOTÓN FÍSICO FLOTANTE PARA ABRIR LA BARRA LATERAL (SI SE ESCONDE) 🚀 */
+        [data-testid="collapsedControl"] {
+            background: linear-gradient(135deg, var(--bhp-orange) 0%, #cc5200 100%) !important;
+            border-radius: 50% !important;
+            box-shadow: 0 4px 15px rgba(255, 102, 0, 0.5) !important;
+            top: 25px !important;
+            left: 25px !important;
+            width: 45px !important;
+            height: 45px !important;
+            z-index: 999999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: transform 0.3s ease !important;
+            opacity: 1 !important; /* Forzar que no sea transparente */
+        }
+        [data-testid="collapsedControl"]:hover {
+            transform: scale(1.1) !important;
+            background: linear-gradient(135deg, #ff7a22 0%, var(--bhp-orange) 100%) !important;
+        }
+        [data-testid="collapsedControl"] svg {
+            fill: white !important;
+            color: white !important;
+            width: 25px !important;
+            height: 25px !important;
+        }
+        
+        /* 🚀 NUEVO: BOTÓN FÍSICO PARA CERRAR DENTRO DE LA BARRA LATERAL 🚀 */
+        [data-testid="stSidebar"] button[kind="header"] {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            border-radius: 50% !important;
+            width: 35px !important;
+            height: 35px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: background-color 0.3s !important;
+        }
+        [data-testid="stSidebar"] button[kind="header"]:hover {
+            background-color: var(--bhp-orange) !important;
+        }
+        [data-testid="stSidebar"] button[kind="header"] svg {
+            fill: white !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -544,7 +589,7 @@ def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
     
-    # 🔥 MEMORIA DE TEXTOS RESTAURADA 🔥
+    # 🔥 MEMORIA DE TEXTOS RESTAURADA Y SE SEGURA 🔥
     if reg:
         st.session_state.input_cliente = reg[1]; st.session_state.input_tec1 = reg[5]; st.session_state.input_tec2 = reg[6]
         st.session_state.input_estado_eq = reg[12] if reg[12] else "Operativo"
@@ -555,7 +600,7 @@ def seleccionar_equipo(tag):
         try: st.session_state.input_p_descarga = str(reg[8]).split()[0].replace(',', '.')
         except: st.session_state.input_p_descarga = "7.5"
         
-        # Leemos la Condición Final y Recomendaciones del historial
+        # Leemos la Condición Final y Recomendaciones del historial (índices 3 y 11 de la tupla)
         st.session_state.input_estado = str(reg[3]) if reg[3] else ""
         st.session_state.input_reco = str(reg[11]) if reg[11] else ""
     else: 
