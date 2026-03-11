@@ -104,7 +104,7 @@ def aplicar_estilos_premium():
 aplicar_estilos_premium()
 
 # =============================================================================
-# 1. DATOS MAESTROS, INVENTARIO Y ROLES (RBAC)
+# 1. DATOS MAESTROS Y ROLES (RBAC)
 # =============================================================================
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "yerko villarroel": "spence2026", "admin": "admin123"}
 ADMIN_USERS = ["ignacio morales", "admin"]
@@ -457,7 +457,7 @@ def safe_date_str(x):
     except: return ""
 
 # =============================================================================
-# 5. MOTOR PLANIFICACIÓN
+# 5. MOTOR PLANIFICACIÓN Y CARGA
 # =============================================================================
 DATOS_PLAN_BASE = [
     {"TAG": "70-GC-013", "S_Programada": "WK51_2025", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
@@ -619,7 +619,7 @@ for key, value in default_states.items():
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 7. INTERFAZ: LOGIN (Con corte seguro si no estás logueado)
+# 7. INTERFAZ: LOGIN (Corta la ejecución si no estás logueado)
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
@@ -665,7 +665,7 @@ if not st.session_state.logged_in:
                 else: 
                     st.error("❌ Credenciales inválidas.")
             st.markdown("</div>", unsafe_allow_html=True)
-    st.stop()  # 🔥 MAGIA: Evita que el código de abajo se ejecute o necesite un bloque "else:" gigante. 🔥
+    st.stop()  # 🔥 MAGIA: Evita que el código de abajo se ejecute. Evita el SyntaxError 🔥
 
 # =============================================================================
 # 8. INTERFAZ PRINCIPAL (NAVEGACIÓN SUPERIOR FIJA Y SIN BARRA LATERAL)
@@ -822,14 +822,14 @@ elif st.session_state.vista_actual == "planificacion":
         </div>
     """, unsafe_allow_html=True)
     
-    # 🔥 ARREGLO DEL PORCENTAJE (Búsqueda limpia de texto) 🔥
+    # 🔥 ARREGLO DE KPIs (Búsqueda limpia que ignora Emojis y espacios extra) 🔥
     df_kpi = df_cmms[(df_cmms["Mes_Calc"] == mes_visualizado) & (df_cmms["Tipo"] != "N/A") & (df_cmms["Tipo"] != "")]
     df_kpi_estado_limpio = df_kpi["Estado"].astype(str).str.strip().str.upper()
     
     total_tareas = len(df_kpi)
-    hechas = len(df_kpi_estado_limpio[df_kpi_estado_limpio == "HECHO"])
-    fs = len(df_kpi_estado_limpio[df_kpi_estado_limpio == "F/S"])
-    pendientes = len(df_kpi_estado_limpio[df_kpi_estado_limpio == "PENDIENTE"])
+    hechas = len(df_kpi_estado_limpio[df_kpi_estado_limpio.str.contains("HECHO")])
+    fs = len(df_kpi_estado_limpio[df_kpi_estado_limpio.str.contains("F/S")])
+    pendientes = len(df_kpi_estado_limpio[df_kpi_estado_limpio.str.contains("PENDIENTE")])
     
     total_evaluable = hechas + pendientes
     cumplimiento = int((hechas / total_evaluable * 100)) if total_evaluable > 0 else (100 if hechas > 0 else 0)
@@ -1081,13 +1081,18 @@ elif st.session_state.vista_actual == "planificacion":
 
     with tab_calendario:
         opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]] + ["Enero 2027"]
-        c_cal_tit, c_cal_sel = st.columns([2, 1])
+        c_cal_tit, c_cal_sel, c_cal_tog = st.columns([1.5, 1, 1])
         
         with c_cal_sel:
             hoy_cal = datetime.date.today()
             meses_nombres_cal = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
             mes_str = f"Diciembre 2025" if hoy_cal.year == 2025 and hoy_cal.month == 12 else f"{meses_nombres_cal[hoy_cal.month - 1]} {hoy_cal.year}" if hoy_cal.year in [2026, 2027] else "Enero 2026"
             mes_sel = st.selectbox("📅 Mes a visualizar:", opciones_meses_calendario, index=opciones_meses_calendario.index(mes_str) if mes_str in opciones_meses_calendario else 1)
+            
+        with c_cal_tog:
+            st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+            # 🔥 NUEVO INTERRUPTOR PARA VER SOLO TAREAS COMPLETADAS 🔥
+            solo_hechos = st.toggle("✅ Solo mostrar Completados", value=False)
             
         with c_cal_tit: st.markdown("### 📆 Calendario")
         
@@ -1099,15 +1104,21 @@ elif st.session_state.vista_actual == "planificacion":
         
         tareas_por_fecha = {}
         for _, row in df_cmms.iterrows():
+            estado_tarea = str(row['Estado']).strip()
+            
+            # Si el interruptor está activo, ignoramos las tareas que no sean "Hecho"
+            if solo_hechos and "Hecho" not in estado_tarea:
+                continue
+                
             d_prog = wk_to_date(row['S_Programada'])
             d_target = None
-            if row['Estado'] == 'Hecho' and str(row['S_Realizada']).strip() != "":
+            if "Hecho" in estado_tarea and str(row['S_Realizada']).strip() != "":
                 try: d_target = datetime.datetime.strptime(str(row['S_Realizada']).strip(), "%Y-%m-%d").date()
                 except: d_target = d_prog
             else: d_target = d_prog
             if d_target:
                 if d_target not in tareas_por_fecha: tareas_por_fecha[d_target] = []
-                tareas_por_fecha[d_target].append({"tag": row['TAG'], "tipo": row['Tipo'], "est": row['Estado']})
+                tareas_por_fecha[d_target].append({"tag": row['TAG'], "tipo": row['Tipo'], "est": estado_tarea})
         
         html_cal = '<div style="display:grid; grid-template-columns: 65px repeat(7, 1fr); gap: 10px; margin-top:10px;">'
         html_cal += '<div style="text-align:center; color:#FF6600; font-weight:900; font-size:0.8rem; margin-top: 10px;">REF</div>'
@@ -1129,8 +1140,8 @@ elif st.session_state.vista_actual == "planificacion":
                 if dia in tareas_por_fecha:
                     for t in tareas_por_fecha[dia]:
                         c_bg = "transparent"; c_tx = "#8c9eb5"; b_style = "1px dashed #455065" 
-                        if t['est'] == 'Hecho': c_bg, c_tx, b_style = "#063f22", "#6ee7b7", "1px solid #10b981"
-                        elif t['est'] == 'F/S': c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #ef4444"
+                        if 'Hecho' in t['est']: c_bg, c_tx, b_style = "#063f22", "#6ee7b7", "1px solid #10b981"
+                        elif 'F/S' in t['est']: c_bg, c_tx, b_style = "#471015", "#ff8a93", "1px solid #ef4444"
                         elif t['tipo'] == 'INSP': c_bg, c_tx, b_style = "#1e3a8a", "#93c5fd", "1px solid #1a5c94"
                         elif t['tipo'] == 'P1': c_bg, c_tx, b_style = "#064e3b", "#6ee7b7", "1px solid #047857"
                         elif t['tipo'] == 'P2': c_bg, c_tx, b_style = "#78350f", "#fdba74", "1px solid #8c5300"
@@ -1229,6 +1240,7 @@ elif st.session_state.vista_actual == "planificacion":
 # --- 8.3 VISTA DE FIRMAS ---
 elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
     st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas y Revisión</h1>", unsafe_allow_html=True)
+    st.markdown("---")
     
     if len(st.session_state.informes_pendientes) == 0: 
         st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
