@@ -77,10 +77,6 @@ def aplicar_estilos_premium():
         a[href*="github.com"] { display: none !important; visibility: hidden !important; }
         [data-testid="viewerBadge"], div[class^="viewerBadge_container"], footer { display: none !important; }
         
-        /* 🔥 OCULTAMOS LA BARRA LATERAL PROBLEMATICA POR DEFECTO 🔥 */
-        [data-testid="collapsedControl"] { display: none !important; visibility: hidden !important; }
-        [data-testid="stSidebar"] { display: none !important; }
-        
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 8px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
         [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 12px !important; border: 1px solid #2b3543 !important; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important; }
@@ -95,6 +91,51 @@ def aplicar_estilos_premium():
         div[data-testid="stNumberInput"] small { 
             display: none !important; 
             visibility: hidden !important; 
+        }
+        
+        /* 🚀 BOTÓN FÍSICO FLOTANTE PARA ABRIR LA BARRA LATERAL (SI LA CIERRAN) 🚀 */
+        [data-testid="collapsedControl"] {
+            background: linear-gradient(135deg, var(--bhp-orange) 0%, #cc5200 100%) !important;
+            border-radius: 50% !important;
+            box-shadow: 0 4px 15px rgba(255, 102, 0, 0.5) !important;
+            top: 25px !important;
+            left: 25px !important;
+            width: 45px !important;
+            height: 45px !important;
+            z-index: 999999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: transform 0.3s ease !important;
+            opacity: 1 !important;
+        }
+        [data-testid="collapsedControl"]:hover {
+            transform: scale(1.1) !important;
+            background: linear-gradient(135deg, #ff7a22 0%, var(--bhp-orange) 100%) !important;
+        }
+        [data-testid="collapsedControl"] svg {
+            fill: white !important;
+            color: white !important;
+            width: 25px !important;
+            height: 25px !important;
+        }
+        
+        /* 🚀 BOTÓN FÍSICO PARA CERRAR DENTRO DE LA BARRA LATERAL 🚀 */
+        [data-testid="stSidebar"] button[kind="header"] {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            border-radius: 50% !important;
+            width: 35px !important;
+            height: 35px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: background-color 0.3s !important;
+        }
+        [data-testid="stSidebar"] button[kind="header"]:hover {
+            background-color: var(--bhp-orange) !important;
+        }
+        [data-testid="stSidebar"] button[kind="header"] svg {
+            fill: white !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -611,6 +652,7 @@ for key, value in default_states.items():
     if key not in st.session_state: st.session_state[key] = value
 
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
+
 # =============================================================================
 # 6. INTERFAZ: LOGIN
 # =============================================================================
@@ -660,59 +702,48 @@ if not st.session_state.logged_in:
             st.markdown("</div>", unsafe_allow_html=True)
 
 # =============================================================================
-# 7. INTERFAZ PRINCIPAL (MENÚ SUPERIOR FIJO)
+# 7. INTERFAZ PRINCIPAL (BARRA LATERAL INTACTA)
 # =============================================================================
 else:
-    es_admin = st.session_state.usuario_actual in ADMIN_USERS
-    rol = "👑 Admin" if es_admin else "🧑‍🔧 Técnico"
-    
-    # 🔥 ENCABEZADO Y MENÚ SUPERIOR 🔥
-    st.markdown(f"<h3 style='margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span> <span style='font-size: 0.5em; color: #8c9eb5; font-weight: normal; margin-left: 10px;'>| 👤 Usuario: {st.session_state.usuario_actual.title()} ({rol})</span></h3>", unsafe_allow_html=True)
-    
-    tiene_pendientes = len(st.session_state.informes_pendientes) > 0
-    if tiene_pendientes:
-        c1, c2, c3, c4, c5 = st.columns(5)
-    else:
-        c1, c2, c3, c4 = st.columns(4)
-        c5 = None
+    with st.sidebar:
+        es_admin = st.session_state.usuario_actual in ADMIN_USERS
+        rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
         
-    with c1:
-        if st.button("🏭 Catálogo Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
+        st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas Copco</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
+        st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}<br><small style='color:#FF6600; font-weight:bold;'>{rol}</small>", unsafe_allow_html=True)
+        st.markdown("---")
+        
+        if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
             st.session_state.vista_actual = "catalogo"
             st.session_state.vista_firmas = False
             st.session_state.equipo_seleccionado = None
             st.rerun()
-    with c2:
+        
         if st.button("📊 Planificación", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
             st.session_state.vista_actual = "planificacion"
             st.session_state.vista_firmas = False
             st.session_state.equipo_seleccionado = None
             st.rerun()
-    with c3:
-        if st.button("📜 Historial", use_container_width=True, type="primary" if st.session_state.vista_actual == "historial" else "secondary"):
+        
+        if st.button("📜 Últimas Intervenciones", use_container_width=True, type="primary" if st.session_state.vista_actual == "historial" else "secondary"):
             st.session_state.vista_actual = "historial"
             st.session_state.vista_firmas = False
             st.session_state.equipo_seleccionado = None
             st.rerun()
             
-    if tiene_pendientes:
-        with c4:
-            if st.button(f"✍️ Firmas ({len(st.session_state.informes_pendientes)})", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"):
+        if len(st.session_state.informes_pendientes) > 0:
+            st.markdown("---")
+            st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
+            if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"): 
                 st.session_state.vista_firmas = True
                 st.session_state.vista_actual = "firmas"
                 st.session_state.equipo_seleccionado = None
                 st.rerun()
-        with c5:
-            if st.button("🚪 Salir", use_container_width=True):
-                st.session_state.logged_in = False
-                st.rerun()
-    else:
-        with c4:
-            if st.button("🚪 Salir", use_container_width=True):
-                st.session_state.logged_in = False
-                st.rerun()
                 
-    st.markdown("<hr style='margin-top: 5px; border-color: #2b3543;'>", unsafe_allow_html=True)
+        st.markdown("---")
+        if st.button("🚪 Cerrar Sesión", use_container_width=True): 
+            st.session_state.logged_in = False
+            st.rerun()
 
     # --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES ---
     if st.session_state.vista_actual == "historial":
@@ -1215,8 +1246,7 @@ else:
                 except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
             else:
                 st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
-
-    # --- 7.3 VISTA DE FIRMAS ---
+                # --- 7.3 VISTA DE FIRMAS ---
     elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         c_v1, c_v2 = st.columns([1,4])
         with c_v1: 
@@ -1224,7 +1254,8 @@ else:
         with c_v2: st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas y Revisión</h1>", unsafe_allow_html=True)
         st.markdown("---")
         
-        if len(st.session_state.informes_pendientes) == 0: st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
+        if len(st.session_state.informes_pendientes) == 0: 
+            st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
         else:
             _, c_btn_firma, _ = st.columns([1, 2, 1])
             with c_btn_firma:
@@ -1263,6 +1294,43 @@ else:
                             else: st.warning("⚠️ Por favor dibuja tu firma.")
 
             st.markdown("<br><hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
+            
+            # 🔥 NUEVO: SELECCIÓN GLOBAL DE APROBADOR ARRIBA 🔥
+            st.markdown("### 👤 Seleccionar Aprobador para los Informes")
+            contactos_db = obtener_contactos()
+            opciones_aprobador = ["➕ Escribir nuevo aprobador..."] + contactos_db
+            
+            if 'aprobador_global' not in st.session_state:
+                # Tomamos el cliente del primer reporte pendiente como valor por defecto, o el primero de la BD
+                cliente_por_defecto = st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes[0].get('cli') else (contactos_db[0] if contactos_db else "")
+                st.session_state.aprobador_global = cliente_por_defecto
+
+            idx_aprob = opciones_aprobador.index(st.session_state.aprobador_global) if st.session_state.aprobador_global in opciones_aprobador else 1 if len(contactos_db) > 0 else 0
+
+            c_apr1, c_apr2 = st.columns([3, 1])
+            with c_apr1:
+                aprob_sel = st.selectbox("Este cliente aparecerá como el aprobador y firmante final:", opciones_aprobador, index=idx_aprob)
+            with c_apr2:
+                st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+                if aprob_sel != "➕ Escribir nuevo aprobador...":
+                    if st.button("❌ Borrar Aprobador", key="del_aprob"):
+                        eliminar_contacto(aprob_sel)
+                        st.session_state.aprobador_global = obtener_contactos()[0] if obtener_contactos() else ""
+                        st.rerun()
+
+            if aprob_sel == "➕ Escribir nuevo aprobador...":
+                nuevo_aprob = st.text_input("Nombre del nuevo aprobador:", placeholder="Ej: Oriana Reyes", label_visibility="collapsed")
+                if st.button("💾 Guardar y Seleccionar Aprobador", use_container_width=True):
+                    if nuevo_aprob.strip():
+                        agregar_contacto(nuevo_aprob)
+                        st.session_state.aprobador_global = nuevo_aprob.strip().title()
+                        st.rerun()
+                aprobador_final = nuevo_aprob.strip().title()
+            else:
+                aprobador_final = aprob_sel
+                st.session_state.aprobador_global = aprob_sel
+
+            st.markdown("<hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
 
             areas_agrupadas = {}
             for inf in st.session_state.informes_pendientes:
@@ -1276,8 +1344,9 @@ else:
                     for idx, inf in enumerate(informes_area):
                         c_exp, c_del = st.columns([11, 1])
                         with c_exp:
-                            # 🔥 AHORA MUESTRA LA FECHA EN EL TÍTULO DEL EXPANDER 🔥
-                            titulo_expander = f"📝 Revisar Documento: {inf['tag']} ({inf['tipo_plan']}) - {inf['context'].get('fecha', '')}"
+                            # 🔥 SE AÑADE LA FECHA AL TÍTULO DEL EXPANDER 🔥
+                            fecha_informe = inf['context'].get('fecha', '')
+                            titulo_expander = f"📝 Revisar Documento: {inf['tag']} ({inf['tipo_plan']}) - {fecha_informe}"
                             with st.expander(titulo_expander):
                                 tab_ver, tab_editar = st.tabs(["📄 Ver y Descargar Borrador", "✏️ Corregir Datos Faltantes / Erróneos"])
                                 
@@ -1361,16 +1430,9 @@ else:
                     
                     st.markdown("<hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
                     
+                    # 🔥 SOLO SE MUESTRA EL NOMBRE DEL APROBADOR ENCIMA DEL CUADRO 🔥
                     st.markdown(f"<h2 style='text-align: center; color: white; margin-bottom: 5px;'>Firma de Aprobación Final</h2>", unsafe_allow_html=True)
-                    
-                    # 🔥 AHORA PUEDES CAMBIAR EL CLIENTE APROBADOR ANTES DE FIRMAR 🔥
-                    contactos_db = obtener_contactos()
-                    clientes_actuales = [inf['cli'] for inf in informes_area if inf.get('cli')]
-                    cliente_por_defecto = clientes_actuales[0] if clientes_actuales else (contactos_db[0] if contactos_db else "")
-                    
-                    _, col_aprobador, _ = st.columns([1, 2, 1])
-                    with col_aprobador:
-                        nuevo_aprobador = st.selectbox(f"👤 Seleccionar Aprobador para todos los reportes de {macro_area}:", contactos_db, index=contactos_db.index(cliente_por_defecto) if cliente_por_defecto in contactos_db else 0, key=f"aprobador_{macro_area}")
+                    st.markdown(f"<h4 style='text-align: center; color: #aeb9cc; margin-top: 0px; margin-bottom: 25px;'>Aprobador: <span style='color: white;'>{aprobador_final}</span></h4>", unsafe_allow_html=True)
                     
                     _, col_firma_cli, _ = st.columns([1, 2.5, 1])
                     with col_firma_cli:
@@ -1393,7 +1455,7 @@ else:
                             cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
                             
                             if not tec_ok: st.warning("⚠️ Debes configurar tu Firma de Técnico en el botón azul de arriba primero.")
-                            elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {nuevo_aprobador}.")
+                            elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {aprobador_final}.")
                             else:
                                 def procesar_imagen_firma(img_data): 
                                     img = Image.fromarray(img_data.astype('uint8'), 'RGBA')
@@ -1409,11 +1471,11 @@ else:
                                     
                                     try:
                                         for inf in informes_area:
-                                            # 🔥 SOBRESCRIBIMOS EL CLIENTE EN EL WORD CON EL NUEVO SELECCIONADO 🔥
-                                            inf['context']['cliente_contacto'] = nuevo_aprobador
-                                            inf['cli'] = nuevo_aprobador
+                                            # 🔥 SOBRESCRIBIMOS EL CLIENTE EN EL WORD CON EL NUEVO SELECCIONADO ARRIBA 🔥
+                                            inf['context']['cliente_contacto'] = aprobador_final
+                                            inf['cli'] = aprobador_final
                                             t_list = list(inf['tupla_db'])
-                                            t_list[6] = nuevo_aprobador # Índice 6 es el contacto del cliente en la BD
+                                            t_list[6] = aprobador_final # Índice 6 es el contacto del cliente en la BD
                                             inf['tupla_db'] = tuple(t_list)
                                             
                                             io_cli_local = io.BytesIO(io_cli.getvalue())
@@ -1462,7 +1524,8 @@ else:
                                         else: st.error(f"Error de red: {mensaje_correo}")
                                     except Exception as e: st.error(f"Error procesando los PDFs: {e}")
                 st.markdown("<br><br>", unsafe_allow_html=True)
-                # --- 7.4 VISTA CATÁLOGO AGRUPADO POR ÁREA ---
+
+    # --- 7.4 VISTA CATÁLOGO AGRUPADO POR ÁREA ---
     elif st.session_state.vista_actual == "catalogo" and st.session_state.equipo_seleccionado is None:
         st.markdown("""
             <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(0,124,166,0) 0%, rgba(0,124,166,0.1) 50%, rgba(0,124,166,0) 100%); padding: 20px; border-radius: 15px;">
@@ -1546,7 +1609,7 @@ else:
             area = c3.text_input("Área Específica", area_d, disabled=True)
             ubicacion = c4.text_input("Macro-Área", ubi_d, disabled=True)
             
-            # 🔥 TÉCNICOS Y CLIENTE CON SELECCIÓN GUARDABLE 🔥
+            # 🔥 TÉCNICOS Y CLIENTE SIN TEXTO DE "(OBLIGATORIO)" Y CON LISTAS DESPLEGABLES 🔥
             c5, c6, c7, c8 = st.columns([1.2, 1.5, 1.5, 1.5])
             
             with c5:
@@ -1650,11 +1713,17 @@ else:
             reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100)
             st.markdown("<br>", unsafe_allow_html=True)
             
+            # 🔥 LÓGICA DE VALIDACIÓN ANTES DE GUARDAR 🔥
             if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
                 campos_vacios = []
                 
                 if not tec1_final.strip(): campos_vacios.append("Técnico 1")
-                if not cli_cont_final.strip(): campos_vacios.append("Contacto Cliente")
+                
+                cliente_final_validar = cli_cont_final
+                if cli_sel == "➕ Escribir nuevo..." and not nuevo_c.strip():
+                    cliente_final_validar = "" 
+                
+                if not cliente_final_validar.strip(): campos_vacios.append("Contacto Cliente")
                 if not p_c_str.strip(): campos_vacios.append("P. Carga")
                 if not p_d_str.strip(): campos_vacios.append("P. Descarga")
                 if not t_salida_str.strip(): campos_vacios.append("Temp Salida")
@@ -1662,7 +1731,7 @@ else:
                 if not reco.strip(): campos_vacios.append("Recomendaciones")
 
                 if campos_vacios:
-                    mensaje_error = "❌ No se puede guardar el informe. Los siguientes campos obligatorios están vacíos:\n"
+                    mensaje_error = "❌ No se puede guardar el informe. Los siguientes campos están vacíos:\n"
                     for campo in campos_vacios:
                         mensaje_error += f"- {campo}\n"
                     st.error(mensaje_error)
