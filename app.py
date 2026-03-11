@@ -92,6 +92,51 @@ def aplicar_estilos_premium():
             display: none !important; 
             visibility: hidden !important; 
         }
+
+        /* 🚀 BOTÓN FÍSICO FLOTANTE PARA ABRIR LA BARRA LATERAL (SI LA CIERRAN) 🚀 */
+        [data-testid="collapsedControl"] {
+            background: linear-gradient(135deg, var(--bhp-orange) 0%, #cc5200 100%) !important;
+            border-radius: 50% !important;
+            box-shadow: 0 4px 15px rgba(255, 102, 0, 0.5) !important;
+            top: 25px !important;
+            left: 25px !important;
+            width: 45px !important;
+            height: 45px !important;
+            z-index: 999999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: transform 0.3s ease !important;
+            opacity: 1 !important;
+        }
+        [data-testid="collapsedControl"]:hover {
+            transform: scale(1.1) !important;
+            background: linear-gradient(135deg, #ff7a22 0%, var(--bhp-orange) 100%) !important;
+        }
+        [data-testid="collapsedControl"] svg {
+            fill: white !important;
+            color: white !important;
+            width: 25px !important;
+            height: 25px !important;
+        }
+        
+        /* 🚀 BOTÓN FÍSICO PARA CERRAR DENTRO DE LA BARRA LATERAL 🚀 */
+        [data-testid="stSidebar"] button[kind="header"] {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            border-radius: 50% !important;
+            width: 35px !important;
+            height: 35px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: background-color 0.3s !important;
+        }
+        [data-testid="stSidebar"] button[kind="header"]:hover {
+            background-color: var(--bhp-orange) !important;
+        }
+        [data-testid="stSidebar"] button[kind="header"] svg {
+            fill: white !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 aplicar_estilos_premium()
@@ -335,7 +380,7 @@ def guardar_especificacion_db(modelo, clave, valor):
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
 
 # =============================================================================
-# 4. FUNCIONES AUXILIARES Y DE FECHAS
+# 4. FUNCIONES AUXILIARES GLOBALES Y CEREBRO DE FECHAS
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
@@ -654,9 +699,6 @@ if not st.session_state.logged_in:
             st.markdown("</div>", unsafe_allow_html=True)
 
 else:
-    # =============================================================================
-    # 🔥 BARRA LATERAL (SIEMPRE ACTIVA Y VISIBLE) 🔥
-    # =============================================================================
     with st.sidebar:
         es_admin = st.session_state.usuario_actual in ADMIN_USERS
         rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
@@ -1323,7 +1365,6 @@ else:
                     for idx, inf in enumerate(informes_area):
                         c_exp, c_del = st.columns([11, 1])
                         with c_exp:
-                            # 🔥 FECHA AÑADIDA AL EXPANDER 🔥
                             fecha_informe = inf['context'].get('fecha', '')
                             titulo_expander = f"📝 Revisar Documento: {inf['tag']} ({inf['tipo_plan']}) - {fecha_informe}"
                             with st.expander(titulo_expander):
@@ -1348,7 +1389,6 @@ else:
                                     
                                 with tab_editar:
                                     with st.form(f"edit_form_{inf['tag']}_{idx}"):
-                                        # 🔥 NUEVO CAMPO DE FECHA EN LA EDICIÓN 🔥
                                         c0, c1, c2, c3 = st.columns([1, 1, 1, 1])
                                         new_fecha = c0.text_input("Fecha", value=str(inf['context'].get('fecha', '')))
                                         new_h_m = c1.number_input("Horas Marcha Totales", value=int(inf['context'].get('horas_marcha', 0)), step=1)
@@ -1453,12 +1493,8 @@ else:
                                     
                                     try:
                                         for inf in informes_area:
-                                            # 🔥 SOBRESCRIBIMOS EL CLIENTE EN EL WORD AL FIRMAR DEFINITIVAMENTE 🔥
                                             inf['context']['cliente_contacto'] = aprobador_final
                                             inf['cli'] = aprobador_final
-                                            t_list = list(inf['tupla_db'])
-                                            t_list[6] = aprobador_final
-                                            inf['tupla_db'] = tuple(t_list)
                                             
                                             io_cli_local = io.BytesIO(io_cli.getvalue())
                                             io_tec_local = io.BytesIO(io_tec.getvalue())
@@ -1490,8 +1526,10 @@ else:
                                                 nombre_final = inf['nombre_archivo_base']
                                             
                                             tupla_lista = list(inf['tupla_db'])
+                                            tupla_lista[6] = aprobador_final
                                             tupla_lista[18] = ruta_final
                                             guardar_registro(tuple(tupla_lista))
+                                            
                                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{wk_str}@@{macro_area}@@{inf['tag']}@@{nombre_final}"})
                                         
                                         exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
