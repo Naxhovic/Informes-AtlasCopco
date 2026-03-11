@@ -643,7 +643,7 @@ if not st.session_state.logged_in:
             st.markdown("</div>", unsafe_allow_html=True)
 
 # =============================================================================
-# 7. INTERFAZ PRINCIPAL (NUEVO MENÚ SUPERIOR FIJO)
+# 7. INTERFAZ PRINCIPAL (MENÚ SUPERIOR)
 # =============================================================================
 else:
     es_admin = st.session_state.usuario_actual in ADMIN_USERS
@@ -1619,9 +1619,7 @@ else:
                         ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}")
                         doc_prev.save(ruta_prev_docx)
                         ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
-                        if ruta_prev_pdf: 
-                            inf['ruta_prev_pdf'] = ruta_prev_pdf
-                            
+                        
                     st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf})
                     guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes)
                     st.success(f"✅ Datos guardados. El equipo se anotó como '{est_eq}' en tu Base de Datos y el informe se fue a la Bandeja de {ubi_d.title()}.")
