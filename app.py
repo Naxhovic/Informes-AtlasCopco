@@ -586,7 +586,6 @@ def seleccionar_equipo(tag):
     st.session_state.equipo_seleccionado = tag; st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
     
-    # 🔥 MEMORIA DE TEXTOS RESTAURADA Y SE SEGURA 🔥
     if reg:
         st.session_state.input_cliente = reg[1]; st.session_state.input_tec1 = reg[5]; st.session_state.input_tec2 = reg[6]
         st.session_state.input_estado_eq = reg[12] if reg[12] else "Operativo"
@@ -597,7 +596,6 @@ def seleccionar_equipo(tag):
         try: st.session_state.input_p_descarga = str(reg[8]).split()[0].replace(',', '.')
         except: st.session_state.input_p_descarga = "7.5"
         
-        # Leemos la Condición Final y Recomendaciones del historial (índices 3 y 11 de la tupla)
         st.session_state.input_estado = str(reg[3]) if reg[3] else ""
         st.session_state.input_reco = str(reg[11]) if reg[11] else ""
     else: 
@@ -622,7 +620,7 @@ for key, value in default_states.items():
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 6. INTERFAZ: LOGIN (ACTUALIZADA: LIMPIA Y CIRCULAR)
+# 6. INTERFAZ: LOGIN 
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
@@ -673,6 +671,51 @@ if not st.session_state.logged_in:
 # 7. INTERFAZ PRINCIPAL
 # =============================================================================
 else:
+    # 🔥 SOLUCIÓN DESESPERADA 1: CSS PARA HACER EL BOTON FLOTANTE GIGANTE E INESCONDIBLE 🔥
+    st.markdown("""
+        <style>
+        [data-testid="collapsedControl"] {
+            opacity: 1 !important;
+            visibility: visible !important;
+            background-color: #FF6600 !important;
+            border-radius: 50% !important;
+            width: 60px !important;
+            height: 60px !important;
+            position: fixed !important;
+            top: 15px !important;
+            left: 15px !important;
+            z-index: 9999999 !important;
+            border: 3px solid white !important;
+            box-shadow: 0 0 20px rgba(255,102,0,0.9) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        [data-testid="collapsedControl"] svg {
+            width: 35px !important;
+            height: 35px !important;
+            fill: white !important;
+            color: white !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # 🔥 SOLUCIÓN DESESPERADA 2: MENÚ SUPERIOR DE EMERGENCIA (SIEMPRE VISIBLE) 🔥
+    st.markdown("<p style='text-align:center; color:#FF6600; font-size:0.85em; margin-bottom:5px; margin-top:-25px; font-weight:bold;'>🆘 NAVEGACIÓN RÁPIDA DE EMERGENCIA</p>", unsafe_allow_html=True)
+    n1, n2, n3, n4, n5 = st.columns(5)
+    with n1: 
+        if st.button("🏭 Catálogo", use_container_width=True, key="nav_cat"): st.session_state.vista_actual = "catalogo"; st.session_state.equipo_seleccionado = None; st.rerun()
+    with n2: 
+        if st.button("📊 Planificación", use_container_width=True, key="nav_plan"): st.session_state.vista_actual = "planificacion"; st.session_state.equipo_seleccionado = None; st.rerun()
+    with n3:
+        if st.button("📜 Historial", use_container_width=True, key="nav_hist"): st.session_state.vista_actual = "historial"; st.session_state.equipo_seleccionado = None; st.rerun()
+    with n4:
+        if st.button("✍️ Firmas", use_container_width=True, key="nav_firm"): st.session_state.vista_firmas = True; st.session_state.vista_actual = "firmas"; st.session_state.equipo_seleccionado = None; st.rerun()
+    with n5:
+        if st.button("🚪 Salir", use_container_width=True, key="nav_sal"): st.session_state.logged_in = False; st.rerun()
+    st.markdown("<hr style='margin-top: 5px; border-color: #2b3543;'>", unsafe_allow_html=True)
+
+    # BARRA LATERAL ORIGINAL (Por si logran abrirla)
     with st.sidebar:
         es_admin = st.session_state.usuario_actual in ADMIN_USERS
         rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
