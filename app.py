@@ -93,7 +93,7 @@ def aplicar_estilos_premium():
             visibility: hidden !important; 
         }
         
-        /* 🚀 BOTÓN FÍSICO FLOTANTE PARA ABRIR LA BARRA LATERAL 🚀 */
+        /* 🚀 BOTÓN FÍSICO FLOTANTE PARA ABRIR LA BARRA LATERAL (SI LA CIERRAN) 🚀 */
         [data-testid="collapsedControl"] {
             background: linear-gradient(135deg, var(--bhp-orange) 0%, #cc5200 100%) !important;
             border-radius: 50% !important;
@@ -359,8 +359,7 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
 
-# --- FIN DE LA PARTE 1 ---
-# =============================================================================
+    # =============================================================================
 # 4. FUNCIONES AUXILIARES GLOBALES Y CEREBRO DE FECHAS
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
@@ -597,6 +596,7 @@ def seleccionar_equipo(tag):
     st.session_state.vista_firmas = False
     reg = buscar_ultimo_registro(tag)
     
+    # 🔥 MEMORIA DE TEXTOS RESTAURADA Y SEGURA 🔥
     if reg:
         st.session_state.input_cliente = reg[1]
         st.session_state.input_tec1 = reg[5]
@@ -609,6 +609,7 @@ def seleccionar_equipo(tag):
         except: st.session_state.input_p_carga = "7.0"
         try: st.session_state.input_p_descarga = str(reg[8]).split()[0].replace(',', '.')
         except: st.session_state.input_p_descarga = "7.5"
+        
         st.session_state.input_estado = str(reg[3]) if reg[3] else ""
         st.session_state.input_reco = str(reg[11]) if reg[11] else ""
     else: 
@@ -1344,6 +1345,7 @@ else:
                                             inf['tupla_db'] = tuple(t_list)
                                             
                                             ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{inf['nombre_archivo_base']}")
+                                            
                                             doc_prev = DocxTemplate(inf['file_plantilla'])
                                             ctx_prev = inf['context'].copy()
                                             ctx_prev['firma_tecnico'] = ""
@@ -1352,7 +1354,7 @@ else:
                                             doc_prev.save(ruta_prev_docx)
                                             
                                             ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
-                                            if ruta_prev_pdf:
+                                            if ruta_prev_pdf: 
                                                 inf['ruta_prev_pdf'] = ruta_prev_pdf
                                             
                                             guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes)
@@ -1596,7 +1598,6 @@ else:
             reco = st.text_area("Recomendaciones / Acciones Pendientes (Obligatorio):", key="input_reco", height=100)
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # 🔥 LÓGICA DE VALIDACIÓN ANTES DE GUARDAR 🔥
             if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
                 campos_vacios = []
                 
@@ -1632,7 +1633,9 @@ else:
                     }
                     nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"
                     ruta = os.path.join(RUTA_ONEDRIVE, nombre_archivo)
-                    temp_db = float(t_salida_clean) if t_salida_clean.replace('.', '', 1).isdigit() else 0.0
+                    
+                    try: temp_db = float(t_salida_clean)
+                    except: temp_db = 0.0
                     
                     tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
                     
@@ -1651,6 +1654,7 @@ else:
                     guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes)
                     st.success(f"✅ Datos guardados. El equipo se anotó como '{est_eq}' en tu Base de Datos y el informe se fue a la Bandeja de {ubi_d.title()}.")
                     st.session_state.equipo_seleccionado = None
+                    time.sleep(1)
                     st.rerun()
                     
         with tab2:
