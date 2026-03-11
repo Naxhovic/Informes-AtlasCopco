@@ -1,7 +1,7 @@
 import streamlit as st
 
-# 🔥 CONFIGURACIÓN DE PÁGINA (Debe ser la línea 2)
-st.set_page_config(page_title="Atlas Spence | Gestión Activos", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
+# 🔥 CONFIGURACIÓN DE PÁGINA: Barra lateral inicia CERRADA por defecto para mostrar el botón
+st.set_page_config(page_title="Atlas Spence | Gestión Activos", layout="wide", page_icon="⚙️", initial_sidebar_state="collapsed")
 
 from docxtpl import DocxTemplate, InlineImage
 from docx.shared import Mm
@@ -60,7 +60,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM GLOBALES Y BOTÓN FLOTANTE
+# 0.2 ESTILOS PREMIUM GLOBALES
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -93,7 +93,7 @@ def aplicar_estilos_premium():
             visibility: hidden !important; 
         }
         
-        /* 🚀 NUEVO: BOTÓN FÍSICO FLOTANTE PARA ABRIR LA BARRA LATERAL (SI SE ESCONDE) 🚀 */
+        /* 🚀 BOTÓN FÍSICO FLOTANTE PARA ABRIR LA BARRA LATERAL 🚀 */
         [data-testid="collapsedControl"] {
             background: linear-gradient(135deg, var(--bhp-orange) 0%, #cc5200 100%) !important;
             border-radius: 50% !important;
@@ -107,7 +107,7 @@ def aplicar_estilos_premium():
             align-items: center !important;
             justify-content: center !important;
             transition: transform 0.3s ease !important;
-            opacity: 1 !important; /* Forzar que no sea transparente */
+            opacity: 1 !important;
         }
         [data-testid="collapsedControl"]:hover {
             transform: scale(1.1) !important;
@@ -120,7 +120,7 @@ def aplicar_estilos_premium():
             height: 25px !important;
         }
         
-        /* 🚀 NUEVO: BOTÓN FÍSICO PARA CERRAR DENTRO DE LA BARRA LATERAL 🚀 */
+        /* 🚀 BOTÓN FÍSICO PARA CERRAR DENTRO DE LA BARRA LATERAL 🚀 */
         [data-testid="stSidebar"] button[kind="header"] {
             background-color: rgba(255, 255, 255, 0.1) !important;
             border-radius: 50% !important;
@@ -142,7 +142,7 @@ def aplicar_estilos_premium():
 aplicar_estilos_premium()
 
 # =============================================================================
-# 1. DATOS MAESTROS, INVENTARIO Y ROLES (RBAC)
+# 1. DATOS MAESTROS Y ROLES (RBAC)
 # =============================================================================
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "yerko villarroel": "spence2026", "admin": "admin123"}
 ADMIN_USERS = ["ignacio morales", "admin"]
