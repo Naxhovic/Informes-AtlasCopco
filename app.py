@@ -483,7 +483,7 @@ DATOS_PLAN_BASE = [
     {"TAG": "70-GC-014", "S_Programada": "WK52_2025", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2025-12-22", "Observacion": ""},
     {"TAG": "70-GC-014", "S_Programada": "WK02_2026", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2026-01-05", "Observacion": ""},
     {"TAG": "70-GC-014", "S_Programada": "WK04_2026", "Tipo": "INSP", "Estado": "F/S", "S_Realizada": "", "Observacion": ""}, 
-    {"TAG": "70-GC-014", "S_Programada": "WK09_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-23", "Observacion": ""},
+    {"TAG": "70-GC-014", "S_Programada": "WK09_2026", "Tipo": "INSP", "Hecho": "2026-02-23", "Observacion": ""},
     {"TAG": "70-GC-014", "S_Programada": "WK10_2026", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
     {"TAG": "50-GC-001", "S_Programada": "WK01_2026", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
     {"TAG": "50-GC-001", "S_Programada": "WK04_2026", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-21", "Observacion": ""},
@@ -493,15 +493,15 @@ DATOS_PLAN_BASE = [
     {"TAG": "50-GC-002", "S_Programada": "WK02_2026", "Tipo": "P2", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
     {"TAG": "50-GC-002", "S_Programada": "WK04_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-01-19", "Observacion": ""},
     {"TAG": "50-GC-002", "S_Programada": "WK09_2026", "Tipo": "INSP", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-    {"TAG": "50-GC-003", "S_Programada": "WK01_2026", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+    {"TAG": "50-GC-003", "S_Programada": "WK01_2026", "Tipo": "P2", "Hecho": "2025-12-29", "Observacion": ""},
     {"TAG": "50-GC-003", "S_Programada": "WK07_2026", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
     {"TAG": "50-GC-003", "S_Programada": "WK11_2026", "Tipo": "P1", "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""},
-    {"TAG": "55-GC-015", "S_Programada": "WK01_2026", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
+    {"TAG": "55-GC-015", "S_Programada": "WK01_2026", "Tipo": "P2", "Hecho": "2025-12-29", "Observacion": ""},
     {"TAG": "55-GC-015", "S_Programada": "WK06_2026", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-02-04", "Observacion": ""},
     {"TAG": "55-GC-015", "S_Programada": "WK08_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""},
     {"TAG": "65-GC-011", "S_Programada": "WK01_2026", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
     {"TAG": "65-GC-011", "S_Programada": "WK05_2026", "Tipo": "P1", "Estado": "Hecho", "S_Realizada": "2026-01-28", "Observacion": ""},
-    {"TAG": "65-GC-011", "S_Programada": "WK11_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-03-09", "Observacion": ""},
+    {"TAG": "65-GC-011", "S_Programada": "WK11_2026", "Tipo": "INSP", "Hecho": "2026-03-09", "Observacion": ""},
     {"TAG": "35-GC-006", "S_Programada": "WK01_2026", "Tipo": "P3", "Estado": "Hecho", "S_Realizada": "2025-12-29", "Observacion": ""},
     {"TAG": "35-GC-006", "S_Programada": "WK02_2026", "Tipo": "P1", "Estado": "F/S", "S_Realizada": "", "Observacion": ""},
     {"TAG": "35-GC-006", "S_Programada": "WK08_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
@@ -671,51 +671,9 @@ if not st.session_state.logged_in:
 # 7. INTERFAZ PRINCIPAL
 # =============================================================================
 else:
-    # 🔥 SOLUCIÓN DESESPERADA 1: CSS PARA HACER EL BOTON FLOTANTE GIGANTE E INESCONDIBLE 🔥
-    st.markdown("""
-        <style>
-        [data-testid="collapsedControl"] {
-            opacity: 1 !important;
-            visibility: visible !important;
-            background-color: #FF6600 !important;
-            border-radius: 50% !important;
-            width: 60px !important;
-            height: 60px !important;
-            position: fixed !important;
-            top: 15px !important;
-            left: 15px !important;
-            z-index: 9999999 !important;
-            border: 3px solid white !important;
-            box-shadow: 0 0 20px rgba(255,102,0,0.9) !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-        [data-testid="collapsedControl"] svg {
-            width: 35px !important;
-            height: 35px !important;
-            fill: white !important;
-            color: white !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    # ⛔ SE ELIMINÓ LA SOLUCIÓN DESESPERADA DE NAVEGACIÓN RÁPIDA AQUÍ ⛔
 
-    # 🔥 SOLUCIÓN DESESPERADA 2: MENÚ SUPERIOR DE EMERGENCIA (SIEMPRE VISIBLE) 🔥
-    st.markdown("<p style='text-align:center; color:#FF6600; font-size:0.85em; margin-bottom:5px; margin-top:-25px; font-weight:bold;'>🆘 NAVEGACIÓN RÁPIDA DE EMERGENCIA</p>", unsafe_allow_html=True)
-    n1, n2, n3, n4, n5 = st.columns(5)
-    with n1: 
-        if st.button("🏭 Catálogo", use_container_width=True, key="nav_cat"): st.session_state.vista_actual = "catalogo"; st.session_state.equipo_seleccionado = None; st.rerun()
-    with n2: 
-        if st.button("📊 Planificación", use_container_width=True, key="nav_plan"): st.session_state.vista_actual = "planificacion"; st.session_state.equipo_seleccionado = None; st.rerun()
-    with n3:
-        if st.button("📜 Historial", use_container_width=True, key="nav_hist"): st.session_state.vista_actual = "historial"; st.session_state.equipo_seleccionado = None; st.rerun()
-    with n4:
-        if st.button("✍️ Firmas", use_container_width=True, key="nav_firm"): st.session_state.vista_firmas = True; st.session_state.vista_actual = "firmas"; st.session_state.equipo_seleccionado = None; st.rerun()
-    with n5:
-        if st.button("🚪 Salir", use_container_width=True, key="nav_sal"): st.session_state.logged_in = False; st.rerun()
-    st.markdown("<hr style='margin-top: 5px; border-color: #2b3543;'>", unsafe_allow_html=True)
-
-    # BARRA LATERAL ORIGINAL (Por si logran abrirla)
+    # BARRA LATERAL ORIGINAL
     with st.sidebar:
         es_admin = st.session_state.usuario_actual in ADMIN_USERS
         rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
@@ -1349,14 +1307,7 @@ else:
                                             inf['tupla_db'] = tuple(t_list)
                                             
                                             ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{inf['nombre_archivo_base']}")
-                                            doc_prev = DocxTemplate(inf['file_plantilla'])
-                                            ctx_prev = inf['context'].copy()
-                                            ctx_prev['firma_tecnico'] = ""
-                                            ctx_prev['firma_cliente'] = ""
-                                            doc_prev.render(ctx_prev)
-                                            doc_prev.save(ruta_prev_docx)
-                                            ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
-                                            if ruta_prev_pdf: inf['ruta_prev_pdf'] = ruta_prev_pdf
+                                            doc_prev = DocxTemplate(inf['file_plantilla']); ctx_prev = inf['context'].copy(); ctx_prev['firma_tecnico'] = ""; ctx_prev['firma_cliente'] = ""; doc_prev.render(ctx_prev); doc_prev.save(ruta_prev_docx); ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx); if ruta_prev_pdf: inf['ruta_prev_pdf'] = ruta_prev_pdf
                                             
                                             guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes)
                                             st.success("✅ ¡Documento corregido exitosamente! Ve a la pestaña 'Ver y Descargar Borrador'.")
@@ -1385,11 +1336,7 @@ else:
                         with st.container(border=True):
                             st.markdown("<p style='text-align: center; font-size: 0.9em; color: #aeb9cc; margin-bottom: 5px;'>Coloque su firma en el recuadro blanco</p>", unsafe_allow_html=True)
                             cli_key = f"cli_{macro_area}"
-                            canvas_cli = st_canvas(
-                                stroke_width=3, stroke_color="#000", background_color="#fff", 
-                                height=250, width=550, drawing_mode="freedraw", 
-                                key=cli_key, display_toolbar=True
-                            )
+                            canvas_cli = st_canvas(stroke_width=3, stroke_color="#000", background_color="#fff", height=250, width=550, drawing_mode="freedraw", key=cli_key, display_toolbar=True)
                             
                     st.markdown("<br>", unsafe_allow_html=True)
                     
@@ -1412,32 +1359,22 @@ else:
                                     
                                     try:
                                         for inf in informes_area:
-                                            io_cli_local = io.BytesIO(io_cli.getvalue())
-                                            io_tec_local = io.BytesIO(io_tec.getvalue())
+                                            io_cli_local = io.BytesIO(io_cli.getvalue()); io_tec_local = io.BytesIO(io_tec.getvalue())
                                             
                                             doc = DocxTemplate(inf['file_plantilla']); context = inf['context']
                                             
-                                            context['firma_cliente'] = InlineImage(doc, io_cli_local, width=Mm(40))
-                                            context['firma_tecnico'] = InlineImage(doc, io_tec_local, width=Mm(40))
+                                            context['firma_cliente'] = InlineImage(doc, io_cli_local, width=Mm(40)); context['firma_tecnico'] = InlineImage(doc, io_tec_local, width=Mm(40))
 
-                                            d_obj = parse_fecha(context['fecha'])
-                                            wk_str = f"WK{d_obj.isocalendar()[1]:02d}_{d_obj.year}"
-                                            fecha_corta = f"{d_obj.day}-{d_obj.month}-{d_obj.year}"
+                                            d_obj = parse_fecha(context['fecha']); wk_str = f"WK{d_obj.isocalendar()[1]:02d}_{d_obj.year}"; fecha_corta = f"{d_obj.day}-{d_obj.month}-{d_obj.year}"
                                             
-                                            dir_final = os.path.join(RUTA_APROBADOS, wk_str, macro_area, fecha_corta)
-                                            os.makedirs(dir_final, exist_ok=True)
+                                            dir_final = os.path.join(RUTA_APROBADOS, wk_str, macro_area, fecha_corta); os.makedirs(dir_final, exist_ok=True)
                                             
-                                            ruta_docx_final = os.path.join(dir_final, inf['nombre_archivo_base'])
-                                            doc.render(context); doc.save(ruta_docx_final)
+                                            ruta_docx_final = os.path.join(dir_final, inf['nombre_archivo_base']); doc.render(context); doc.save(ruta_docx_final)
                                             
                                             ruta_pdf_gen = convertir_a_pdf(ruta_docx_final)
                                             
-                                            if ruta_pdf_gen: 
-                                                ruta_final = ruta_pdf_gen
-                                                nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
-                                            else: 
-                                                ruta_final = ruta_docx_final
-                                                nombre_final = inf['nombre_archivo_base']
+                                            if ruta_pdf_gen: ruta_final = ruta_pdf_gen; nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
+                                            else: ruta_final = ruta_docx_final; nombre_final = inf['nombre_archivo_base']
                                             
                                             tupla_lista = list(inf['tupla_db']); tupla_lista[18] = ruta_final; guardar_registro(tuple(tupla_lista))
                                             informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{wk_str}@@{macro_area}@@{inf['tag']}@@{nombre_final}"})
@@ -1448,8 +1385,7 @@ else:
                                             for inf_enviado in informes_area:
                                                 if inf_enviado in st.session_state.informes_pendientes: st.session_state.informes_pendientes.remove(inf_enviado)
                                             guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
-                                            time.sleep(2)
-                                            if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
+                                            time.sleep(2); if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
                                             st.rerun()
                                         else: st.error(f"Error de red: {mensaje_correo}")
                                     except Exception as e: st.error(f"Error procesando los PDFs: {e}")
@@ -1474,15 +1410,12 @@ else:
             st.markdown("<p style='color: #8c9eb5; margin-bottom: 10px; font-weight: 600; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px;'>⚙️ Controles de Búsqueda</p>", unsafe_allow_html=True)
             
             col_filtro, col_busqueda = st.columns([1, 2])
-            with col_filtro: 
-                filtro_tipo = st.radio("Categoría de Equipo:", ["Todos", "Compresores", "Secadores"], horizontal=True, label_visibility="collapsed")
-            with col_busqueda: 
-                busqueda = st.text_input("🔍 Buscar...", placeholder="Buscar activo por TAG, Modelo o Área (Ej: GA 250, Mina...)", label_visibility="collapsed").lower()
+            with col_filtro: filtro_tipo = st.radio("Categoría de Equipo:", ["Todos", "Compresores", "Secadores"], horizontal=True, label_visibility="collapsed")
+            with col_busqueda: busqueda = st.text_input("🔍 Buscar...", placeholder="Buscar activo por TAG, Modelo o Área (Ej: GA 250, Mina...)", label_visibility="collapsed").lower()
             
             st.markdown("<hr style='border-color: #2b3543; margin: 15px 0;'>", unsafe_allow_html=True)
             
-            c_a1, c_a2, c_a3, c_a4, c_a5 = st.columns(5)
-            def set_area(a): st.session_state.filtro_area = a
+            c_a1, c_a2, c_a3, c_a4, c_a5 = st.columns(5); def set_area(a): st.session_state.filtro_area = a
             c_a1.button("🌍 Todas", use_container_width=True, type="primary" if st.session_state.filtro_area == "Todas" else "secondary", on_click=set_area, args=("Todas",))
             c_a2.button("⛏️ Mina", use_container_width=True, type="primary" if st.session_state.filtro_area == "Mina" else "secondary", on_click=set_area, args=("Mina",))
             c_a3.button("🏜️ Área Seca", use_container_width=True, type="primary" if st.session_state.filtro_area == "Área Seca" else "secondary", on_click=set_area, args=("Área Seca",))
@@ -1498,8 +1431,7 @@ else:
             if filtro_tipo == "Secadores" and not es_secador: continue
             
             area_macro = ubicacion.title()
-            if st.session_state.filtro_area != "Todas" and area_macro != st.session_state.filtro_area:
-                continue
+            if st.session_state.filtro_area != "Todas" and area_macro != st.session_state.filtro_area: continue
             
             if busqueda in tag.lower() or busqueda in area.lower() or busqueda in modelo.lower() or busqueda in ubicacion.lower():
                 if area_macro not in equipos_filtrados: equipos_filtrados[area_macro] = []
@@ -1533,34 +1465,59 @@ else:
         with tab1:
             st.markdown("### Datos de la Intervención"); tipo_plan = st.selectbox("🛠️ Tipo de Plan / Orden:", ["Inspección", "PM03"] if "CD" in tag_sel else ["Inspección", "P1", "P2", "P3", "PM03"]); c1, c2, c3, c4 = st.columns(4); modelo = c1.text_input("Modelo", mod_d, disabled=True); numero_serie = c2.text_input("N° Serie", ser_d, disabled=True); area = c3.text_input("Área Específica", area_d, disabled=True); ubicacion = c4.text_input("Macro-Área", ubi_d, disabled=True); c5, c6, c7, c8 = st.columns([1, 1, 1, 1.3])
             fecha = c5.text_input("Fecha Ejecución", obtener_fecha_hoy_esp())
-            tec1 = c6.text_input("Técnico 1", key="input_tec1"); tec2 = c7.text_input("Técnico 2", key="input_tec2")
+            tec1 = c6.text_input("Técnico 1 (Obligatorio)", key="input_tec1"); tec2 = c7.text_input("Técnico 2", key="input_tec2")
             with c8:
-                contactos_db = obtener_contactos(); opciones = ["➕ Escribir nuevo..."] + contactos_db
-                cli_idx = opciones.index(st.session_state.input_cliente) if st.session_state.input_cliente in opciones else 1 if len(contactos_db) > 0 else 0
+                contactos_db = obtener_contactos(); opciones = ["➕ Escribir nuevo...", "Lorena Rojas"] + [c for c in contactos_db if c != "Lorena Rojas"]
+                cli_idx = opciones.index(st.session_state.input_cliente) if st.session_state.input_cliente in opciones else 1 if len(opciones) > 1 else 0
                 sc1, sc2 = st.columns([4, 1])
-                with sc1: cli_sel = st.selectbox("Contacto Cliente", opciones, index=cli_idx)
+                with sc1: cli_sel = st.selectbox("Contacto Cliente (Obligatorio)", opciones, index=cli_idx)
                 with sc2:
                     st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
                     if cli_sel != "➕ Escribir nuevo...":
-                        if st.button("❌", help="Eliminar permanentemente"): eliminar_contacto(cli_sel); st.session_state.input_cliente = obtener_contactos()[0] if obtener_contactos() else ""; st.rerun()
+                        if st.button("❌", help="Eliminar permanentemente"): eliminar_contacto(cli_sel); st.session_state.input_cliente = "Lorena Rojas"; st.rerun()
                 if cli_sel == "➕ Escribir nuevo...":
                     nuevo_c = st.text_input("Nombre:", placeholder="Ej: Juan Pérez", label_visibility="collapsed")
                     if st.button("💾 Guardar y Seleccionar", use_container_width=True):
                         if nuevo_c.strip(): agregar_contacto(nuevo_c); st.session_state.input_cliente = nuevo_c.strip().title(); st.rerun()
                     cli_cont = nuevo_c.strip().title()
                 else: cli_cont = cli_sel; st.session_state.input_cliente = cli_sel
-            st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Mediciones del Equipo"); c9, c10, c11, c12, c13, c14 = st.columns(6); h_m = c9.number_input("Horas Marcha Totales", step=1, value=int(st.session_state.input_h_marcha), format="%d"); h_c = c10.number_input("Horas en Carga", step=1, value=int(st.session_state.input_h_carga), format="%d"); unidad_p = c11.selectbox("Unidad de Presión", ["Bar", "psi"]); p_c_str = c12.text_input("P. Carga", value=str(st.session_state.input_p_carga)); p_d_str = c13.text_input("P. Descarga", value=str(st.session_state.input_p_descarga)); t_salida_str = c14.text_input("Temp Salida (°C)", value=str(st.session_state.input_temp)); p_c_clean = p_c_str.replace(',', '.'); p_d_clean = p_d_str.replace(',', '.'); t_salida_clean = t_salida_str.replace(',', '.')
-            st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Evaluación y Diagnóstico Final"); est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True); est_ent = st.text_area("Descripción Condición Final:", key="input_estado", height=100); reco = st.text_area("Recomendaciones / Acciones Pendientes:", key="input_reco", height=100); st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Mediciones del Equipo (Obligatorias)"); c9, c10, c11, c12, c13, c14 = st.columns(6); h_m = c9.number_input("Horas Marcha Totales", step=1, value=int(st.session_state.input_h_marcha), format="%d"); h_c = c10.number_input("Horas en Carga", step=1, value=int(st.session_state.input_h_carga), format="%d"); unidad_p = c11.selectbox("Unidad de Presión", ["Bar", "psi"]); p_c_str = c12.text_input("P. Carga", value=str(st.session_state.input_p_carga)); p_d_str = c13.text_input("P. Descarga", value=str(st.session_state.input_p_descarga)); t_salida_str = c14.text_input("Temp Salida (°C)", value=str(st.session_state.input_temp)); p_c_clean = p_c_str.replace(',', '.'); p_d_clean = p_d_str.replace(',', '.'); t_salida_clean = t_salida_str.replace(',', '.')
+            st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### Evaluación y Diagnóstico Final"); est_eq = st.radio("Estado de Devolución del Activo:", ["Operativo", "Fuera de servicio"], key="input_estado_eq", horizontal=True); est_ent = st.text_area("Descripción Condición Final (Obligatorio):", key="input_estado", height=100); reco = st.text_area("Recomendaciones / Acciones Pendientes (Obligatorio):", key="input_reco", height=100); st.markdown("<br>", unsafe_allow_html=True)
+            
+            # 🔥 LÓGICA DE VALIDACIÓN ANTES DE GUARDAR 🔥
             if st.button("📥 Guardar y Añadir a la Bandeja de Firmas", type="primary", use_container_width=True):
-                actualizar_estado_equipo_en_nube(tag_sel, est_eq)
-                if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
-                else: file_plantilla = "plantilla/fueradeservicio.docx" if est_eq == "Fuera de servicio" else f"plantilla/{tipo_plan.lower()}.docx" if tipo_plan in ["P1", "P2", "P3"] else "plantilla/inspeccion.docx"
-                context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}; nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"; ruta = os.path.join(RUTA_ONEDRIVE, nombre_archivo); temp_db = float(t_salida_clean) if t_salida_clean.replace('.', '', 1).isdigit() else 0.0; tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
-                with st.spinner("Creando borrador del documento para vista preliminar..."):
-                    doc_prev = DocxTemplate(file_plantilla); ctx_prev = context.copy(); ctx_prev['firma_tecnico'] = ""; ctx_prev['firma_cliente'] = ""; doc_prev.render(ctx_prev); os.makedirs(RUTA_ONEDRIVE, exist_ok=True); ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}"); doc_prev.save(ruta_prev_docx); ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
-                st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf})
-                guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
-                st.success(f"✅ Datos guardados. El equipo se anotó como '{est_eq}' en tu Base de Datos y el informe se fue a la Bandeja de {ubi_d.title()}."); st.session_state.equipo_seleccionado = None; st.rerun()
+                # 1. Verificar campos vacíos (Textos e Inputs obligatorios)
+                campos_vacios = []
+                
+                if not st.session_state.input_tec1.strip(): campos_vacios.append("Técnico 1")
+                
+                # Validar cliente (considerando el "Escribir nuevo")
+                cliente_final_validar = cli_cont
+                if cli_sel == "➕ Escribir nuevo..." and not nuevo_c.strip():
+                    cliente_final_validar = "" # Forzar vacío si eligió nuevo pero no escribió nada
+                
+                if not cliente_final_validar.strip(): campos_vacios.append("Contacto Cliente")
+                if not p_c_str.strip(): campos_vacios.append("P. Carga")
+                if not p_d_str.strip(): campos_vacios.append("P. Descarga")
+                if not t_salida_str.strip(): campos_vacios.append("Temp Salida")
+                if not est_ent.strip(): campos_vacios.append("Descripción Condición Final")
+                if not reco.strip(): campos_vacios.append("Recomendaciones")
+
+                # 2. Si hay errores, detener y mostrar mensaje
+                if campos_vacios:
+                    mensaje_error = "❌ No se puede guardar el informe. Los siguientes campos obligatorios están vacíos:\n"
+                    for campo in campos_vacios:
+                        mensaje_error += f"- {campo}\n"
+                    st.error(mensaje_error)
+                else:
+                    # 3. Si todo está bien, proceder a guardar (Lógica original)
+                    actualizar_estado_equipo_en_nube(tag_sel, est_eq)
+                    if "CD" in tag_sel: file_plantilla = "plantilla/secadorfueradeservicio.docx" if est_eq == "Fuera de servicio" else "plantilla/inspeccionsecador.docx"
+                    else: file_plantilla = "plantilla/fueradeservicio.docx" if est_eq == "Fuera de servicio" else f"plantilla/{tipo_plan.lower()}.docx" if tipo_plan in ["P1", "P2", "P3"] else "plantilla/inspeccion.docx"
+                    context = {"tipo_intervencion": tipo_plan, "modelo": mod_d, "tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "cliente_contacto": cli_cont, "p_carga": f"{p_c_clean} {unidad_p}", "p_descarga": f"{p_d_clean} {unidad_p}", "temp_salida": t_salida_clean, "horas_marcha": int(h_m), "horas_carga": int(h_c), "tecnico_1": tec1, "tecnico_2": tec2, "estado_equipo": est_eq, "estado_entrega": est_ent, "recomendaciones": reco, "serie": ser_d, "tipo_orden": tipo_plan.upper(), "fecha": fecha, "equipo_modelo": mod_d}; nombre_archivo = f"Informe_{tipo_plan}_{tag_sel}_{fecha.replace(' ','_')}.docx"; ruta = os.path.join(RUTA_ONEDRIVE, nombre_archivo); temp_db = float(t_salida_clean) if t_salida_clean.replace('.', '', 1).isdigit() else 0.0; tupla_db = (tag_sel, mod_d, ser_d, area_d, ubi_d, fecha, cli_cont, tec1, tec2, temp_db, f"{p_c_clean} {unidad_p}", f"{p_d_clean} {unidad_p}", h_m, h_c, est_ent, tipo_plan, reco, est_eq, "", st.session_state.usuario_actual)
+                    with st.spinner("Creando borrador del documento para vista preliminar..."): doc_prev = DocxTemplate(file_plantilla); ctx_prev = context.copy(); ctx_prev['firma_tecnico'] = ""; ctx_prev['firma_cliente'] = ""; doc_prev.render(ctx_prev); os.makedirs(RUTA_ONEDRIVE, exist_ok=True); ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{nombre_archivo}"); doc_prev.save(ruta_prev_docx); ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
+                    st.session_state.informes_pendientes.append({"tag": tag_sel, "area": area_d, "ubicacion": ubi_d, "tec1": tec1, "cli": cli_cont, "tipo_plan": tipo_plan, "file_plantilla": file_plantilla, "context": context, "tupla_db": tupla_db, "ruta_docx": ruta, "nombre_archivo_base": nombre_archivo, "ruta_prev_pdf": ruta_prev_pdf})
+                    guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes); st.success(f"✅ Datos guardados. El equipo se anotó como '{est_eq}' en tu Base de Datos y el informe se fue a la Bandeja de {ubi_d.title()}."); st.session_state.equipo_seleccionado = None; st.rerun()
                     
         with tab2:
             st.markdown(f"### 📘 Datos Técnicos y Repuestos ({mod_d})")
@@ -1580,45 +1537,26 @@ else:
                     cat_aceite = ["Tipo de Aceite", "Litros de Aceite", "Cant. Filtros Aceite", "N° Parte Filtro Aceite"]
                     cat_aire = ["Cant. Filtros Aire", "N° Parte Filtro Aire", "Filtro de Gases"]
                     cat_kits = ["N° Parte Kit", "N° Parte Separador", "Desecante", "Kit Válvulas", "Silenciador"]
-                    
-                    conocidos = set(cat_aceite + cat_aire + cat_kits)
-                    otros = [k for k in specs.keys() if k not in conocidos]
-                    
+                    conocidos = set(cat_aceite + cat_aire + cat_kits); otros = [k for k in specs.keys() if k not in conocidos]
                     c_col1, c_col2, c_col3 = st.columns(3)
-                    
-                    def draw_card(k, v):
-                        return f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>"
-                    
+                    def draw_card(k, v): return f"<div style='background-color: #1e2530; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #007CA6;'><span style='color: #8c9eb5; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>"
                     with c_col1:
-                        st.markdown("<h5 style='color:#FF6600; margin-bottom: 15px;'>🛢️ Sistema de Aceite</h5>", unsafe_allow_html=True)
-                        has_a = False
+                        st.markdown("<h5 style='color:#FF6600; margin-bottom: 15px;'>🛢️ Sistema de Aceite</h5>", unsafe_allow_html=True); has_a = False
                         for k in cat_aceite:
-                            if k in specs: 
-                                st.markdown(draw_card(k, specs[k]), unsafe_allow_html=True)
-                                has_a = True
+                            if k in specs: st.markdown(draw_card(k, specs[k]), unsafe_allow_html=True); has_a = True
                         if not has_a: st.markdown("<p style='color:gray; font-size:0.8em; font-style:italic;'>No aplica / Sin datos</p>", unsafe_allow_html=True)
-                        
                     with c_col2:
                         titulo_col2 = "💨 Sistema de Gases" if "CD" in tag_sel else "💨 Sistema de Aire"
-                        st.markdown(f"<h5 style='color:#FF6600; margin-bottom: 15px;'>{titulo_col2}</h5>", unsafe_allow_html=True)
-                        has_ai = False
+                        st.markdown(f"<h5 style='color:#FF6600; margin-bottom: 15px;'>{titulo_col2}</h5>", unsafe_allow_html=True); has_ai = False
                         for k in cat_aire:
-                            if k in specs: 
-                                st.markdown(draw_card(k, specs[k]), unsafe_allow_html=True)
-                                has_ai = True
+                            if k in specs: st.markdown(draw_card(k, specs[k]), unsafe_allow_html=True); has_ai = True
                         if not has_ai: st.markdown("<p style='color:gray; font-size:0.8em; font-style:italic;'>No aplica / Sin datos</p>", unsafe_allow_html=True)
-                        
                     with c_col3:
-                        st.markdown("<h5 style='color:#FF6600; margin-bottom: 15px;'>🔧 Kits y Otros Componentes</h5>", unsafe_allow_html=True)
-                        has_k = False
+                        st.markdown("<h5 style='color:#FF6600; margin-bottom: 15px;'>🔧 Kits y Otros Componentes</h5>", unsafe_allow_html=True); has_k = False
                         for k in cat_kits + otros:
-                            if k in specs: 
-                                st.markdown(draw_card(k, specs[k]), unsafe_allow_html=True)
-                                has_k = True
+                            if k in specs: st.markdown(draw_card(k, specs[k]), unsafe_allow_html=True); has_k = True
                         if not has_k: st.markdown("<p style='color:gray; font-size:0.8em; font-style:italic;'>No aplica / Sin datos</p>", unsafe_allow_html=True)
-
-                st.markdown("<hr>", unsafe_allow_html=True)
-                st.markdown("### 📥 Documentación y Manuales")
+                st.markdown("<hr>", unsafe_allow_html=True); st.markdown("### 📥 Documentación y Manuales")
                 if "Manual" in ESPECIFICACIONES[mod_d] and os.path.exists(ESPECIFICACIONES[mod_d]["Manual"]):
                     with open(ESPECIFICACIONES[mod_d]["Manual"], "rb") as f: st.download_button(label=f"📕 Descargar Manual de {mod_d} (PDF)", data=f, file_name=ESPECIFICACIONES[mod_d]["Manual"].split('/')[-1], mime="application/pdf")
         
@@ -1638,48 +1576,26 @@ else:
         
         with tab4:
             st.markdown(f"### 👤 Información de Contactos y Seguridad del Área: {tag_sel}")
-            
             if es_admin:
                 with st.expander("👑 Agregar Información de Contacto (Admin)"):
                     with st.form(key=f"form_area_{tag_sel}"):
                         c_a1, c_a2 = st.columns(2)
                         opc_area = ["Dueño de Área (Turno 1-3)", "Dueño de Área (Turno 2-4)", "PEA", "Frecuencia Radial", "➕ Agregar cargo manual..."]
-                        clave_sel_area = c_a1.selectbox("¿Qué dato vas a ingresar?", opc_area)
-                        
-                        clave_final_area = c_a1.text_input("Escribe el nombre del nuevo cargo:") if clave_sel_area == "➕ Agregar cargo manual..." else clave_sel_area
-                        valor_final_area = c_a2.text_input("Ingresa la información:")
-                        
+                        clave_sel_area = c_a1.selectbox("¿Qué dato vas a ingresar?", opc_area); clave_final_area = c_a1.text_input("Escribe el nombre del nuevo cargo:") if clave_sel_area == "➕ Agregar cargo manual..." else clave_sel_area; valor_final_area = c_a2.text_input("Ingresa la información:")
                         if st.form_submit_button("💾 Guardar Información", use_container_width=True):
-                            if clave_final_area and valor_final_area: 
-                                guardar_dato_equipo(tag_sel, clave_final_area.strip(), valor_final_area.strip())
-                                st.success("✅ Dato actualizado!")
-                                time.sleep(1)
-                                st.rerun()
-            
-            datos_equipo = obtener_datos_equipo(tag_sel)
-            cols_area = st.columns(2)
+                            if clave_final_area and valor_final_area: guardar_dato_equipo(tag_sel, clave_final_area.strip(), valor_final_area.strip()); st.success("✅ Dato actualizado!"); time.sleep(1); st.rerun()
+            datos_equipo = obtener_datos_equipo(tag_sel); cols_area = st.columns(2)
             for i, (k, v) in enumerate(datos_equipo.items()):
                 with cols_area[i % 2]: st.markdown(f"<div style='background-color: #2b303b; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #FF6600;'><span style='color: #aeb9cc; font-size: 0.85em; text-transform: uppercase; font-weight: bold;'>{k}</span><br><span style='color: white; font-size: 1.1em;'>{v}</span></div>", unsafe_allow_html=True)
         
-        st.markdown("<br><hr>", unsafe_allow_html=True)
-        st.markdown("### 📋 Trazabilidad Histórica de Intervenciones")
-        df_hist = obtener_todo_el_historial(tag_sel)
-        
+        st.markdown("<br><hr>", unsafe_allow_html=True); st.markdown("### 📋 Trazabilidad Histórica de Intervenciones"); df_hist = obtener_todo_el_historial(tag_sel)
         if not df_hist.empty: 
             if es_admin:
-                df_hist.insert(0, "🗑️ Borrar", False)
-                config_hist = {"🗑️ Borrar": st.column_config.CheckboxColumn("Seleccionar", default=False)}
-                df_edit_hist = st.data_editor(df_hist, hide_index=True, use_container_width=True, column_config=config_hist, key=f"hist_edit_{tag_sel}")
-                
+                df_hist.insert(0, "🗑️ Borrar", False); config_hist = {"🗑️ Borrar": st.column_config.CheckboxColumn("Seleccionar", default=False)}; df_edit_hist = st.data_editor(df_hist, hide_index=True, use_container_width=True, column_config=config_hist, key=f"hist_edit_{tag_sel}")
                 if st.button("🚨 Eliminar Registros Históricos Seleccionados", type="primary"):
                     borrados = df_edit_hist[df_edit_hist["🗑️ Borrar"] == True]
                     if not borrados.empty:
-                        for _, row in borrados.iterrows():
-                            eliminar_registro_intervencion(tag_sel, row['fecha'], row['tipo_intervencion'])
-                        st.success("✅ Registros históricos eliminados.")
-                        time.sleep(1.5)
-                        st.rerun()
-                    else:
-                        st.warning("⚠️ No seleccionaste ningún registro para borrar.")
-            else:
-                st.dataframe(df_hist, hide_index=True, use_container_width=True)
+                        for _, row in borrados.iterrows(): eliminar_registro_intervencion(tag_sel, row['fecha'], row['tipo_intervencion'])
+                        st.success("✅ Registros históricos eliminados."); time.sleep(1.5); st.rerun()
+                    else: st.warning("⚠️ No seleccionaste ningún registro para borrar.")
+            else: st.dataframe(df_hist, hide_index=True, use_container_width=True)
