@@ -1,7 +1,7 @@
 import streamlit as st
 
-# 🔥 CONFIGURACIÓN DE PÁGINA (Debe ser la línea 2)
-st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="expanded")
+# 🔥 CONFIGURACIÓN DE PÁGINA: Barra lateral oculta por defecto
+st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="collapsed")
 
 from docxtpl import DocxTemplate, InlineImage
 from docx.shared import Mm
@@ -60,7 +60,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (BORDES CIRCULARES)
+# 0.2 ESTILOS PREMIUM Y OCULTAMIENTO DE BARRA LATERAL
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -77,10 +77,13 @@ def aplicar_estilos_premium():
         a[href*="github.com"] { display: none !important; visibility: hidden !important; }
         [data-testid="viewerBadge"], div[class^="viewerBadge_container"], footer { display: none !important; }
         
+        /* 🔥 DESAPARECER LA BARRA LATERAL POR COMPLETO 🔥 */
+        [data-testid="collapsedControl"] { display: none !important; visibility: hidden !important; }
+        [data-testid="stSidebar"] { display: none !important; }
+        
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 20px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
         
-        /* 🔥 BORDES REDONDEADOS / CIRCULARES PARA PANELES Y FORMULARIOS 🔥 */
         [data-testid="stVerticalBlockBorderWrapper"] { background: linear-gradient(145deg, #1a212b, #151a22) !important; border-radius: 30px !important; border: 1px solid #2b3543 !important; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important; }
         [data-testid="stVerticalBlockBorderWrapper"]:hover { transform: translateY(-6px) !important; box-shadow: 0 10px 25px rgba(0, 124, 166, 0.25) !important; border-color: var(--ac-blue) !important; }
         [data-testid="stForm"] { border-radius: 25px !important; border: 1px solid #2b3543 !important; }
@@ -96,57 +99,12 @@ def aplicar_estilos_premium():
             display: none !important; 
             visibility: hidden !important; 
         }
-
-        /* 🚀 BOTÓN FÍSICO FLOTANTE PARA ABRIR LA BARRA LATERAL (SI LA CIERRAN) 🚀 */
-        [data-testid="collapsedControl"] {
-            background: linear-gradient(135deg, var(--bhp-orange) 0%, #cc5200 100%) !important;
-            border-radius: 50% !important;
-            box-shadow: 0 4px 15px rgba(255, 102, 0, 0.5) !important;
-            top: 25px !important;
-            left: 25px !important;
-            width: 45px !important;
-            height: 45px !important;
-            z-index: 999999 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: transform 0.3s ease !important;
-            opacity: 1 !important;
-        }
-        [data-testid="collapsedControl"]:hover {
-            transform: scale(1.1) !important;
-            background: linear-gradient(135deg, #ff7a22 0%, var(--bhp-orange) 100%) !important;
-        }
-        [data-testid="collapsedControl"] svg {
-            fill: white !important;
-            color: white !important;
-            width: 25px !important;
-            height: 25px !important;
-        }
-        
-        /* 🚀 BOTÓN FÍSICO PARA CERRAR DENTRO DE LA BARRA LATERAL 🚀 */
-        [data-testid="stSidebar"] button[kind="header"] {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            border-radius: 50% !important;
-            width: 35px !important;
-            height: 35px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: background-color 0.3s !important;
-        }
-        [data-testid="stSidebar"] button[kind="header"]:hover {
-            background-color: var(--bhp-orange) !important;
-        }
-        [data-testid="stSidebar"] button[kind="header"] svg {
-            fill: white !important;
-        }
         </style>
     """, unsafe_allow_html=True)
 aplicar_estilos_premium()
 
 # =============================================================================
-# 1. DATOS MAESTROS Y ROLES (RBAC)
+# 1. DATOS MAESTROS, INVENTARIO Y ROLES (RBAC)
 # =============================================================================
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "yerko villarroel": "spence2026", "admin": "admin123"}
 ADMIN_USERS = ["ignacio morales", "admin"]
@@ -383,7 +341,7 @@ def guardar_especificacion_db(modelo, clave, valor):
     sheet = get_sheet("especificaciones")
     if sheet: sheet.append_row([modelo, clave, valor]); st.cache_data.clear()
 
-    # =============================================================================
+# =============================================================================
 # 4. FUNCIONES AUXILIARES GLOBALES Y CEREBRO DE FECHAS
 # =============================================================================
 def convertir_a_pdf(ruta_docx):
@@ -661,7 +619,7 @@ for key, value in default_states.items():
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 7. INTERFAZ: LOGIN (Corta la ejecución si no estás logueado)
+# 7. INTERFAZ: LOGIN (Con corte seguro si no estás logueado)
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
@@ -707,52 +665,63 @@ if not st.session_state.logged_in:
                 else: 
                     st.error("❌ Credenciales inválidas.")
             st.markdown("</div>", unsafe_allow_html=True)
-    st.stop()  # 🔥 MAGIA: Esto evita el uso de un "else:" gigante y previene los SyntaxError al pegar código. 🔥
+    st.stop()  # 🔥 MAGIA: Evita que el código de abajo se ejecute o necesite un bloque "else:" gigante. 🔥
 
 # =============================================================================
-# 8. INTERFAZ PRINCIPAL (BARRA LATERAL Y VISTAS)
+# 8. INTERFAZ PRINCIPAL (NAVEGACIÓN SUPERIOR FIJA Y SIN BARRA LATERAL)
 # =============================================================================
 es_admin = st.session_state.usuario_actual in ADMIN_USERS
 rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
 
-with st.sidebar:
-    st.markdown("<h2 style='text-align: center; border-bottom:none; margin-top: -20px;'><span style='color:#007CA6;'>Atlas Copco</span> <span style='color:#FF6600;'>Spence</span></h2>", unsafe_allow_html=True)
-    st.markdown(f"**Usuario Activo:**<br>{st.session_state.usuario_actual.title()}<br><small style='color:#FF6600; font-weight:bold;'>{rol}</small>", unsafe_allow_html=True)
-    st.markdown("---")
+# 🔥 ENCABEZADO Y MENÚ SUPERIOR FIJO 🔥
+st.markdown(f"<h3 style='margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span> <span style='font-size: 0.5em; color: #8c9eb5; font-weight: normal; margin-left: 10px;'>| 👤 Usuario: {st.session_state.usuario_actual.title()} ({rol})</span></h3>", unsafe_allow_html=True)
+
+tiene_pendientes = len(st.session_state.informes_pendientes) > 0
+if tiene_pendientes:
+    c1, c2, c3, c4, c5 = st.columns(5)
+else:
+    c1, c2, c3, c4 = st.columns(4)
+    c5 = None
     
-    if st.button("🏭 Catálogo de Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
+with c1:
+    if st.button("🏭 Catálogo Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
         st.session_state.vista_actual = "catalogo"
         st.session_state.vista_firmas = False
         st.session_state.equipo_seleccionado = None
         st.rerun()
-    
+with c2:
     if st.button("📊 Planificación", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
         st.session_state.vista_actual = "planificacion"
         st.session_state.vista_firmas = False
         st.session_state.equipo_seleccionado = None
         st.rerun()
-    
-    if st.button("📜 Últimas Intervenciones", use_container_width=True, type="primary" if st.session_state.vista_actual == "historial" else "secondary"):
+with c3:
+    if st.button("📜 Historial", use_container_width=True, type="primary" if st.session_state.vista_actual == "historial" else "secondary"):
         st.session_state.vista_actual = "historial"
         st.session_state.vista_firmas = False
         st.session_state.equipo_seleccionado = None
         st.rerun()
         
-    if len(st.session_state.informes_pendientes) > 0:
-        st.markdown("---")
-        st.warning(f"📝 Tienes {len(st.session_state.informes_pendientes)} reportes esperando firmas.")
-        if st.button("✍️ Ir a Pizarra de Firmas", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"): 
+if tiene_pendientes:
+    with c4:
+        if st.button(f"✍️ Firmas ({len(st.session_state.informes_pendientes)})", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"):
             st.session_state.vista_firmas = True
             st.session_state.vista_actual = "firmas"
             st.session_state.equipo_seleccionado = None
             st.rerun()
+    with c5:
+        if st.button("🚪 Salir", use_container_width=True):
+            st.session_state.logged_in = False
+            st.rerun()
+else:
+    with c4:
+        if st.button("🚪 Salir", use_container_width=True):
+            st.session_state.logged_in = False
+            st.rerun()
             
-    st.markdown("---")
-    if st.button("🚪 Cerrar Sesión", use_container_width=True): 
-        st.session_state.logged_in = False
-        st.rerun()
+st.markdown("<hr style='margin-top: 5px; border-color: #2b3543;'>", unsafe_allow_html=True)
 
-# --- 7.0 VISTA: ÚLTIMAS INTERVENCIONES ---
+# --- 8.1 VISTA: ÚLTIMAS INTERVENCIONES ---
 if st.session_state.vista_actual == "historial":
     st.markdown("""
         <div style="margin-top: 1rem; margin-bottom: 2.5rem; text-align: center; background: linear-gradient(90deg, rgba(255,102,0,0) 0%, rgba(255,102,0,0.15) 50%, rgba(255,102,0,0) 100%); padding: 20px; border-radius: 15px;">
@@ -832,7 +801,7 @@ if st.session_state.vista_actual == "historial":
                                     time.sleep(1)
                                     st.rerun()
 
-# --- 7.1 VISTA PLANIFICACIÓN ---
+# --- 8.2 VISTA PLANIFICACIÓN ---
 elif st.session_state.vista_actual == "planificacion":
     df_cmms = cargar_cmms()
     semana_actual = get_current_wk()
@@ -853,12 +822,14 @@ elif st.session_state.vista_actual == "planificacion":
         </div>
     """, unsafe_allow_html=True)
     
-    # 🔥 ARREGLO DE KPIs (Búsqueda limpia de "Hecho", no "✅ Hecho") 🔥
+    # 🔥 ARREGLO DEL PORCENTAJE (Búsqueda limpia de texto) 🔥
     df_kpi = df_cmms[(df_cmms["Mes_Calc"] == mes_visualizado) & (df_cmms["Tipo"] != "N/A") & (df_cmms["Tipo"] != "")]
+    df_kpi_estado_limpio = df_kpi["Estado"].astype(str).str.strip().str.upper()
+    
     total_tareas = len(df_kpi)
-    hechas = len(df_kpi[df_kpi["Estado"] == "Hecho"])
-    fs = len(df_kpi[df_kpi["Estado"] == "F/S"])
-    pendientes = len(df_kpi[df_kpi["Estado"] == "Pendiente"])
+    hechas = len(df_kpi_estado_limpio[df_kpi_estado_limpio == "HECHO"])
+    fs = len(df_kpi_estado_limpio[df_kpi_estado_limpio == "F/S"])
+    pendientes = len(df_kpi_estado_limpio[df_kpi_estado_limpio == "PENDIENTE"])
     
     total_evaluable = hechas + pendientes
     cumplimiento = int((hechas / total_evaluable * 100)) if total_evaluable > 0 else (100 if hechas > 0 else 0)
@@ -1257,11 +1228,7 @@ elif st.session_state.vista_actual == "planificacion":
 
 # --- 8.3 VISTA DE FIRMAS ---
 elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
-    c_v1, c_v2 = st.columns([1,4])
-    with c_v1: 
-        if st.button("⬅️ Volver", use_container_width=True): volver_catalogo(); st.rerun()
-    with c_v2: st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas y Revisión</h1>", unsafe_allow_html=True)
-    st.markdown("---")
+    st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas y Revisión</h1>", unsafe_allow_html=True)
     
     if len(st.session_state.informes_pendientes) == 0: 
         st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
@@ -1667,7 +1634,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if t1_sel == "➕ Escribir nuevo...":
                 nuevo_t1 = st.text_input("Nombre T1:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_t1")
-                if st.button("💾 Guardar", key="save_t1", use_container_width=True):
+                if st.button("💾 Guardar y Seleccionar", key="save_t1", use_container_width=True):
                     if nuevo_t1.strip(): 
                         agregar_tecnico(nuevo_t1)
                         st.session_state.input_tec1 = nuevo_t1.strip().title()
@@ -1691,7 +1658,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if t2_sel == "➕ Escribir nuevo...":
                 nuevo_t2 = st.text_input("Nombre T2:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_t2")
-                if st.button("💾 Guardar", key="save_t2", use_container_width=True):
+                if st.button("💾 Guardar y Seleccionar", key="save_t2", use_container_width=True):
                     if nuevo_t2.strip(): 
                         agregar_tecnico(nuevo_t2)
                         st.session_state.input_tec2 = nuevo_t2.strip().title()
@@ -1719,7 +1686,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if cli_sel == "➕ Escribir nuevo...":
                 nuevo_c = st.text_input("Nombre:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_c1")
-                if st.button("💾 Guardar", use_container_width=True, key="save_c1"):
+                if st.button("💾 Guardar y Seleccionar", use_container_width=True, key="save_c1"):
                     if nuevo_c.strip(): 
                         agregar_contacto(nuevo_c)
                         st.session_state.input_cliente = nuevo_c.strip().title()
