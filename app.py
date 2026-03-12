@@ -457,7 +457,7 @@ def safe_date_str(x):
     except: return ""
 
 # =============================================================================
-# 5. MOTOR PLANIFICACIÓN Y CARGA
+# 5. MOTOR PLANIFICACIÓN
 # =============================================================================
 DATOS_PLAN_BASE = [
     {"TAG": "70-GC-013", "S_Programada": "WK51_2025", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
@@ -619,7 +619,7 @@ for key, value in default_states.items():
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 7. INTERFAZ: LOGIN (Corta la ejecución si no estás logueado)
+# 7. INTERFAZ: LOGIN (Corta la ejecución si no estás logueado para no dar SyntaxError)
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
@@ -676,12 +676,7 @@ rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
 # 🔥 ENCABEZADO Y MENÚ SUPERIOR FIJO 🔥
 st.markdown(f"<h3 style='margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span> <span style='font-size: 0.5em; color: #8c9eb5; font-weight: normal; margin-left: 10px;'>| 👤 Usuario: {st.session_state.usuario_actual.title()} ({rol})</span></h3>", unsafe_allow_html=True)
 
-tiene_pendientes = len(st.session_state.informes_pendientes) > 0
-if tiene_pendientes:
-    c1, c2, c3, c4, c5 = st.columns(5)
-else:
-    c1, c2, c3, c4 = st.columns(4)
-    c5 = None
+c1, c2, c3, c4, c5 = st.columns(5)
     
 with c1:
     if st.button("🏭 Catálogo Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
@@ -701,23 +696,17 @@ with c3:
         st.session_state.vista_firmas = False
         st.session_state.equipo_seleccionado = None
         st.rerun()
-        
-if tiene_pendientes:
-    with c4:
-        if st.button(f"✍️ Firmas ({len(st.session_state.informes_pendientes)})", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"):
-            st.session_state.vista_firmas = True
-            st.session_state.vista_actual = "firmas"
-            st.session_state.equipo_seleccionado = None
-            st.rerun()
-    with c5:
-        if st.button("🚪 Salir", use_container_width=True):
-            st.session_state.logged_in = False
-            st.rerun()
-else:
-    with c4:
-        if st.button("🚪 Salir", use_container_width=True):
-            st.session_state.logged_in = False
-            st.rerun()
+with c4:
+    cantidad = len(st.session_state.informes_pendientes)
+    if st.button(f"✍️ Firmas ({cantidad})", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"):
+        st.session_state.vista_firmas = True
+        st.session_state.vista_actual = "firmas"
+        st.session_state.equipo_seleccionado = None
+        st.rerun()
+with c5:
+    if st.button("🚪 Salir", use_container_width=True):
+        st.session_state.logged_in = False
+        st.rerun()
             
 st.markdown("<hr style='margin-top: 5px; border-color: #2b3543;'>", unsafe_allow_html=True)
 
@@ -822,7 +811,7 @@ elif st.session_state.vista_actual == "planificacion":
         </div>
     """, unsafe_allow_html=True)
     
-    # 🔥 ARREGLO DE KPIs (Búsqueda limpia que ignora Emojis y espacios extra) 🔥
+    # 🔥 ARREGLO DEL PORCENTAJE (Búsqueda limpia que ignora Emojis y espacios extra) 🔥
     df_kpi = df_cmms[(df_cmms["Mes_Calc"] == mes_visualizado) & (df_cmms["Tipo"] != "N/A") & (df_cmms["Tipo"] != "")]
     df_kpi_estado_limpio = df_kpi["Estado"].astype(str).str.strip().str.upper()
     
@@ -1106,7 +1095,6 @@ elif st.session_state.vista_actual == "planificacion":
         for _, row in df_cmms.iterrows():
             estado_tarea = str(row['Estado']).strip()
             
-            # Si el interruptor está activo, ignoramos las tareas que no sean "Hecho"
             if solo_hechos and "Hecho" not in estado_tarea:
                 continue
                 
@@ -1381,60 +1369,60 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                                 else: st.warning("⚠️ Vista preliminar no disponible.")
                                 
                             with tab_editar:
-                                with st.form(f"edit_form_{inf['tag']}_{idx}"):
-                                    c0, c1, c2, c3 = st.columns([1, 1, 1, 1])
-                                    new_fecha = c0.text_input("Fecha", value=str(inf['context'].get('fecha', '')))
-                                    new_h_m = c1.number_input("Horas Marcha Totales", value=int(inf['context'].get('horas_marcha', 0)), step=1)
-                                    new_h_c = c2.number_input("Horas en Carga", value=int(inf['context'].get('horas_carga', 0)), step=1)
-                                    new_t_s = c3.text_input("Temp Salida (°C)", value=str(inf['context'].get('temp_salida', '0')))
-                                    
-                                    c4, c5 = st.columns(2)
-                                    new_p_c = c4.text_input("P. Carga (con unidad)", value=str(inf['context'].get('p_carga', '')))
-                                    new_p_d = c5.text_input("P. Descarga (con unidad)", value=str(inf['context'].get('p_descarga', '')))
-                                    
-                                    new_est_ent = st.text_area("Descripción Condición Final", value=str(inf['context'].get('estado_entrega', '')))
-                                    new_reco = st.text_area("Recomendaciones / Acciones Pendientes", value=str(inf['context'].get('recomendaciones', '')))
-                                    
-                                    if st.form_submit_button("💾 Guardar Corrección y Regenerar PDF", type="primary"):
-                                        inf['context']['fecha'] = new_fecha
-                                        inf['context']['horas_marcha'] = new_h_m
-                                        inf['context']['horas_carga'] = new_h_c
-                                        inf['context']['temp_salida'] = new_t_s
-                                        inf['context']['p_carga'] = new_p_c
-                                        inf['context']['p_descarga'] = new_p_d
-                                        inf['context']['estado_entrega'] = new_est_ent
-                                        inf['context']['recomendaciones'] = new_reco
+                                    with st.form(f"edit_form_{inf['tag']}_{idx}"):
+                                        c0, c1, c2, c3 = st.columns([1, 1, 1, 1])
+                                        new_fecha = c0.text_input("Fecha", value=str(inf['context'].get('fecha', '')))
+                                        new_h_m = c1.number_input("Horas Marcha Totales", value=int(inf['context'].get('horas_marcha', 0)), step=1)
+                                        new_h_c = c2.number_input("Horas en Carga", value=int(inf['context'].get('horas_carga', 0)), step=1)
+                                        new_t_s = c3.text_input("Temp Salida (°C)", value=str(inf['context'].get('temp_salida', '0')))
                                         
-                                        t_list = list(inf['tupla_db'])
-                                        try: t_list[9] = float(new_t_s.replace(',', '.'))
-                                        except: t_list[9] = 0.0
+                                        c4, c5 = st.columns(2)
+                                        new_p_c = c4.text_input("P. Carga (con unidad)", value=str(inf['context'].get('p_carga', '')))
+                                        new_p_d = c5.text_input("P. Descarga (con unidad)", value=str(inf['context'].get('p_descarga', '')))
                                         
-                                        t_list[5] = new_fecha
-                                        t_list[10] = new_p_c
-                                        t_list[11] = new_p_d
-                                        t_list[12] = new_h_m
-                                        t_list[13] = new_h_c
-                                        t_list[14] = new_est_ent
-                                        t_list[16] = new_reco
-                                        inf['tupla_db'] = tuple(t_list)
+                                        new_est_ent = st.text_area("Descripción Condición Final", value=str(inf['context'].get('estado_entrega', '')))
+                                        new_reco = st.text_area("Recomendaciones / Acciones Pendientes", value=str(inf['context'].get('recomendaciones', '')))
                                         
-                                        ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{inf['nombre_archivo_base']}")
-                                        
-                                        doc_prev = DocxTemplate(inf['file_plantilla'])
-                                        ctx_prev = inf['context'].copy()
-                                        ctx_prev['firma_tecnico'] = ""
-                                        ctx_prev['firma_cliente'] = ""
-                                        doc_prev.render(ctx_prev)
-                                        doc_prev.save(ruta_prev_docx)
-                                        
-                                        ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
-                                        if ruta_prev_pdf: 
-                                            inf['ruta_prev_pdf'] = ruta_prev_pdf
-                                        
-                                        guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes)
-                                        st.success("✅ ¡Documento corregido exitosamente! Ve a la pestaña 'Ver y Descargar Borrador'.")
-                                        time.sleep(1.5)
-                                        st.rerun()
+                                        if st.form_submit_button("💾 Guardar Corrección y Regenerar PDF", type="primary"):
+                                            inf['context']['fecha'] = new_fecha
+                                            inf['context']['horas_marcha'] = new_h_m
+                                            inf['context']['horas_carga'] = new_h_c
+                                            inf['context']['temp_salida'] = new_t_s
+                                            inf['context']['p_carga'] = new_p_c
+                                            inf['context']['p_descarga'] = new_p_d
+                                            inf['context']['estado_entrega'] = new_est_ent
+                                            inf['context']['recomendaciones'] = new_reco
+                                            
+                                            t_list = list(inf['tupla_db'])
+                                            try: t_list[9] = float(new_t_s.replace(',', '.'))
+                                            except: t_list[9] = 0.0
+                                            
+                                            t_list[5] = new_fecha
+                                            t_list[10] = new_p_c
+                                            t_list[11] = new_p_d
+                                            t_list[12] = new_h_m
+                                            t_list[13] = new_h_c
+                                            t_list[14] = new_est_ent
+                                            t_list[16] = new_reco
+                                            inf['tupla_db'] = tuple(t_list)
+                                            
+                                            ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{inf['nombre_archivo_base']}")
+                                            
+                                            doc_prev = DocxTemplate(inf['file_plantilla'])
+                                            ctx_prev = inf['context'].copy()
+                                            ctx_prev['firma_tecnico'] = ""
+                                            ctx_prev['firma_cliente'] = ""
+                                            doc_prev.render(ctx_prev)
+                                            doc_prev.save(ruta_prev_docx)
+                                            
+                                            ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
+                                            if ruta_prev_pdf: 
+                                                inf['ruta_prev_pdf'] = ruta_prev_pdf
+                                            
+                                            guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes)
+                                            st.success("✅ ¡Documento corregido exitosamente! Ve a la pestaña 'Ver y Descargar Borrador'.")
+                                            time.sleep(1.5)
+                                            st.rerun()
 
                     with c_del:
                         st.markdown("<div style='margin-top: 35px;'></div>", unsafe_allow_html=True)
@@ -1443,99 +1431,118 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                             guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
                             if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
                             st.rerun()
-                
-                st.markdown("<hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
-                
-                st.markdown(f"<h2 style='text-align: center; color: white; margin-bottom: 5px;'>Firma de Aprobación Final</h2>", unsafe_allow_html=True)
-                st.markdown(f"<h4 style='text-align: center; color: #aeb9cc; margin-top: 0px; margin-bottom: 25px;'>Aprobador: <span style='color: white;'>{aprobador_final}</span></h4>", unsafe_allow_html=True)
-                
-                _, col_firma_cli, _ = st.columns([1, 2.5, 1])
-                with col_firma_cli:
-                    with st.container(border=True):
-                        st.markdown("<p style='text-align: center; font-size: 0.9em; color: #aeb9cc; margin-bottom: 5px;'>Coloque su firma en el recuadro blanco</p>", unsafe_allow_html=True)
-                        cli_key = f"cli_{macro_area}"
-                        canvas_cli = st_canvas(
-                            stroke_width=3, stroke_color="#000", background_color="#fff", 
-                            height=250, width=550, drawing_mode="freedraw", 
-                            key=cli_key, display_toolbar=True
-                        )
-                        
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-                _, col_btn_final, _ = st.columns([1, 2, 1])
-                with col_btn_final:
-                    if st.button(f"🚀 Aprobar, Firmar y Subir Informes", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
-                        
-                        tec_ok = st.session_state.firma_tec_img is not None 
-                        cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
-                        
-                        if not tec_ok: st.warning("⚠️ Debes configurar tu Firma de Técnico en el botón azul de arriba primero.")
-                        elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {aprobador_final}.")
+            
+            st.markdown("<hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
+            
+            st.markdown(f"<h2 style='text-align: center; color: white; margin-bottom: 5px;'>Firma de Aprobación Final</h2>", unsafe_allow_html=True)
+            st.markdown(f"<h4 style='text-align: center; color: #aeb9cc; margin-top: 0px; margin-bottom: 25px;'>Aprobador: <span style='color: white;'>{aprobador_final}</span></h4>", unsafe_allow_html=True)
+            
+            _, col_firma_cli, _ = st.columns([1, 2.5, 1])
+            with col_firma_cli:
+                with st.container(border=True):
+                    st.markdown("<p style='text-align: center; font-size: 0.9em; color: #aeb9cc; margin-bottom: 5px;'>Coloque su firma en el recuadro blanco</p>", unsafe_allow_html=True)
+                    cli_key = f"cli_{macro_area}"
+                    canvas_cli = st_canvas(
+                        stroke_width=3, stroke_color="#000", background_color="#fff", 
+                        height=250, width=550, drawing_mode="freedraw", 
+                        key=cli_key, display_toolbar=True
+                    )
+                    
+                    # 🔥 APARTADO ESCONDIDO PARA CARGAR FIRMA 🔥
+                    with st.expander("⚙️ Opciones de Firma (Cargar Imagen)"):
+                        st.info("Sube una imagen de la firma sin fondo (PNG). Si subes un archivo, el recuadro de dibujo será ignorado.")
+                        firma_archivo = st.file_uploader("Subir archivo de firma", type=['png', 'jpg', 'jpeg'], key=f"up_{macro_area}")
+                        if firma_archivo is not None:
+                            st.session_state[f"firma_subida_{macro_area}"] = firma_archivo.getvalue()
+                            st.success("✅ Firma cargada correctamente.")
                         else:
-                            def procesar_imagen_firma(img_data): 
-                                img = Image.fromarray(img_data.astype('uint8'), 'RGBA')
-                                img_io = io.BytesIO()
-                                img.save(img_io, format='PNG')
-                                img_io.seek(0)
-                                return img_io
+                            st.session_state[f"firma_subida_{macro_area}"] = None
+                    
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            _, col_btn_final, _ = st.columns([1, 2, 1])
+            with col_btn_final:
+                if st.button(f"🚀 Aprobar, Firmar y Subir Informes", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
+                    
+                    tec_ok = st.session_state.firma_tec_img is not None 
+                    
+                    firma_subida = st.session_state.get(f"firma_subida_{macro_area}")
+                    cli_dibujada_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
+                    cli_ok = cli_dibujada_ok or (firma_subida is not None)
+                    
+                    if not tec_ok: st.warning("⚠️ Debes configurar tu Firma de Técnico en el botón azul de arriba primero.")
+                    elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {aprobador_final} (Dibuja o sube una imagen).")
+                    else:
+                        def procesar_imagen_firma(img_data): 
+                            img = Image.fromarray(img_data.astype('uint8'), 'RGBA')
+                            img_io = io.BytesIO()
+                            img.save(img_io, format='PNG')
+                            img_io.seek(0)
+                            return img_io
+                        
+                        informes_finales = []
+                        with st.spinner(f"Generando documentos sellados para {macro_area}..."):
                             
-                            informes_finales = []
-                            with st.spinner(f"Generando documentos sellados para {macro_area}..."):
+                            if firma_subida is not None:
+                                io_cli = io.BytesIO(firma_subida)
+                            else:
                                 io_cli = procesar_imagen_firma(canvas_cli.image_data)
-                                io_tec = procesar_imagen_firma(st.session_state.firma_tec_img)
                                 
-                                try:
-                                    for inf in informes_area:
-                                        inf['context']['cliente_contacto'] = aprobador_final
-                                        inf['cli'] = aprobador_final
-                                        
-                                        io_cli_local = io.BytesIO(io_cli.getvalue())
-                                        io_tec_local = io.BytesIO(io_tec.getvalue())
-                                        
-                                        doc = DocxTemplate(inf['file_plantilla'])
-                                        context = inf['context']
-                                        
-                                        context['firma_cliente'] = InlineImage(doc, io_cli_local, width=Mm(40))
-                                        context['firma_tecnico'] = InlineImage(doc, io_tec_local, width=Mm(40))
-
-                                        d_obj = parse_fecha(context['fecha'])
-                                        wk_str = f"WK{d_obj.isocalendar()[1]:02d}_{d_obj.year}"
-                                        fecha_corta = f"{d_obj.day}-{d_obj.month}-{d_obj.year}"
-                                        
-                                        dir_final = os.path.join(RUTA_APROBADOS, wk_str, macro_area, fecha_corta)
-                                        os.makedirs(dir_final, exist_ok=True)
-                                        
-                                        ruta_docx_final = os.path.join(dir_final, inf['nombre_archivo_base'])
-                                        doc.render(context)
-                                        doc.save(ruta_docx_final)
-                                        
-                                        ruta_pdf_gen = convertir_a_pdf(ruta_docx_final)
-                                        
-                                        if ruta_pdf_gen: 
-                                            ruta_final = ruta_pdf_gen
-                                            nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
-                                        else: 
-                                            ruta_final = ruta_docx_final
-                                            nombre_final = inf['nombre_archivo_base']
-                                        
-                                        tupla_lista = list(inf['tupla_db'])
-                                        tupla_lista[6] = aprobador_final
-                                        tupla_lista[18] = ruta_final
-                                        guardar_registro(tuple(tupla_lista))
-                                        
-                                        informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{wk_str}@@{macro_area}@@{inf['tag']}@@{nombre_final}"})
+                            io_tec = procesar_imagen_firma(st.session_state.firma_tec_img)
+                            
+                            try:
+                                for inf in informes_area:
+                                    inf['context']['cliente_contacto'] = aprobador_final
+                                    inf['cli'] = aprobador_final
                                     
-                                    exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
-                                    if exito: 
-                                        st.success(f"✅ ¡Listos y enviados los reportes de {macro_area}!")
-                                        for inf_enviado in informes_area:
-                                            if inf_enviado in st.session_state.informes_pendientes: st.session_state.informes_pendientes.remove(inf_enviado)
-                                        guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
-                                        time.sleep(2)
-                                        if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
-                                        st.rerun()
-                                    else: st.error(f"Error de red: {mensaje_correo}")
-                                except Exception as e: st.error(f"Error procesando los PDFs: {e}")
+                                    # Usar getvalue() para crear una copia limpia en memoria por cada PDF iterado
+                                    io_cli_local = io.BytesIO(io_cli.getvalue())
+                                    io_tec_local = io.BytesIO(io_tec.getvalue())
+                                    
+                                    doc = DocxTemplate(inf['file_plantilla'])
+                                    context = inf['context']
+                                    
+                                    context['firma_cliente'] = InlineImage(doc, io_cli_local, width=Mm(40))
+                                    context['firma_tecnico'] = InlineImage(doc, io_tec_local, width=Mm(40))
+
+                                    d_obj = parse_fecha(context['fecha'])
+                                    wk_str = f"WK{d_obj.isocalendar()[1]:02d}_{d_obj.year}"
+                                    fecha_corta = f"{d_obj.day}-{d_obj.month}-{d_obj.year}"
+                                    
+                                    dir_final = os.path.join(RUTA_APROBADOS, wk_str, macro_area, fecha_corta)
+                                    os.makedirs(dir_final, exist_ok=True)
+                                    
+                                    ruta_docx_final = os.path.join(dir_final, inf['nombre_archivo_base'])
+                                    doc.render(context)
+                                    doc.save(ruta_docx_final)
+                                    
+                                    ruta_pdf_gen = convertir_a_pdf(ruta_docx_final)
+                                    
+                                    if ruta_pdf_gen: 
+                                        ruta_final = ruta_pdf_gen
+                                        nombre_final = inf['nombre_archivo_base'].replace(".docx", ".pdf")
+                                    else: 
+                                        ruta_final = ruta_docx_final
+                                        nombre_final = inf['nombre_archivo_base']
+                                    
+                                    tupla_lista = list(inf['tupla_db'])
+                                    tupla_lista[6] = aprobador_final
+                                    tupla_lista[18] = ruta_final
+                                    guardar_registro(tuple(tupla_lista))
+                                    
+                                    informes_finales.append({"tag": inf['tag'], "tipo": inf['tipo_plan'], "ruta": ruta_final, "nombre_archivo": f"{wk_str}@@{macro_area}@@{inf['tag']}@@{nombre_final}"})
+                                
+                                exito, mensaje_correo = enviar_carrito_por_correo(MI_CORREO_CORPORATIVO, informes_finales)
+                                if exito: 
+                                    st.success(f"✅ ¡Listos y enviados los reportes de {macro_area}!")
+                                    for inf_enviado in informes_area:
+                                        if inf_enviado in st.session_state.informes_pendientes: st.session_state.informes_pendientes.remove(inf_enviado)
+                                    guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes) 
+                                    time.sleep(2)
+                                    if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
+                                    st.rerun()
+                                else: st.error(f"Error de red: {mensaje_correo}")
+                            except Exception as e: st.error(f"Error procesando los PDFs: {e}")
             st.markdown("<br><br>", unsafe_allow_html=True)
 
 # --- 8.4 VISTA CATÁLOGO AGRUPADO POR ÁREA ---
@@ -1646,7 +1653,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if t1_sel == "➕ Escribir nuevo...":
                 nuevo_t1 = st.text_input("Nombre T1:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_t1")
-                if st.button("💾 Guardar y Seleccionar", key="save_t1", use_container_width=True):
+                if st.button("💾 Guardar", key="save_t1", use_container_width=True):
                     if nuevo_t1.strip(): 
                         agregar_tecnico(nuevo_t1)
                         st.session_state.input_tec1 = nuevo_t1.strip().title()
@@ -1670,7 +1677,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if t2_sel == "➕ Escribir nuevo...":
                 nuevo_t2 = st.text_input("Nombre T2:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_t2")
-                if st.button("💾 Guardar y Seleccionar", key="save_t2", use_container_width=True):
+                if st.button("💾 Guardar", key="save_t2", use_container_width=True):
                     if nuevo_t2.strip(): 
                         agregar_tecnico(nuevo_t2)
                         st.session_state.input_tec2 = nuevo_t2.strip().title()
@@ -1698,7 +1705,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if cli_sel == "➕ Escribir nuevo...":
                 nuevo_c = st.text_input("Nombre:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_c1")
-                if st.button("💾 Guardar y Seleccionar", use_container_width=True, key="save_c1"):
+                if st.button("💾 Guardar", use_container_width=True, key="save_c1"):
                     if nuevo_c.strip(): 
                         agregar_contacto(nuevo_c)
                         st.session_state.input_cliente = nuevo_c.strip().title()
