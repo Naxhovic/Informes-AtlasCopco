@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 🔥 CONFIGURACIÓN DE PÁGINA: Oculta la barra lateral para siempre
+# 🔥 CONFIGURACIÓN DE PÁGINA: Barra lateral oculta para siempre
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="collapsed")
 
 from docxtpl import DocxTemplate, InlineImage
@@ -61,7 +61,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM (CON OCULTAMIENTO DE BARRA LATERAL DEFINITIVO)
+# 0.2 ESTILOS PREMIUM Y OCULTAMIENTO DE BARRA LATERAL
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -135,7 +135,7 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. CONEXIÓN A GOOGLE SHEETS Y NUEVA GESTIÓN DE FIRMAS EN LA NUBE
+# 2. CONEXIÓN A GOOGLE SHEETS
 # =============================================================================
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
@@ -153,7 +153,7 @@ def get_sheet(sheet_name):
         except gspread.exceptions.WorksheetNotFound: return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e: return None
 
-# 🔥 NUEVO: FUNCIONES PARA GUARDAR FIRMAS EN GOOGLE SHEETS 🔥
+# 🔥 NUEVO: FUNCIONES PARA GUARDAR FIRMAS EN LA NUBE 🔥
 def guardar_firma_db(nombre, rol, img_bytes):
     try:
         sheet = get_sheet("firmas_guardadas")
@@ -186,7 +186,7 @@ def obtener_firma_db(nombre, rol):
     return None
 
 # =============================================================================
-# 3. FUNCIONES DE BASE DE DATOS REGULARES
+# 3. FUNCIONES DE BASE DE DATOS
 # =============================================================================
 @st.cache_data(ttl=120, show_spinner=False)
 def obtener_estados_actuales():
@@ -422,32 +422,6 @@ def format_fecha(d):
     return f"{d.day} de {meses_nombres[d.month]} de {d.year}" if d.year != 1970 else "Fecha Desconocida"
 
 def cargar_pendientes(usuario):
-    try:
-        sheet = get_sheet("bandeja_pendientes")
-        if sheet:
-            registros = sheet.get_all_values()
-            for row in registros:
-                if len(row) >= 2 and row[0] == usuario:
-                    pendientes = json.loads(row[1])
-                    os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
-                    for inf in pendientes:
-                        if 'tupla_db' in inf:
-                            inf['tupla_db'] = tuple(inf['tupla_db'])
-                        ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{inf['nombre_archivo_base']}")
-                        if not os.path.exists(ruta_prev_docx):
-                            try:
-                                doc_prev = DocxTemplate(inf['file_plantilla'])
-                                ctx = inf['context'].copy()
-                                ctx['firma_tecnico'] = ""
-                                ctx['firma_cliente'] = ""
-                                doc_prev.render(ctx)
-                                doc_prev.save(ruta_prev_docx)
-                                ruta_pdf = convertir_a_pdf(ruta_prev_docx)
-                                if ruta_pdf: inf['ruta_prev_pdf'] = ruta_pdf
-                            except Exception as e: pass
-                    return pendientes
-    except Exception as e: pass
-    
     archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
     if os.path.exists(archivo):
         try:
@@ -460,22 +434,6 @@ def guardar_pendientes(usuario, pendientes):
     archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
     try:
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
-    except: pass
-    
-    try:
-        sheet = get_sheet("bandeja_pendientes")
-        if sheet:
-            datos_json = json.dumps(pendientes, ensure_ascii=False)
-            registros = sheet.get_all_values()
-            fila_encontrada = -1
-            for i, fila in enumerate(registros):
-                if len(fila) > 0 and fila[0] == usuario:
-                    fila_encontrada = i + 1
-                    break
-            if fila_encontrada != -1:
-                sheet.update_cell(fila_encontrada, 2, datos_json)
-            else:
-                sheet.append_row([usuario, datos_json])
     except: pass
 
 def wk_to_date(wk_string):
@@ -637,7 +595,7 @@ def cargar_cmms():
                 sheet.append_rows([headers] + df_base.values.tolist())
                 st.cache_data.clear()
                 return df_base
-    except Exception as e: print(f"Error cargando Planificación: {e}")
+    except Exception as e: pass
     return pd.DataFrame(DATOS_PLAN_BASE, columns=headers)
 
 def guardar_cmms(df):
@@ -678,7 +636,7 @@ def volver_catalogo():
 
 # --- FIN DE LA PARTE 1 ---
 # =============================================================================
-# 6. INICIALIZACIÓN DE ESTADOS
+# 6. INICIALIZACIÓN DE ESTADOS Y LOGIN 
 # =============================================================================
 default_states = {
     'logged_in': False, 'usuario_actual': "", 'equipo_seleccionado': None, 'vista_actual': "catalogo",
@@ -686,7 +644,6 @@ default_states = {
     'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
     'input_reco': "", 'input_estado_eq': "Operativo", 'vista_firmas': False,
-    'mostrar_firma_tec': False,
     'filtro_area': "Todas" 
 }
 for key, value in default_states.items():
@@ -694,57 +651,32 @@ for key, value in default_states.items():
 
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
-# =============================================================================
-# 7. INTERFAZ: LOGIN (Corta la ejecución de abajo si no hay login para evitar SyntaxError)
-# =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     _, col_centro, _ = st.columns([1, 1.2, 1])
     with col_centro:
         st.markdown("""
             <style>
-                div[data-testid="stForm"] { 
-                    border-radius: 40px !important; 
-                    border: 1px solid #2b3543 !important; 
-                    padding: 45px 35px !important; 
-                    background: linear-gradient(145deg, #151a22, #1a212b) !important;
-                    box-shadow: 0 15px 35px rgba(0,0,0,0.5) !important;
-                }
-                .stTextInput>div>div>input { 
-                    border-radius: 25px !important; 
-                    padding: 12px 20px !important;
-                    font-size: 1.05em !important;
-                    text-align: center !important;
-                }
-                div.stButton > button {
-                    border-radius: 25px !important;
-                    padding: 12px !important;
-                    font-size: 1.1em !important;
-                    margin-top: 15px !important;
-                }
+                div[data-testid="stForm"] { border-radius: 40px !important; border: 1px solid #2b3543 !important; padding: 45px 35px !important; background: linear-gradient(145deg, #151a22, #1a212b) !important; box-shadow: 0 15px 35px rgba(0,0,0,0.5) !important; }
+                .stTextInput>div>div>input { border-radius: 25px !important; padding: 12px 20px !important; font-size: 1.05em !important; text-align: center !important; }
+                div.stButton > button { border-radius: 25px !important; padding: 12px !important; font-size: 1.1em !important; margin-top: 15px !important; }
             </style>
         """, unsafe_allow_html=True)
-        
         st.markdown("<h1 style='text-align: center; border-bottom:none; font-weight: 800; font-size: 3.5em; margin-bottom: -15px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span></h1>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #8c9eb5; font-size: 1.1em; font-weight: 500; margin-bottom: 30px; letter-spacing: 0.5px;'>Gestión Activos Hidrometalurgia</p>", unsafe_allow_html=True)
-        
         with st.form("form_login"):
-            st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
             u_in = st.text_input("Usuario", label_visibility="collapsed", placeholder="👤 Usuario Corporativo").lower()
             p_in = st.text_input("Contraseña", label_visibility="collapsed", placeholder="🔒 Contraseña", type="password")
-            
             if st.form_submit_button("Acceder", type="primary", use_container_width=True):
                 if u_in in USUARIOS and USUARIOS[u_in] == p_in: 
                     st.session_state.update({'logged_in': True, 'usuario_actual': u_in})
                     st.session_state.informes_pendientes = cargar_pendientes(u_in)
                     st.rerun()
-                else: 
-                    st.error("❌ Credenciales inválidas.")
-            st.markdown("</div>", unsafe_allow_html=True)
-    st.stop()  # 🔥 MAGIA: Esto previene que se lea el resto del código sin indentar "else:" 🔥
+                else: st.error("❌ Credenciales inválidas.")
+    st.stop()  # Corta la ejecución si no está logueado
 
 # =============================================================================
-# 8. INTERFAZ PRINCIPAL (MENÚ SUPERIOR Y SISTEMA)
+# 7. INTERFAZ PRINCIPAL (NAVEGACIÓN SUPERIOR FIJA)
 # =============================================================================
 es_admin = st.session_state.usuario_actual in ADMIN_USERS
 rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
@@ -752,36 +684,22 @@ rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
 st.markdown(f"<h3 style='margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span> <span style='font-size: 0.5em; color: #8c9eb5; font-weight: normal; margin-left: 10px;'>| 👤 Usuario: {st.session_state.usuario_actual.title()} ({rol})</span></h3>", unsafe_allow_html=True)
 
 c1, c2, c3, c4, c5 = st.columns(5)
-    
 with c1:
     if st.button("🏭 Catálogo Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
-        st.session_state.vista_actual = "catalogo"
-        st.session_state.vista_firmas = False
-        st.session_state.equipo_seleccionado = None
-        st.rerun()
+        st.session_state.vista_actual = "catalogo"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
 with c2:
     if st.button("📊 Planificación", use_container_width=True, type="primary" if st.session_state.vista_actual == "planificacion" else "secondary"):
-        st.session_state.vista_actual = "planificacion"
-        st.session_state.vista_firmas = False
-        st.session_state.equipo_seleccionado = None
-        st.rerun()
+        st.session_state.vista_actual = "planificacion"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
 with c3:
     if st.button("📜 Historial", use_container_width=True, type="primary" if st.session_state.vista_actual == "historial" else "secondary"):
-        st.session_state.vista_actual = "historial"
-        st.session_state.vista_firmas = False
-        st.session_state.equipo_seleccionado = None
-        st.rerun()
+        st.session_state.vista_actual = "historial"; st.session_state.vista_firmas = False; st.session_state.equipo_seleccionado = None; st.rerun()
 with c4:
     cantidad = len(st.session_state.informes_pendientes)
     if st.button(f"✍️ Firmas ({cantidad})", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"):
-        st.session_state.vista_firmas = True
-        st.session_state.vista_actual = "firmas"
-        st.session_state.equipo_seleccionado = None
-        st.rerun()
+        st.session_state.vista_firmas = True; st.session_state.vista_actual = "firmas"; st.session_state.equipo_seleccionado = None; st.rerun()
 with c5:
     if st.button("🚪 Salir", use_container_width=True):
-        st.session_state.logged_in = False
-        st.rerun()
+        st.session_state.logged_in = False; st.rerun()
             
 st.markdown("<hr style='margin-top: 5px; border-color: #2b3543;'>", unsafe_allow_html=True)
 
@@ -804,9 +722,7 @@ if st.session_state.vista_actual == "historial":
             d_obj = parse_fecha(item['fecha'])
             identificador = (item['tag'], d_obj)
             if identificador not in vistos:
-                vistos.add(identificador)
-                item['fecha_obj'] = d_obj
-                historial_unico.append(item)
+                vistos.add(identificador); item['fecha_obj'] = d_obj; historial_unico.append(item)
 
         historial_agrupado = {}
         for item in historial_unico:
@@ -817,9 +733,7 @@ if st.session_state.vista_actual == "historial":
         fechas_ordenadas = sorted(list(historial_agrupado.keys()), reverse=True)
 
         for d_obj in fechas_ordenadas:
-            fecha_str = format_fecha(d_obj)
-            intervenciones = historial_agrupado[d_obj]
-            
+            fecha_str = format_fecha(d_obj); intervenciones = historial_agrupado[d_obj]
             st.markdown(f"<h3 style='color: white; border-bottom: 2px solid #2b3543; padding-bottom: 5px; margin-top: 15px;'>🗓️ {fecha_str}</h3>", unsafe_allow_html=True)
             columnas_muro = st.columns(3) 
             
@@ -827,10 +741,8 @@ if st.session_state.vista_actual == "historial":
                 b_color = "#00e676" if item['estado'] == "Operativo" else "#ff1744"
                 bg_color = "rgba(0, 230, 118, 0.1)" if item['estado'] == "Operativo" else "rgba(255, 23, 68, 0.1)"
                 icono = "✅" if item['estado'] == "Operativo" else "🚨"
-                
                 cond_safe = str(item.get('condicion', '')).replace('\n', ' ').replace("'", '"')
                 reco_safe = str(item.get('reco', '')).replace('\n', ' ').replace("'", '"')
-                
                 cond_html = f"<hr style='margin: 8px 0; border-color: #2b3543;'><p style='margin: 5px 0 0 0; color: #aeb9cc; font-size: 0.8em; line-height: 1.3;'>📝 <b>Condición Final:</b> {cond_safe}</p>" if cond_safe.strip() else ""
                 reco_html = f"<p style='margin: 5px 0 0 0; color: #aeb9cc; font-size: 0.8em; line-height: 1.3;'>💡 <b>Nota:</b> {reco_safe}</p>" if reco_safe.strip() else ""
 
@@ -838,32 +750,16 @@ if st.session_state.vista_actual == "historial":
                     with st.container(border=True):
                         html_card = (
                             f"<div style='border-left: 5px solid {b_color}; padding-left: 12px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;'>"
-                            f"<div>"
-                            f"<div style='display: flex; justify-content: space-between; align-items: flex-start;'>"
-                            f"<h3 style='margin: 0; color: #007CA6; font-size: 1.4em;'>{item['tag']}</h3>"
-                            f"<span style='background: #2b3543; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;'>🛠️ {item['tipo']}</span>"
-                            f"</div>"
+                            f"<div><div style='display: flex; justify-content: space-between; align-items: flex-start;'><h3 style='margin: 0; color: #007CA6; font-size: 1.4em;'>{item['tag']}</h3><span style='background: #2b3543; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;'>🛠️ {item['tipo']}</span></div>"
                             f"<p style='margin: 2px 0 10px 0; color: #aeb9cc; font-size: 0.9em;'>{item['modelo']} &bull; {item['area'].title()}</p>"
-                            f"<div style='background: #151a22; padding: 8px; border-radius: 8px; margin-bottom: 5px;'>"
-                            f"<p style='margin: 0; color: #8c9eb5; font-size: 0.85em;'>🧑‍🔧 <b>Técnico:</b> {item['tecnico']}</p>"
-                            f"{cond_html}"
-                            f"{reco_html}"
-                            f"</div>"
-                            f"</div>"
-                            f"<div style='margin-top: 10px; background: {bg_color}; border: 1px solid {b_color}; color: {b_color}; padding: 5px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 0.85em;'>"
-                            f"{icono} {item['estado']}"
-                            f"</div>"
-                            f"</div>"
+                            f"<div style='background: #151a22; padding: 8px; border-radius: 8px; margin-bottom: 5px;'><p style='margin: 0; color: #8c9eb5; font-size: 0.85em;'>🧑‍🔧 <b>Técnico:</b> {item['tecnico']}</p>{cond_html}{reco_html}</div></div>"
+                            f"<div style='margin-top: 10px; background: {bg_color}; border: 1px solid {b_color}; color: {b_color}; padding: 5px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 0.85em;'>{icono} {item['estado']}</div></div>"
                         )
                         st.markdown(html_card, unsafe_allow_html=True)
-                        
                         if es_admin:
                             if st.button("🗑️ Eliminar Registro", key=f"del_hist_{item['tag']}_{item['fecha']}_{item['tipo']}_{idx}", use_container_width=True):
                                 exito = eliminar_registro_intervencion(item['tag'], item['fecha'], item['tipo'])
-                                if exito:
-                                    st.success(f"Registro de {item['tag']} eliminado correctamente.")
-                                    time.sleep(1)
-                                    st.rerun()
+                                if exito: st.success(f"Registro eliminado."); time.sleep(1); st.rerun()
 
 # --- 8.2 VISTA PLANIFICACIÓN ---
 elif st.session_state.vista_actual == "planificacion":
@@ -873,9 +769,7 @@ elif st.session_state.vista_actual == "planificacion":
     df_cmms['Mes_Calc'] = df_cmms['S_Programada'].apply(calcular_mes_minero)
     mes_de_hoy_full = calcular_mes_minero(semana_actual)
     
-    if 'filtro_mes_activo' not in st.session_state:
-        st.session_state.filtro_mes_activo = mes_de_hoy_full
-        
+    if 'filtro_mes_activo' not in st.session_state: st.session_state.filtro_mes_activo = mes_de_hoy_full
     mes_visualizado = st.session_state.filtro_mes_activo if st.session_state.filtro_mes_activo != "Todas" else mes_de_hoy_full
     rango_semanas_header = get_semanas_mes_minero(mes_visualizado)
     
@@ -886,7 +780,6 @@ elif st.session_state.vista_actual == "planificacion":
         </div>
     """, unsafe_allow_html=True)
     
-    # 🔥 ARREGLO DE KPIs (Búsqueda limpia que ignora Emojis y espacios extra) 🔥
     df_kpi = df_cmms[(df_cmms["Mes_Calc"] == mes_visualizado) & (df_cmms["Tipo"] != "N/A") & (df_cmms["Tipo"] != "")]
     df_kpi_estado_limpio = df_kpi["Estado"].astype(str).str.strip().str.upper()
     
@@ -912,19 +805,15 @@ elif st.session_state.vista_actual == "planificacion":
         c_f1, c_f2 = st.columns([1, 3])
         orden_meses_full = ["Todas", "Diciembre 2025", "Enero 2026", "Febrero 2026", "Marzo 2026", "Abril 2026", "Mayo 2026", "Junio 2026", "Julio 2026", "Agosto 2026", "Septiembre 2026", "Octubre 2026", "Noviembre 2026", "Diciembre 2026", "Enero 2027"]
         
-        if st.session_state.filtro_mes_activo not in orden_meses_full:
-            st.session_state.filtro_mes_activo = "Todas"
-
+        if st.session_state.filtro_mes_activo not in orden_meses_full: st.session_state.filtro_mes_activo = "Todas"
         filtro_mes = c_f1.selectbox("Filtrar por Mes:", orden_meses_full, key="filtro_mes_activo")
         
         min_date_val, max_date_val = None, None
         if filtro_mes != "Todas":
-            mes_nombre = filtro_mes.split(" ")[0]
-            y_num = int(filtro_mes.split(" ")[1])
+            mes_nombre = filtro_mes.split(" ")[0]; y_num = int(filtro_mes.split(" ")[1])
             meses_map_full = {"Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12}
             m_num = meses_map_full[mes_nombre]
-            if m_num == 1: min_date_val = datetime.date(y_num - 1, 12, 16)
-            else: min_date_val = datetime.date(y_num, m_num - 1, 16)
+            min_date_val = datetime.date(y_num - 1, 12, 16) if m_num == 1 else datetime.date(y_num, m_num - 1, 16)
             max_date_val = datetime.date(y_num, m_num, 15)
 
         df_mostrar = df_cmms.copy() if filtro_mes == "Todas" else df_cmms[df_cmms["Mes_Calc"] == filtro_mes].copy()
@@ -934,9 +823,7 @@ elif st.session_state.vista_actual == "planificacion":
         tags_faltantes = [t for t in todos_los_tags if t not in tags_presentes]
         
         if tags_faltantes:
-            wk_defecto = ""
-            if filtro_mes != "Todas" and min_date_val is not None:
-                wk_defecto = f"WK{min_date_val.isocalendar()[1]:02d}_{min_date_val.year}"
+            wk_defecto = f"WK{min_date_val.isocalendar()[1]:02d}_{min_date_val.year}" if filtro_mes != "Todas" and min_date_val is not None else ""
             filas_vacias = pd.DataFrame([{"TAG": t, "S_Programada": wk_defecto, "Tipo": "N/A", "Estado": "N/A", "S_Realizada": None, "Observacion": "", "Mes_Calc": filtro_mes if filtro_mes != "Todas" else "Sin Asignar"} for t in tags_faltantes])
             df_mostrar = pd.concat([df_mostrar, filas_vacias], ignore_index=True)
             
@@ -959,15 +846,12 @@ elif st.session_state.vista_actual == "planificacion":
             if "kanban_table" in st.session_state:
                 edits = st.session_state["kanban_table"].get("edited_rows", {})
                 for idx_str, changes in edits.items():
-                    if "Día Programado" in changes:
-                        val = changes["Día Programado"]
-                        if val is not None:
-                            try:
-                                if isinstance(val, str): new_date = datetime.datetime.strptime(val[:10], "%Y-%m-%d").date()
-                                else: new_date = val
-                                wk_calculada = f"WK{new_date.isocalendar()[1]:02d}_{new_date.year}"
-                                df_mostrar.at[int(idx_str), 'S_Programada'] = wk_calculada
-                            except: pass
+                    if "Día Programado" in changes and changes["Día Programado"] is not None:
+                        try:
+                            val = changes["Día Programado"]
+                            new_date = datetime.datetime.strptime(val[:10], "%Y-%m-%d").date() if isinstance(val, str) else val
+                            df_mostrar.at[int(idx_str), 'S_Programada'] = f"WK{new_date.isocalendar()[1]:02d}_{new_date.year}"
+                        except: pass
 
             if es_admin:
                 df_mostrar.insert(0, "🗑️ Quitar", False)
@@ -989,7 +873,6 @@ elif st.session_state.vista_actual == "planificacion":
                 "S_Realizada": st.column_config.DateColumn("Día Ejecución (Día y WK) 📅", format="DD/MM/YYYY - [WK]WW", disabled=False),
                 "Observacion": st.column_config.TextColumn("Comentarios")
             }
-            
             if es_admin: config_columnas["🗑️ Quitar"] = st.column_config.CheckboxColumn("Quitar", default=False)
             
             def color_estado(val):
@@ -1016,7 +899,6 @@ elif st.session_state.vista_actual == "planificacion":
             
             if st.button("💾 Guardar Avances y Limpiar Tabla", type="primary"):
                 df_guardar = df_editado.copy()
-                
                 if not es_admin: df_guardar["🗑️ Quitar"] = False 
                 
                 inv_tipo_map = {v: k for k, v in tipo_visual_map.items() if k not in ["", "N/A"]}
@@ -1028,9 +910,8 @@ elif st.session_state.vista_actual == "planificacion":
                 def get_final_wk(row):
                     d = row.get('Día Programado')
                     if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
-                        if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
-                        return f"WK{d.isocalendar()[1]:02d}_{d.year}"
-                    
+                        d_obj = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date() if isinstance(d, str) else d
+                        return f"WK{d_obj.isocalendar()[1]:02d}_{d_obj.year}"
                     wk_actual = str(row.get('S_Programada', '')).strip()
                     if wk_actual == "" and filtro_mes != "Todas" and min_date_val is not None:
                         return f"WK{min_date_val.isocalendar()[1]:02d}_{min_date_val.year}"
@@ -1050,10 +931,7 @@ elif st.session_state.vista_actual == "planificacion":
                 for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
                     if col in df_cmms_final.columns: df_cmms_final = df_cmms_final.drop(columns=[col])
                 
-                guardar_cmms(df_cmms_final)
-                st.success(f"✅ ¡Guardado!")
-                time.sleep(1.5)
-                st.rerun()
+                guardar_cmms(df_cmms_final); st.success(f"✅ ¡Guardado!"); time.sleep(1.5); st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
         
@@ -1063,32 +941,27 @@ elif st.session_state.vista_actual == "planificacion":
                 with st.form("form_nueva_tarea"):
                     c1, c2, c3 = st.columns(3)
                     n_tag = c1.selectbox("Equipo:", sorted(list(inventario_equipos.keys())))
-                    
                     tipo_visual_map_iny = {"INSP": "🟦 INSP", "P1": "🟩 P1", "P2": "🟧 P2", "P3": "🟪 P3", "P4": "🟥 P4", "PM03": "🩵 PM03"}
                     n_tipo_visual = c2.selectbox("Tipo de Tarea:", list(tipo_visual_map_iny.values()))
-                    
                     default_d = datetime.date.today()
                     if min_date_val and max_date_val and not (min_date_val <= default_d <= max_date_val): default_d = min_date_val
-                        
                     n_fecha_prog = c3.date_input("📆 Día a Programar:", value=default_d, min_value=min_date_val, max_value=max_date_val)
                     n_obs = st.text_input("Observación inicial (Opcional):")
                     
                     if st.form_submit_button("🚀 Inyectar Tarea y Guardar Todo", type="primary", use_container_width=True):
                         n_tipo_puro = {v: k for k, v in tipo_visual_map_iny.items()}.get(n_tipo_visual, "INSP")
                         df_cmms_guardar = df_cmms.copy()
-                        
                         if not df_editado.empty:
                             df_editado_clean = df_editado.copy()
-                            inv_tipo_map = {v: k for k, v in tipo_visual_map.items()}
-                            inv_estado_map = {v: k for k, v in map_visual_estado.items()}
+                            inv_tipo_map = {v: k for k, v in tipo_visual_map.items()}; inv_estado_map = {v: k for k, v in map_visual_estado.items()}
                             df_editado_clean['Tipo'] = df_editado_clean['Tipo'].apply(lambda x: inv_tipo_map.get(str(x).strip(), "N/A"))
                             df_editado_clean['Estado'] = df_editado_clean['Estado'].apply(lambda x: inv_estado_map.get(str(x).strip(), "N/A"))
                             
                             def get_final_wk_clean(row):
                                 d = row.get('Día Programado')
                                 if pd.notnull(d) and str(d).strip() not in ["", "None", "NaT"]:
-                                    if isinstance(d, str): d = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date()
-                                    return f"WK{d.isocalendar()[1]:02d}_{d.year}"
+                                    d_obj = datetime.datetime.strptime(d[:10], "%Y-%m-%d").date() if isinstance(d, str) else d
+                                    return f"WK{d_obj.isocalendar()[1]:02d}_{d_obj.year}"
                                 wk_actual = str(row.get('S_Programada', '')).strip()
                                 if wk_actual == "" and filtro_mes != "Todas" and min_date_val is not None:
                                     return f"WK{min_date_val.isocalendar()[1]:02d}_{min_date_val.year}"
@@ -1096,7 +969,6 @@ elif st.session_state.vista_actual == "planificacion":
                                 
                             df_editado_clean['S_Programada'] = df_editado_clean.apply(get_final_wk_clean, axis=1)
                             df_editado_clean['S_Realizada'] = df_editado_clean['S_Realizada'].apply(safe_date_str)
-                            
                             if not es_admin: df_editado_clean["🗑️ Quitar"] = False
                             
                             filas_validas_f = df_editado_clean[(df_editado_clean["🗑️ Quitar"] == False) & (df_editado_clean["Tipo"] != "N/A")].copy()
@@ -1112,10 +984,7 @@ elif st.session_state.vista_actual == "planificacion":
                             if col in df_cmms_guardar.columns: df_cmms_guardar = df_cmms_guardar.drop(columns=[col])
                         
                         df_cmms_final_extra = pd.concat([df_cmms_guardar, nueva_fila], ignore_index=True)
-                        guardar_cmms(df_cmms_final_extra)
-                        st.success("✅ Guardado.")
-                        time.sleep(1.5)
-                        st.rerun()
+                        guardar_cmms(df_cmms_final_extra); st.success("✅ Guardado."); time.sleep(1.5); st.rerun()
         
         with c_extra2:
             if es_admin:
@@ -1128,20 +997,14 @@ elif st.session_state.vista_actual == "planificacion":
                         df_combinado = df_combinado.drop_duplicates(subset=['TAG', 'S_Programada'], keep='first')
                         for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
                             if col in df_combinado.columns: df_combinado = df_combinado.drop(columns=[col])
-                        guardar_cmms(df_combinado)
-                        st.success("✅ Programación anual inyectada correctamente.")
-                        time.sleep(1.5)
-                        st.rerun()
+                        guardar_cmms(df_combinado); st.success("✅ Programación anual inyectada correctamente."); time.sleep(1.5); st.rerun()
                         
                     st.markdown("---")
                     st.warning("Usa esto solo si la base de datos se corrompe por completo (Reseteo de Fábrica).")
                     if st.button("🚑 Resetear Todo a Valores Iniciales", use_container_width=True):
                         headers_b = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
                         df_rec = pd.DataFrame(DATOS_PLAN_BASE, columns=headers_b)
-                        guardar_cmms(df_rec)
-                        st.success("Base de datos restaurada de fábrica.")
-                        time.sleep(1.5)
-                        st.rerun()
+                        guardar_cmms(df_rec); st.success("Base de datos restaurada de fábrica."); time.sleep(1.5); st.rerun()
 
     with tab_calendario:
         opciones_meses_calendario = ["Diciembre 2025"] + [f"{m} 2026" for m in ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]] + ["Enero 2027"]
@@ -1159,18 +1022,13 @@ elif st.session_state.vista_actual == "planificacion":
             
         with c_cal_tit: st.markdown("### 📆 Calendario")
         
-        cal_year = int(mes_sel.split(" ")[1])
-        cal_month = meses_nombres_cal.index(mes_sel.split(" ")[0]) + 1
-            
-        cal = calendar.Calendar(calendar.MONDAY)
-        semanas_mes = cal.monthdatescalendar(cal_year, cal_month) 
+        cal_year = int(mes_sel.split(" ")[1]); cal_month = meses_nombres_cal.index(mes_sel.split(" ")[0]) + 1
+        cal = calendar.Calendar(calendar.MONDAY); semanas_mes = cal.monthdatescalendar(cal_year, cal_month) 
         
         tareas_por_fecha = {}
         for _, row in df_cmms.iterrows():
             estado_tarea = str(row['Estado']).strip()
-            
-            if solo_hechos and "Hecho" not in estado_tarea:
-                continue
+            if solo_hechos and "Hecho" not in estado_tarea: continue
                 
             d_prog = wk_to_date(row['S_Programada'])
             d_target = None
@@ -1184,15 +1042,13 @@ elif st.session_state.vista_actual == "planificacion":
         
         html_cal = '<div style="display:grid; grid-template-columns: 65px repeat(7, 1fr); gap: 10px; margin-top:10px;">'
         html_cal += '<div style="text-align:center; color:#FF6600; font-weight:900; font-size:0.8rem; margin-top: 10px;">REF</div>'
-        for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: 
-            html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
+        for d in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]: html_cal += f'<div style="text-align:center; color:#8c9eb5; font-weight:bold; font-size:0.9rem;">{d}</div>'
             
         for semana in semanas_mes:
             wk_num = semana[0].isocalendar()[1]
             if cal_year == 2025 and semana[0].month == 12: wk_num = semana[0].isocalendar()[1] 
             
             html_cal += f'<div style="display:flex; align-items:center; justify-content:center; background:#2b3543; border-radius:8px; border-left: 4px solid #FF6600; color:white; font-weight:bold; font-size:0.85rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); height: 120px;">WK{wk_num:02d}</div>'
-            
             for dia in semana:
                 is_current_month = dia.month == cal_month
                 bg_color = "#1a212b" if is_current_month else "#11151c"
@@ -1220,16 +1076,10 @@ elif st.session_state.vista_actual == "planificacion":
         df_pivot_base['Contenido'] = df_pivot_base['Tipo'] + "\n" + df_pivot_base['Estado'].apply(lambda x: str(x).split(" ")[1] if " " in str(x) else str(x))
         
         c_mat1, c_mat2 = st.columns([1.5, 2])
-        with c_mat1: 
-            vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Mes (Zoom In)", "📆 Anual (Semanas WK)", "📅 Anual (Por Meses)"], horizontal=True)
+        with c_mat1: vista_matriz = st.radio("Modo de Visualización:", ["🔍 Por Mes (Zoom In)", "📆 Anual (Semanas WK)", "📅 Anual (Por Meses)"], horizontal=True)
         
         def map_mes_full(q):
-            mapping = {
-                "Diciembre 2025": "dic-25", "Enero 2026": "ene-26", "Febrero 2026": "feb-26", "Marzo 2026": "mar-26", 
-                "Abril 2026": "abr-26", "Mayo 2026": "may-26", "Junio 2026": "jun-26", "Julio 2026": "jul-26", 
-                "Agosto 2026": "ago-26", "Septiembre 2026": "sept-26", "Octubre 2026": "oct-26", "Noviembre 2026": "nov-26",
-                "Diciembre 2026": "dic-26", "Enero 2027": "ene-27"
-            }
+            mapping = {"Diciembre 2025": "dic-25", "Enero 2026": "ene-26", "Febrero 2026": "feb-26", "Marzo 2026": "mar-26", "Abril 2026": "abr-26", "Mayo 2026": "may-26", "Junio 2026": "jun-26", "Julio 2026": "jul-26", "Agosto 2026": "ago-26", "Septiembre 2026": "sept-26", "Octubre 2026": "oct-26", "Noviembre 2026": "nov-26", "Diciembre 2026": "dic-26", "Enero 2027": "ene-27"}
             return mapping.get(q, str(q))
 
         df_pivot_base['Mes_Vista'] = df_pivot_base['Mes_Calc'].apply(map_mes_full)
@@ -1254,13 +1104,12 @@ elif st.session_state.vista_actual == "planificacion":
         df_matriz = pd.concat([df_info, df_pivot], axis=1).reset_index()
         
         cols_base = ['TAG', 'Equipo', 'Área']
-        
         for c in cols_todas:
             if c not in df_matriz.columns: df_matriz[c] = ""
             
         df_matriz = df_matriz[cols_base + cols_todas]
-        
         cols_finales = cols_base.copy()
+        
         if vista_matriz == "🔍 Por Mes (Zoom In)":
             wk_a_quincena = {wk: calcular_mes_minero(wk) for wk in cols_todas}
             with c_mat2:
@@ -1270,8 +1119,7 @@ elif st.session_state.vista_actual == "planificacion":
                 quin_seleccionada = st.selectbox("Selecciona el Mes a enfocar:", q_unicas, index=q_unicas.index(mes_visualizado) if mes_visualizado in q_unicas else 0)
             wks_mostrar = [wk for wk, q in wk_a_quincena.items() if q == quin_seleccionada]
             cols_finales.extend(wks_mostrar)
-        else:
-            cols_finales.extend(cols_todas)
+        else: cols_finales.extend(cols_todas)
             
         df_matriz_final = df_matriz[cols_finales]
         df_matriz_congelada = df_matriz_final.set_index(['TAG', 'Equipo', 'Área'])
@@ -1296,17 +1144,18 @@ elif st.session_state.vista_actual == "planificacion":
         if len(columnas_pintar) > 0:
             try: st.dataframe(df_matriz_congelada.style.map(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
             except AttributeError: st.dataframe(df_matriz_congelada.style.applymap(estilo_matriz_colores, subset=columnas_pintar), use_container_width=True, height=600)
-        else:
-            st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
+        else: st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-# --- 8.3 VISTA DE FIRMAS (FIRMAS PERSISTENTES EN BASE DE DATOS) ---
+# --- 8.3 VISTA DE FIRMAS (CON DOBLE PANEL GLOBAL: TÉCNICO Y CLIENTE) ---
 elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
     st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas y Revisión</h1>", unsafe_allow_html=True)
+    st.markdown("---")
     
     if len(st.session_state.informes_pendientes) == 0: 
         st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
     else:
-        # 🔥 SELECCIÓN GLOBAL DE APROBADOR 🔥
+        # 🔥 1. SELECCIÓN DE APROBADOR 🔥
+        st.markdown("### 👤 1. Seleccionar Aprobador (Cliente)")
         contactos_db = obtener_contactos()
         if 'aprobador_global' not in st.session_state:
             cliente_por_defecto = st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes[0].get('cli') else (contactos_db[0] if contactos_db else "")
@@ -1317,7 +1166,7 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
 
         c_apr1, c_apr2, c_apr3 = st.columns([3, 2, 1])
         with c_apr1:
-            aprob_sel = st.selectbox("👤 Cliente Aprobador para los informes de esta sesión:", opciones_aprobador, index=idx_aprob)
+            aprob_sel = st.selectbox("Este cliente aparecerá como firmante en todos los informes:", opciones_aprobador, index=idx_aprob)
         
         if aprob_sel == "➕ Escribir nuevo aprobador...":
             nuevo_aprob = st.text_input("Nombre del nuevo aprobador:", placeholder="Ej: Oriana Reyes", label_visibility="collapsed")
@@ -1333,8 +1182,8 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
             st.session_state.aprobador_global = aprob_sel
             with c_apr2:
                 st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
-                if st.button("🔄 Aplicar a los Borradores", use_container_width=True, help="Actualiza el PDF para mostrar a este aprobador."):
-                    with st.spinner("Regenerando borradores con el nuevo cliente..."):
+                if st.button("🔄 Aplicar nombre a Borradores", use_container_width=True):
+                    with st.spinner("Actualizando borradores..."):
                         for inf in st.session_state.informes_pendientes:
                             inf['context']['cliente_contacto'] = aprobador_final
                             inf['cli'] = aprobador_final
@@ -1353,7 +1202,7 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                             ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
                             if ruta_prev_pdf: inf['ruta_prev_pdf'] = ruta_prev_pdf
                         guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes)
-                    st.success("✅ ¡Borradores actualizados!")
+                    st.success("✅ Nombres actualizados")
                     st.rerun()
         with c_apr3:
             st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
@@ -1363,26 +1212,26 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                     st.session_state.aprobador_global = obtener_contactos()[0] if obtener_contactos() else ""
                     st.rerun()
 
-        st.markdown("<hr style='margin-top: 5px; border-color: #2b3543;'>", unsafe_allow_html=True)
-        st.markdown("### ⚙️ Configuración de Firmas Activas")
-        
-        # 🔥 PANELES DE FIRMAS GUARDADAS EN NUBE 🔥
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # 🔥 2. CONFIGURACIÓN DE FIRMAS (TÉCNICO Y CLIENTE JUNTOS Y EN BD) 🔥
+        st.markdown("### ⚙️ 2. Configurar Firmas Fijas (Se guardan en la nube)")
         firma_tec_bytes = obtener_firma_db(st.session_state.usuario_actual, "Tecnico")
         firma_cli_bytes = obtener_firma_db(aprobador_final, "Cliente")
-        
+
         c_tec, c_cli = st.columns(2)
-        
+
         with c_tec:
             with st.container(border=True):
-                st.markdown("#### 🧑‍🔧 Tu Firma (Técnico)")
+                st.markdown("<h4 style='text-align:center;'>🧑‍🔧 Tu Firma (Técnico)</h4>", unsafe_allow_html=True)
                 if firma_tec_bytes:
-                    st.image(firma_tec_bytes, width=200)
-                    st.success("✅ Firma técnica guardada en la base de datos.")
+                    st.image(firma_tec_bytes, use_column_width=True)
+                    st.success("✅ Firma técnica guardada en base de datos.")
                     if st.button("🔄 Cambiar Mi Firma", key="btn_cambiar_tec", use_container_width=True):
                         guardar_firma_db(st.session_state.usuario_actual, "Tecnico", b"")
                         st.rerun()
                 else:
-                    st.warning("⚠️ No tienes firma configurada.")
+                    st.warning("⚠️ Dibuja tu firma en el recuadro blanco:")
                     canvas_tec = st_canvas(stroke_width=3, stroke_color="#000", background_color="#fff", height=150, width=400, drawing_mode="freedraw", key="canvas_tec")
                     if st.button("💾 Guardar Mi Firma", type="primary", use_container_width=True, key="btn_save_tec"):
                         if canvas_tec.image_data is not None:
@@ -1391,23 +1240,34 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                             img.save(io_img, format='PNG')
                             guardar_firma_db(st.session_state.usuario_actual, "Tecnico", io_img.getvalue())
                             st.rerun()
-                            
+
         with c_cli:
             with st.container(border=True):
-                st.markdown(f"#### 👤 Firma de {aprobador_final} (Cliente)")
+                st.markdown(f"<h4 style='text-align:center;'>👤 Firma de {aprobador_final}</h4>", unsafe_allow_html=True)
                 if firma_cli_bytes:
-                    st.image(firma_cli_bytes, width=200)
-                    st.success("✅ Firma del cliente cargada desde la base de datos.")
+                    st.image(firma_cli_bytes, use_column_width=True)
+                    st.success("✅ Firma del cliente cargada desde base de datos.")
                     if st.button("🔄 Cambiar Firma de Cliente", key="btn_cambiar_cli", use_container_width=True):
                         guardar_firma_db(aprobador_final, "Cliente", b"")
                         st.rerun()
                 else:
-                    st.info("Sube una imagen o dibuja la firma abajo al aprobar.")
-                    firma_archivo = st.file_uploader("📁 Cargar imagen sin fondo (PNG)", type=['png', 'jpg', 'jpeg'], key="up_cli")
-                    if firma_archivo is not None:
-                        if st.button("💾 Guardar Archivo como Firma", type="primary", use_container_width=True, key="btn_save_cli"):
-                            guardar_firma_db(aprobador_final, "Cliente", firma_archivo.getvalue())
-                            st.rerun()
+                    st.info("Pide al cliente que firme aquí, o sube una imagen de su firma:")
+                    tab_draw, tab_up = st.tabs(["🖌️ Dibujar", "📁 Subir Archivo (PNG)"])
+                    with tab_draw:
+                        canvas_cli_top = st_canvas(stroke_width=3, stroke_color="#000", background_color="#fff", height=150, width=400, drawing_mode="freedraw", key="canvas_cli_top")
+                        if st.button("💾 Guardar Dibujo", type="primary", use_container_width=True, key="save_cli_draw"):
+                            if canvas_cli_top.image_data is not None:
+                                img = Image.fromarray(canvas_cli_top.image_data.astype('uint8'), 'RGBA')
+                                io_img = io.BytesIO()
+                                img.save(io_img, format='PNG')
+                                guardar_firma_db(aprobador_final, "Cliente", io_img.getvalue())
+                                st.rerun()
+                    with tab_up:
+                        firma_archivo = st.file_uploader("Subir imagen sin fondo (PNG)", type=['png', 'jpg', 'jpeg'], key="up_cli")
+                        if firma_archivo is not None:
+                            if st.button("💾 Guardar Archivo como Firma", type="primary", use_container_width=True, key="save_cli_file"):
+                                guardar_firma_db(aprobador_final, "Cliente", firma_archivo.getvalue())
+                                st.rerun()
 
         st.markdown("<hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
 
@@ -1511,44 +1371,18 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 
-                _, col_firma_cli, _ = st.columns([1, 2.5, 1])
-                canvas_cli = None
-                with col_firma_cli:
-                    if not firma_cli_bytes:
-                        with st.container(border=True):
-                            st.markdown("<p style='text-align: center; font-size: 0.9em; color: #aeb9cc; margin-bottom: 5px;'>Dibuja tu firma en el recuadro blanco</p>", unsafe_allow_html=True)
-                            cli_key = f"cli_{macro_area}"
-                            canvas_cli = st_canvas(
-                                stroke_width=3, stroke_color="#000", background_color="#fff", 
-                                height=250, width=550, drawing_mode="freedraw", 
-                                key=cli_key, display_toolbar=True
-                            )
-                    else:
-                        st.success(f"✅ La firma de {aprobador_final} está configurada y lista para usarse.")
-                        
-                st.markdown("<br>", unsafe_allow_html=True)
-                
                 _, col_btn_final, _ = st.columns([1, 2, 1])
                 with col_btn_final:
-                    if st.button(f"🚀 Aprobar, Firmar y Subir Informes", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
+                    if st.button(f"🚀 Aprobar, Firmar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
                         
                         tec_ok = firma_tec_bytes is not None 
-                        cli_dibujada_ok = canvas_cli is not None and canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
-                        cli_ok = (firma_cli_bytes is not None) or cli_dibujada_ok
+                        cli_ok = firma_cli_bytes is not None
                         
                         if not tec_ok: st.warning("⚠️ Debes configurar tu Firma de Técnico en el panel de arriba primero.")
-                        elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {aprobador_final}.")
+                        elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {aprobador_final} en el panel de arriba.")
                         else:
                             informes_finales = []
                             with st.spinner(f"Generando documentos sellados para {macro_area}..."):
-                                
-                                if not firma_cli_bytes and cli_dibujada_ok:
-                                    img_c = Image.fromarray(canvas_cli.image_data.astype('uint8'), 'RGBA')
-                                    io_c = io.BytesIO()
-                                    img_c.save(io_c, format='PNG')
-                                    firma_cli_bytes = io_c.getvalue()
-                                    guardar_firma_db(aprobador_final, "Cliente", firma_cli_bytes)
-                                
                                 try:
                                     for inf in informes_area:
                                         inf['context']['cliente_contacto'] = aprobador_final
@@ -1711,7 +1545,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if t1_sel == "➕ Escribir nuevo...":
                 nuevo_t1 = st.text_input("Nombre T1:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_t1")
-                if st.button("💾 Guardar y Seleccionar", key="save_t1", use_container_width=True):
+                if st.button("💾 Guardar", key="save_t1", use_container_width=True):
                     if nuevo_t1.strip(): 
                         agregar_tecnico(nuevo_t1)
                         st.session_state.input_tec1 = nuevo_t1.strip().title()
@@ -1735,7 +1569,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if t2_sel == "➕ Escribir nuevo...":
                 nuevo_t2 = st.text_input("Nombre T2:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_t2")
-                if st.button("💾 Guardar y Seleccionar", key="save_t2", use_container_width=True):
+                if st.button("💾 Guardar", key="save_t2", use_container_width=True):
                     if nuevo_t2.strip(): 
                         agregar_tecnico(nuevo_t2)
                         st.session_state.input_tec2 = nuevo_t2.strip().title()
@@ -1763,7 +1597,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if cli_sel == "➕ Escribir nuevo...":
                 nuevo_c = st.text_input("Nombre:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_c1")
-                if st.button("💾 Guardar y Seleccionar", use_container_width=True, key="save_c1"):
+                if st.button("💾 Guardar", use_container_width=True, key="save_c1"):
                     if nuevo_c.strip(): 
                         agregar_contacto(nuevo_c)
                         st.session_state.input_cliente = nuevo_c.strip().title()
