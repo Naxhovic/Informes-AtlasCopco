@@ -1,7 +1,9 @@
 streamlit
-docxtpl
 pandas
+docxtpl
+docx2pdf
 streamlit-drawable-canvas
+Pillow
 gspread
 google-auth
 streamlit-pdf-viewer
