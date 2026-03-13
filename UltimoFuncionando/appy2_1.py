@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 🔥 CONFIGURACIÓN DE PÁGINA: Barra lateral oculta por defecto
+# 🔥 CONFIGURACIÓN DE PÁGINA: Oculta la barra lateral para siempre
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="collapsed")
 
 from docxtpl import DocxTemplate, InlineImage
@@ -14,6 +14,7 @@ from email import encoders
 from streamlit_drawable_canvas import st_canvas
 from PIL import Image
 import io
+import base64
 import gspread
 import datetime
 import calendar
@@ -60,7 +61,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM Y OCULTAMIENTO DE BARRA LATERAL
+# 0.2 ESTILOS PREMIUM (CON OCULTAMIENTO DE BARRA LATERAL DEFINITIVO)
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -78,8 +79,8 @@ def aplicar_estilos_premium():
         [data-testid="viewerBadge"], div[class^="viewerBadge_container"], footer { display: none !important; }
         
         /* 🔥 DESAPARECER LA BARRA LATERAL POR COMPLETO 🔥 */
-        [data-testid="collapsedControl"] { display: none !important; visibility: hidden !important; }
-        [data-testid="stSidebar"] { display: none !important; }
+        [data-testid="collapsedControl"] { display: none !important; visibility: hidden !important; width: 0px !important; }
+        [data-testid="stSidebar"] { display: none !important; width: 0px !important; }
         
         div.stButton > button:first-child { background: linear-gradient(135deg, var(--ac-blue) 0%, var(--ac-dark) 100%); color: white; border-radius: 20px; border: none; font-weight: 600; padding: 0.6rem 1.2rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 124, 166, 0.4); }
         div.stButton > button:first-child:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 124, 166, 0.6); }
@@ -134,7 +135,7 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. CONEXIÓN A GOOGLE SHEETS
+# 2. CONEXIÓN A GOOGLE SHEETS Y NUEVA GESTIÓN DE FIRMAS EN LA NUBE
 # =============================================================================
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
@@ -152,8 +153,40 @@ def get_sheet(sheet_name):
         except gspread.exceptions.WorksheetNotFound: return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e: return None
 
+# 🔥 NUEVO: FUNCIONES PARA GUARDAR FIRMAS EN GOOGLE SHEETS 🔥
+def guardar_firma_db(nombre, rol, img_bytes):
+    try:
+        sheet = get_sheet("firmas_guardadas")
+        if sheet:
+            b64_str = base64.b64encode(img_bytes).decode('utf-8') if img_bytes else ""
+            registros = sheet.get_all_values()
+            fila_encontrada = -1
+            for i, r in enumerate(registros):
+                if len(r) >= 2 and r[0] == nombre and r[1] == rol:
+                    fila_encontrada = i + 1
+                    break
+            if fila_encontrada != -1:
+                if b64_str == "": sheet.delete_rows(fila_encontrada)
+                else: sheet.update_cell(fila_encontrada, 3, b64_str)
+            elif b64_str != "":
+                sheet.append_row([nombre, rol, b64_str])
+            st.cache_data.clear()
+    except Exception as e: pass
+
+@st.cache_data(ttl=60, show_spinner=False)
+def obtener_firma_db(nombre, rol):
+    try:
+        sheet = get_sheet("firmas_guardadas")
+        if sheet:
+            registros = sheet.get_all_values()
+            for r in registros:
+                if len(r) >= 3 and r[0] == nombre and r[1] == rol:
+                    return base64.b64decode(r[2].encode('utf-8'))
+    except Exception as e: pass
+    return None
+
 # =============================================================================
-# 3. FUNCIONES DE BASE DE DATOS
+# 3. FUNCIONES DE BASE DE DATOS REGULARES
 # =============================================================================
 @st.cache_data(ttl=120, show_spinner=False)
 def obtener_estados_actuales():
@@ -389,6 +422,32 @@ def format_fecha(d):
     return f"{d.day} de {meses_nombres[d.month]} de {d.year}" if d.year != 1970 else "Fecha Desconocida"
 
 def cargar_pendientes(usuario):
+    try:
+        sheet = get_sheet("bandeja_pendientes")
+        if sheet:
+            registros = sheet.get_all_values()
+            for row in registros:
+                if len(row) >= 2 and row[0] == usuario:
+                    pendientes = json.loads(row[1])
+                    os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
+                    for inf in pendientes:
+                        if 'tupla_db' in inf:
+                            inf['tupla_db'] = tuple(inf['tupla_db'])
+                        ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{inf['nombre_archivo_base']}")
+                        if not os.path.exists(ruta_prev_docx):
+                            try:
+                                doc_prev = DocxTemplate(inf['file_plantilla'])
+                                ctx = inf['context'].copy()
+                                ctx['firma_tecnico'] = ""
+                                ctx['firma_cliente'] = ""
+                                doc_prev.render(ctx)
+                                doc_prev.save(ruta_prev_docx)
+                                ruta_pdf = convertir_a_pdf(ruta_prev_docx)
+                                if ruta_pdf: inf['ruta_prev_pdf'] = ruta_pdf
+                            except Exception as e: pass
+                    return pendientes
+    except Exception as e: pass
+    
     archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
     if os.path.exists(archivo):
         try:
@@ -401,6 +460,22 @@ def guardar_pendientes(usuario, pendientes):
     archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
     try:
         with open(archivo, "w", encoding="utf-8") as f: json.dump(pendientes, f, ensure_ascii=False, indent=4)
+    except: pass
+    
+    try:
+        sheet = get_sheet("bandeja_pendientes")
+        if sheet:
+            datos_json = json.dumps(pendientes, ensure_ascii=False)
+            registros = sheet.get_all_values()
+            fila_encontrada = -1
+            for i, fila in enumerate(registros):
+                if len(fila) > 0 and fila[0] == usuario:
+                    fila_encontrada = i + 1
+                    break
+            if fila_encontrada != -1:
+                sheet.update_cell(fila_encontrada, 2, datos_json)
+            else:
+                sheet.append_row([usuario, datos_json])
     except: pass
 
 def wk_to_date(wk_string):
@@ -457,7 +532,7 @@ def safe_date_str(x):
     except: return ""
 
 # =============================================================================
-# 5. MOTOR PLANIFICACIÓN Y CARGA
+# 5. MOTOR PLANIFICACIÓN
 # =============================================================================
 DATOS_PLAN_BASE = [
     {"TAG": "70-GC-013", "S_Programada": "WK51_2025", "Tipo": "P2", "Estado": "Hecho", "S_Realizada": "2025-12-15", "Observacion": ""},
@@ -600,7 +675,9 @@ def volver_catalogo():
     st.session_state.equipo_seleccionado = None
     st.session_state.vista_firmas = False
     st.session_state.vista_actual = "catalogo"
-    # =============================================================================
+
+# --- FIN DE LA PARTE 1 ---
+# =============================================================================
 # 6. INICIALIZACIÓN DE ESTADOS
 # =============================================================================
 default_states = {
@@ -609,7 +686,6 @@ default_states = {
     'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
     'input_reco': "", 'input_estado_eq': "Operativo", 'vista_firmas': False,
-    'firma_tec_json': None, 'firma_tec_img': None,
     'mostrar_firma_tec': False,
     'filtro_area': "Todas" 
 }
@@ -619,7 +695,7 @@ for key, value in default_states.items():
 if 'informes_pendientes' not in st.session_state: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 7. INTERFAZ: LOGIN (Corta la ejecución si no estás logueado)
+# 7. INTERFAZ: LOGIN (Corta la ejecución de abajo si no hay login para evitar SyntaxError)
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
@@ -665,23 +741,17 @@ if not st.session_state.logged_in:
                 else: 
                     st.error("❌ Credenciales inválidas.")
             st.markdown("</div>", unsafe_allow_html=True)
-    st.stop()  # 🔥 MAGIA: Evita que el código de abajo se ejecute. Evita el SyntaxError 🔥
+    st.stop()  # 🔥 MAGIA: Esto previene que se lea el resto del código sin indentar "else:" 🔥
 
 # =============================================================================
-# 8. INTERFAZ PRINCIPAL (NAVEGACIÓN SUPERIOR FIJA Y SIN BARRA LATERAL)
+# 8. INTERFAZ PRINCIPAL (MENÚ SUPERIOR Y SISTEMA)
 # =============================================================================
 es_admin = st.session_state.usuario_actual in ADMIN_USERS
 rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
 
-# 🔥 ENCABEZADO Y MENÚ SUPERIOR FIJO 🔥
 st.markdown(f"<h3 style='margin-top: -20px;'><span style='color:#007CA6;'>Atlas</span> <span style='color:#FF6600;'>Spence</span> <span style='font-size: 0.5em; color: #8c9eb5; font-weight: normal; margin-left: 10px;'>| 👤 Usuario: {st.session_state.usuario_actual.title()} ({rol})</span></h3>", unsafe_allow_html=True)
 
-tiene_pendientes = len(st.session_state.informes_pendientes) > 0
-if tiene_pendientes:
-    c1, c2, c3, c4, c5 = st.columns(5)
-else:
-    c1, c2, c3, c4 = st.columns(4)
-    c5 = None
+c1, c2, c3, c4, c5 = st.columns(5)
     
 with c1:
     if st.button("🏭 Catálogo Activos", use_container_width=True, type="primary" if st.session_state.vista_actual == "catalogo" else "secondary"):
@@ -701,23 +771,17 @@ with c3:
         st.session_state.vista_firmas = False
         st.session_state.equipo_seleccionado = None
         st.rerun()
-        
-if tiene_pendientes:
-    with c4:
-        if st.button(f"✍️ Firmas ({len(st.session_state.informes_pendientes)})", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"):
-            st.session_state.vista_firmas = True
-            st.session_state.vista_actual = "firmas"
-            st.session_state.equipo_seleccionado = None
-            st.rerun()
-    with c5:
-        if st.button("🚪 Salir", use_container_width=True):
-            st.session_state.logged_in = False
-            st.rerun()
-else:
-    with c4:
-        if st.button("🚪 Salir", use_container_width=True):
-            st.session_state.logged_in = False
-            st.rerun()
+with c4:
+    cantidad = len(st.session_state.informes_pendientes)
+    if st.button(f"✍️ Firmas ({cantidad})", use_container_width=True, type="primary" if st.session_state.vista_actual == "firmas" else "secondary"):
+        st.session_state.vista_firmas = True
+        st.session_state.vista_actual = "firmas"
+        st.session_state.equipo_seleccionado = None
+        st.rerun()
+with c5:
+    if st.button("🚪 Salir", use_container_width=True):
+        st.session_state.logged_in = False
+        st.rerun()
             
 st.markdown("<hr style='margin-top: 5px; border-color: #2b3543;'>", unsafe_allow_html=True)
 
@@ -1091,7 +1155,6 @@ elif st.session_state.vista_actual == "planificacion":
             
         with c_cal_tog:
             st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
-            # 🔥 NUEVO INTERRUPTOR PARA VER SOLO TAREAS COMPLETADAS 🔥
             solo_hechos = st.toggle("✅ Solo mostrar Completados", value=False)
             
         with c_cal_tit: st.markdown("### 📆 Calendario")
@@ -1106,7 +1169,6 @@ elif st.session_state.vista_actual == "planificacion":
         for _, row in df_cmms.iterrows():
             estado_tarea = str(row['Estado']).strip()
             
-            # Si el interruptor está activo, ignoramos las tareas que no sean "Hecho"
             if solo_hechos and "Hecho" not in estado_tarea:
                 continue
                 
@@ -1237,71 +1299,29 @@ elif st.session_state.vista_actual == "planificacion":
         else:
             st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-# --- 8.3 VISTA DE FIRMAS ---
+# --- 8.3 VISTA DE FIRMAS (FIRMAS PERSISTENTES EN BASE DE DATOS) ---
 elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
     st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas y Revisión</h1>", unsafe_allow_html=True)
-    st.markdown("---")
     
     if len(st.session_state.informes_pendientes) == 0: 
         st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
     else:
-        _, c_btn_firma, _ = st.columns([1, 2, 1])
-        with c_btn_firma:
-            if st.session_state.firma_tec_img is None:
-                texto_btn = "👁️ Ocultar Panel de Firma" if st.session_state.mostrar_firma_tec else "🖌️ Configurar Mi Firma Fija (Técnico)"
-                if st.button(texto_btn, type="primary", use_container_width=True):
-                    st.session_state.mostrar_firma_tec = not st.session_state.mostrar_firma_tec
-                    st.rerun()
-            else:
-                st.image(st.session_state.firma_tec_img, width=300)
-                st.markdown("<p style='color: #00e676; font-weight: bold; margin-top:-10px; text-align: center;'>✅ Firma lista para aplicar</p>", unsafe_allow_html=True)
-                if st.button("🔄 Cambiar Mi Firma", use_container_width=True):
-                    st.session_state.firma_tec_img = None
-                    st.session_state.mostrar_firma_tec = True
-                    st.rerun()
-
-        if st.session_state.mostrar_firma_tec and st.session_state.firma_tec_img is None:
-            st.markdown("<br>", unsafe_allow_html=True)
-            _, c_canvas_tec, _ = st.columns([1, 2.5, 1])
-            with c_canvas_tec:
-                with st.container(border=True):
-                    st.markdown("<h4 style='text-align: center; color: white;'>Dibuja tu firma técnica</h4>", unsafe_allow_html=True)
-                    canvas_tec = st_canvas(
-                        stroke_width=3, stroke_color="#000", background_color="#fff", 
-                        height=200, width=500, drawing_mode="freedraw", 
-                        key="canvas_tec_central", display_toolbar=True
-                    )
-                    if st.button("💾 Guardar Firma", use_container_width=True, type="primary"):
-                        if canvas_tec.json_data is not None and len(canvas_tec.json_data.get("objects", [])) > 0:
-                            st.session_state.firma_tec_json = canvas_tec.json_data
-                            st.session_state.firma_tec_img = canvas_tec.image_data
-                            st.session_state.mostrar_firma_tec = False
-                            st.success("✅ Firma guardada correctamente.")
-                            time.sleep(1)
-                            st.rerun()
-                        else: st.warning("⚠️ Por favor dibuja tu firma.")
-
-        st.markdown("<br><hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
-        
         # 🔥 SELECCIÓN GLOBAL DE APROBADOR 🔥
-        st.markdown("### 👤 Seleccionar Aprobador para los Informes")
         contactos_db = obtener_contactos()
-        opciones_aprobador = ["➕ Escribir nuevo aprobador..."] + contactos_db
-        
         if 'aprobador_global' not in st.session_state:
             cliente_por_defecto = st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes[0].get('cli') else (contactos_db[0] if contactos_db else "")
             st.session_state.aprobador_global = cliente_por_defecto
 
+        opciones_aprobador = ["➕ Escribir nuevo aprobador..."] + contactos_db
         idx_aprob = opciones_aprobador.index(st.session_state.aprobador_global) if st.session_state.aprobador_global in opciones_aprobador else 1 if len(contactos_db) > 0 else 0
 
-        c_apr1, c_apr2, c_apr3 = st.columns([4, 2, 1])
+        c_apr1, c_apr2, c_apr3 = st.columns([3, 2, 1])
         with c_apr1:
-            aprob_sel = st.selectbox("Este cliente aparecerá como el aprobador y firmante final:", opciones_aprobador, index=idx_aprob)
+            aprob_sel = st.selectbox("👤 Cliente Aprobador para los informes de esta sesión:", opciones_aprobador, index=idx_aprob)
         
         if aprob_sel == "➕ Escribir nuevo aprobador...":
             nuevo_aprob = st.text_input("Nombre del nuevo aprobador:", placeholder="Ej: Oriana Reyes", label_visibility="collapsed")
             with c_apr2:
-                st.markdown("<div style='margin-top: 0px;'></div>", unsafe_allow_html=True)
                 if st.button("💾 Guardar y Seleccionar", use_container_width=True):
                     if nuevo_aprob.strip():
                         agregar_contacto(nuevo_aprob)
@@ -1324,15 +1344,14 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                             
                             ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{inf['nombre_archivo_base']}")
                             doc_prev = DocxTemplate(inf['file_plantilla'])
-                            ctx_prev = inf['context'].copy()
-                            ctx_prev['firma_tecnico'] = ""
-                            ctx_prev['firma_cliente'] = ""
-                            doc_prev.render(ctx_prev)
+                            ctx = inf['context'].copy()
+                            ctx['firma_tecnico'] = ""
+                            ctx['firma_cliente'] = ""
+                            doc_prev.render(ctx)
                             doc_prev.save(ruta_prev_docx)
                             
                             ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
-                            if ruta_prev_pdf: 
-                                inf['ruta_prev_pdf'] = ruta_prev_pdf
+                            if ruta_prev_pdf: inf['ruta_prev_pdf'] = ruta_prev_pdf
                         guardar_pendientes(st.session_state.usuario_actual, st.session_state.informes_pendientes)
                     st.success("✅ ¡Borradores actualizados!")
                     st.rerun()
@@ -1343,6 +1362,52 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                     eliminar_contacto(aprob_sel)
                     st.session_state.aprobador_global = obtener_contactos()[0] if obtener_contactos() else ""
                     st.rerun()
+
+        st.markdown("<hr style='margin-top: 5px; border-color: #2b3543;'>", unsafe_allow_html=True)
+        st.markdown("### ⚙️ Configuración de Firmas Activas")
+        
+        # 🔥 PANELES DE FIRMAS GUARDADAS EN NUBE 🔥
+        firma_tec_bytes = obtener_firma_db(st.session_state.usuario_actual, "Tecnico")
+        firma_cli_bytes = obtener_firma_db(aprobador_final, "Cliente")
+        
+        c_tec, c_cli = st.columns(2)
+        
+        with c_tec:
+            with st.container(border=True):
+                st.markdown("#### 🧑‍🔧 Tu Firma (Técnico)")
+                if firma_tec_bytes:
+                    st.image(firma_tec_bytes, width=200)
+                    st.success("✅ Firma técnica guardada en la base de datos.")
+                    if st.button("🔄 Cambiar Mi Firma", key="btn_cambiar_tec", use_container_width=True):
+                        guardar_firma_db(st.session_state.usuario_actual, "Tecnico", b"")
+                        st.rerun()
+                else:
+                    st.warning("⚠️ No tienes firma configurada.")
+                    canvas_tec = st_canvas(stroke_width=3, stroke_color="#000", background_color="#fff", height=150, width=400, drawing_mode="freedraw", key="canvas_tec")
+                    if st.button("💾 Guardar Mi Firma", type="primary", use_container_width=True, key="btn_save_tec"):
+                        if canvas_tec.image_data is not None:
+                            img = Image.fromarray(canvas_tec.image_data.astype('uint8'), 'RGBA')
+                            io_img = io.BytesIO()
+                            img.save(io_img, format='PNG')
+                            guardar_firma_db(st.session_state.usuario_actual, "Tecnico", io_img.getvalue())
+                            st.rerun()
+                            
+        with c_cli:
+            with st.container(border=True):
+                st.markdown(f"#### 👤 Firma de {aprobador_final} (Cliente)")
+                if firma_cli_bytes:
+                    st.image(firma_cli_bytes, width=200)
+                    st.success("✅ Firma del cliente cargada desde la base de datos.")
+                    if st.button("🔄 Cambiar Firma de Cliente", key="btn_cambiar_cli", use_container_width=True):
+                        guardar_firma_db(aprobador_final, "Cliente", b"")
+                        st.rerun()
+                else:
+                    st.info("Sube una imagen o dibuja la firma abajo al aprobar.")
+                    firma_archivo = st.file_uploader("📁 Cargar imagen sin fondo (PNG)", type=['png', 'jpg', 'jpeg'], key="up_cli")
+                    if firma_archivo is not None:
+                        if st.button("💾 Guardar Archivo como Firma", type="primary", use_container_width=True, key="btn_save_cli"):
+                            guardar_firma_db(aprobador_final, "Cliente", firma_archivo.getvalue())
+                            st.rerun()
 
         st.markdown("<hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
 
@@ -1421,10 +1486,10 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                                         ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{inf['nombre_archivo_base']}")
                                         
                                         doc_prev = DocxTemplate(inf['file_plantilla'])
-                                        ctx_prev = inf['context'].copy()
-                                        ctx_prev['firma_tecnico'] = ""
-                                        ctx_prev['firma_cliente'] = ""
-                                        doc_prev.render(ctx_prev)
+                                        ctx = inf['context'].copy()
+                                        ctx['firma_tecnico'] = ""
+                                        ctx['firma_cliente'] = ""
+                                        doc_prev.render(ctx)
                                         doc_prev.save(ruta_prev_docx)
                                         
                                         ruta_prev_pdf = convertir_a_pdf(ruta_prev_docx)
@@ -1444,21 +1509,22 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                             if len(st.session_state.informes_pendientes) == 0: volver_catalogo()
                             st.rerun()
                 
-                st.markdown("<hr style='border-color: #2b3543;'>", unsafe_allow_html=True)
-                
-                st.markdown(f"<h2 style='text-align: center; color: white; margin-bottom: 5px;'>Firma de Aprobación Final</h2>", unsafe_allow_html=True)
-                st.markdown(f"<h4 style='text-align: center; color: #aeb9cc; margin-top: 0px; margin-bottom: 25px;'>Aprobador: <span style='color: white;'>{aprobador_final}</span></h4>", unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
                 
                 _, col_firma_cli, _ = st.columns([1, 2.5, 1])
+                canvas_cli = None
                 with col_firma_cli:
-                    with st.container(border=True):
-                        st.markdown("<p style='text-align: center; font-size: 0.9em; color: #aeb9cc; margin-bottom: 5px;'>Coloque su firma en el recuadro blanco</p>", unsafe_allow_html=True)
-                        cli_key = f"cli_{macro_area}"
-                        canvas_cli = st_canvas(
-                            stroke_width=3, stroke_color="#000", background_color="#fff", 
-                            height=250, width=550, drawing_mode="freedraw", 
-                            key=cli_key, display_toolbar=True
-                        )
+                    if not firma_cli_bytes:
+                        with st.container(border=True):
+                            st.markdown("<p style='text-align: center; font-size: 0.9em; color: #aeb9cc; margin-bottom: 5px;'>Dibuja tu firma en el recuadro blanco</p>", unsafe_allow_html=True)
+                            cli_key = f"cli_{macro_area}"
+                            canvas_cli = st_canvas(
+                                stroke_width=3, stroke_color="#000", background_color="#fff", 
+                                height=250, width=550, drawing_mode="freedraw", 
+                                key=cli_key, display_toolbar=True
+                            )
+                    else:
+                        st.success(f"✅ La firma de {aprobador_final} está configurada y lista para usarse.")
                         
                 st.markdown("<br>", unsafe_allow_html=True)
                 
@@ -1466,31 +1532,30 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                 with col_btn_final:
                     if st.button(f"🚀 Aprobar, Firmar y Subir Informes", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
                         
-                        tec_ok = st.session_state.firma_tec_img is not None 
-                        cli_ok = canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
+                        tec_ok = firma_tec_bytes is not None 
+                        cli_dibujada_ok = canvas_cli is not None and canvas_cli.image_data is not None and canvas_cli.json_data is not None and len(canvas_cli.json_data.get("objects", [])) > 0
+                        cli_ok = (firma_cli_bytes is not None) or cli_dibujada_ok
                         
-                        if not tec_ok: st.warning("⚠️ Debes configurar tu Firma de Técnico en el botón azul de arriba primero.")
+                        if not tec_ok: st.warning("⚠️ Debes configurar tu Firma de Técnico en el panel de arriba primero.")
                         elif not cli_ok: st.warning(f"⚠️ Falta la Firma de Aprobación de {aprobador_final}.")
                         else:
-                            def procesar_imagen_firma(img_data): 
-                                img = Image.fromarray(img_data.astype('uint8'), 'RGBA')
-                                img_io = io.BytesIO()
-                                img.save(img_io, format='PNG')
-                                img_io.seek(0)
-                                return img_io
-                            
                             informes_finales = []
                             with st.spinner(f"Generando documentos sellados para {macro_area}..."):
-                                io_cli = procesar_imagen_firma(canvas_cli.image_data)
-                                io_tec = procesar_imagen_firma(st.session_state.firma_tec_img)
+                                
+                                if not firma_cli_bytes and cli_dibujada_ok:
+                                    img_c = Image.fromarray(canvas_cli.image_data.astype('uint8'), 'RGBA')
+                                    io_c = io.BytesIO()
+                                    img_c.save(io_c, format='PNG')
+                                    firma_cli_bytes = io_c.getvalue()
+                                    guardar_firma_db(aprobador_final, "Cliente", firma_cli_bytes)
                                 
                                 try:
                                     for inf in informes_area:
                                         inf['context']['cliente_contacto'] = aprobador_final
                                         inf['cli'] = aprobador_final
                                         
-                                        io_cli_local = io.BytesIO(io_cli.getvalue())
-                                        io_tec_local = io.BytesIO(io_tec.getvalue())
+                                        io_cli_local = io.BytesIO(firma_cli_bytes)
+                                        io_tec_local = io.BytesIO(firma_tec_bytes)
                                         
                                         doc = DocxTemplate(inf['file_plantilla'])
                                         context = inf['context']
