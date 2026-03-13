@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 🔥 CONFIGURACIÓN DE PÁGINA: Oculta la barra lateral
+# 🔥 CONFIGURACIÓN DE PÁGINA: Oculta la barra lateral para siempre
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="collapsed")
 
 from docxtpl import DocxTemplate, InlineImage
@@ -23,65 +23,43 @@ from google.oauth2.service_account import Credentials
 from streamlit_pdf_viewer import pdf_viewer
 
 # =============================================================================
-# 0.1 CONFIGURACIÓN DE NUBE Y CORREO
+# 0.1 SISTEMA DE SESIONES INMORTALES (Sobrevive si Render se duerme)
+# =============================================================================
+def check_auto_login():
+    params = st.query_params
+    if "session" in params:
+        try:
+            data = base64.b64decode(params["session"]).decode('utf-8')
+            user, timestamp = data.split("||")
+            if time.time() - float(timestamp) < 3600: # 3600 segs = 1 HORA DE SESIÓN
+                new_token = base64.b64encode(f"{user}||{time.time()}".encode('utf-8')).decode('utf-8')
+                st.query_params.session = new_token
+                return True, user
+            else:
+                st.query_params.clear()
+        except: 
+            st.query_params.clear()
+    return False, ""
+
+def do_login(username):
+    token = base64.b64encode(f"{username}||{time.time()}".encode('utf-8')).decode('utf-8')
+    st.query_params.session = token
+    st.session_state.logged_in = True
+    st.session_state.usuario_actual = username
+
+def do_logout():
+    st.query_params.clear()
+    st.session_state.logged_in = False
+    st.session_state.usuario_actual = ""
+
+# =============================================================================
+# 0.2 CONFIGURACIÓN DE NUBE Y CORREO
 # =============================================================================
 RUTA_ONEDRIVE = "Reportes_Temporales" 
 RUTA_APROBADOS = "Reportes_Aprobados"
 MI_CORREO_CORPORATIVO = "ignacio.a.morales@atlascopco.com"
 CORREO_REMITENTE = "informeatlas.spence@gmail.com"
 PASSWORD_APLICACION = "jbumdljbdpyomnna"
-
-# 🔥 NUEVO: SISTEMA DE SESIONES POR 1 HORA 🔥
-SESSION_FILE = os.path.join(RUTA_ONEDRIVE, "active_sessions.json")
-
-def load_sessions():
-    if os.path.exists(SESSION_FILE):
-        try:
-            with open(SESSION_FILE, "r") as f: return json.load(f)
-        except: return {}
-    return {}
-
-def save_sessions(sessions):
-    os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
-    try:
-        with open(SESSION_FILE, "w") as f: json.dump(sessions, f)
-    except: pass
-
-def check_auto_login():
-    params = st.query_params
-    if "token" in params:
-        token = params["token"]
-        sessions = load_sessions()
-        if token in sessions:
-            datos_sesion = sessions[token]
-            if time.time() - datos_sesion["time"] < 3600: # 3600 segundos = 1 HORA
-                sessions[token]["time"] = time.time() # Renueva la hora
-                save_sessions(sessions)
-                return True, datos_sesion["user"]
-            else:
-                del sessions[token]
-                save_sessions(sessions)
-    return False, ""
-
-def do_login(username):
-    token = str(uuid.uuid4())
-    sessions = load_sessions()
-    sessions[token] = {"user": username, "time": time.time()}
-    save_sessions(sessions)
-    st.query_params.token = token
-    st.session_state.logged_in = True
-    st.session_state.usuario_actual = username
-
-def do_logout():
-    params = st.query_params
-    if "token" in params:
-        token = params["token"]
-        sessions = load_sessions()
-        if token in sessions:
-            del sessions[token]
-            save_sessions(sessions)
-    st.query_params.clear()
-    st.session_state.logged_in = False
 
 def enviar_carrito_por_correo(destinatario, lista_informes):
     msg = MIMEMultipart()
@@ -113,7 +91,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.2 ESTILOS PREMIUM Y OCULTAMIENTO DE BARRA LATERAL
+# 0.3 ESTILOS PREMIUM Y OCULTAMIENTO DE BARRA LATERAL
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -157,7 +135,7 @@ def aplicar_estilos_premium():
 aplicar_estilos_premium()
 
 # =============================================================================
-# 1. DATOS MAESTROS Y ROLES
+# 1. DATOS MAESTROS Y ROLES (RBAC)
 # =============================================================================
 USUARIOS = {"ignacio morales": "spence2026", "emian": "spence2026", "ignacio veas": "spence2026", "yerko villarroel": "spence2026", "admin": "admin123"}
 ADMIN_USERS = ["ignacio morales", "admin"]
@@ -473,6 +451,7 @@ def format_fecha(d):
     meses_nombres = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
     return f"{d.day} de {meses_nombres[d.month]} de {d.year}" if d.year != 1970 else "Fecha Desconocida"
 
+# 🔥 CARGA DE BANDEJA BLINDADA EN GOOGLE SHEETS 🔥
 def cargar_pendientes(usuario):
     try:
         sheet = get_sheet("bandeja_pendientes")
@@ -483,22 +462,19 @@ def cargar_pendientes(usuario):
                     pendientes = json.loads(row[1])
                     os.makedirs(RUTA_ONEDRIVE, exist_ok=True)
                     for inf in pendientes:
-                        if 'tupla_db' in inf:
-                            inf['tupla_db'] = tuple(inf['tupla_db'])
+                        if 'tupla_db' in inf: inf['tupla_db'] = tuple(inf['tupla_db'])
                         ruta_prev_docx = os.path.join(RUTA_ONEDRIVE, f"PREVIEW_{inf['nombre_archivo_base']}")
                         if not os.path.exists(ruta_prev_docx):
                             try:
                                 doc_prev = DocxTemplate(inf['file_plantilla'])
                                 ctx = inf['context'].copy()
-                                ctx['firma_tecnico'] = ""
-                                ctx['firma_cliente'] = ""
-                                doc_prev.render(ctx)
-                                doc_prev.save(ruta_prev_docx)
+                                ctx['firma_tecnico'] = ""; ctx['firma_cliente'] = ""
+                                doc_prev.render(ctx); doc_prev.save(ruta_prev_docx)
                                 ruta_pdf = convertir_a_pdf(ruta_prev_docx)
                                 if ruta_pdf: inf['ruta_prev_pdf'] = ruta_pdf
-                            except Exception as e: pass
+                            except: pass
                     return pendientes
-    except Exception as e: pass
+    except: pass
     
     archivo = os.path.join(RUTA_ONEDRIVE, f"bandeja_{usuario.replace(' ', '_')}.json")
     if os.path.exists(archivo):
@@ -524,10 +500,8 @@ def guardar_pendientes(usuario, pendientes):
                 if len(fila) > 0 and fila[0] == usuario:
                     fila_encontrada = i + 1
                     break
-            if fila_encontrada != -1:
-                sheet.update_cell(fila_encontrada, 2, datos_json)
-            else:
-                sheet.append_row([usuario, datos_json])
+            if fila_encontrada != -1: sheet.update_cell(fila_encontrada, 2, datos_json)
+            else: sheet.append_row([usuario, datos_json])
     except: pass
 
 def wk_to_date(wk_string):
@@ -619,7 +593,8 @@ DATOS_PLAN_BASE = [
     {"TAG": "35-GC-006", "S_Programada": "WK08_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
 ]
 
-def generar_plan_futuro():
+# 🔥 SOPORTE PARA PLANIFICACIÓN DE AÑOS FUTUROS (2027+) 🔥
+def generar_plan_futuro(año):
     PATRONES = {
         "P4_I_P1": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP"],
         "I_P3_I_P1": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4"],
@@ -642,7 +617,7 @@ def generar_plan_futuro():
         "50-GC-004": "I_P2_I_I", "55-GC-015": "P1_P1_P2", "65-CD-011": "P2_P1_P1", "65-CD-012": "P1_P2_P1", 
         "65-GC-009": "I_P4_I_I", "65-GC-011": "P4_I_P1", "70-GC-013": "P4_I_P1", "70-GC-014": "P4_I_P1", "Taller": "P4_I_P1"
     }
-    WKS = ["WK15_2026", "WK19_2026", "WK24_2026", "WK28_2026", "WK32_2026", "WK37_2026", "WK41_2026", "WK45_2026", "WK50_2026", "WK02_2027"]
+    WKS = [f"WK15_{año}", f"WK19_{año}", f"WK24_{año}", f"WK28_{año}", f"WK32_{año}", f"WK37_{año}", f"WK41_{año}", f"WK45_{año}", f"WK50_{año}", f"WK02_{año+1}"]
     
     datos = []
     for tag, p in MAP.items():
@@ -730,7 +705,7 @@ def volver_catalogo():
 
 # --- FIN DE LA PARTE 1 ---
 # =============================================================================
-# 6. INICIALIZACIÓN DE ESTADOS
+# 6. INICIALIZACIÓN DE ESTADOS Y LOGIN 
 # =============================================================================
 default_states = {
     'logged_in': False, 'usuario_actual': "", 'equipo_seleccionado': None, 'vista_actual': "catalogo",
@@ -953,9 +928,9 @@ elif st.session_state.vista_actual == "planificacion":
     df_kpi_estado_limpio = df_kpi["Estado"].astype(str).str.strip().str.upper()
     
     total_tareas = len(df_kpi)
-    hechas = len(df_kpi_estado_limpio[df_kpi_estado_limpio.str.contains("HECHO")])
-    fs = len(df_kpi_estado_limpio[df_kpi_estado_limpio.str.contains("F/S")])
-    pendientes = len(df_kpi_estado_limpio[df_kpi_estado_limpio.str.contains("PENDIENTE")])
+    hechas = len(df_kpi_estado_limpio[df_kpi_estado_limpio.str.contains("HECHO", na=False)])
+    fs = len(df_kpi_estado_limpio[df_kpi_estado_limpio.str.contains("F/S", na=False)])
+    pendientes = len(df_kpi_estado_limpio[df_kpi_estado_limpio.str.contains("PENDIENTE", na=False)])
     
     total_evaluable = hechas + pendientes
     cumplimiento = int((hechas / total_evaluable * 100)) if total_evaluable > 0 else (100 if hechas > 0 else 0)
@@ -1179,19 +1154,22 @@ elif st.session_state.vista_actual == "planificacion":
                         time.sleep(1.5)
                         st.rerun()
         
+        # 🔥 GENERADOR DE PLANIFICACIÓN ANUAL (AHORA DINÁMICO POR AÑO) 🔥
         with c_extra2:
             if es_admin:
                 with st.expander("👑 Control de Base de Datos Anual (Admin)", expanded=False):
-                    st.info("Inyectar las tareas anuales (Abr 2026 a Ene 2027) desde tu Excel original. **No borrará tus datos actuales de Marzo.**")
-                    if st.button("🚀 Inyectar Programación Anual", use_container_width=True):
+                    st.info("Generar y añadir planificación masiva para un año específico.")
+                    año_generar = st.number_input("📅 Selecciona el Año a Generar:", min_value=2025, max_value=2035, value=2026, step=1)
+                    
+                    if st.button(f"🚀 Inyectar Programación {año_generar}", use_container_width=True):
                         df_base_actual = cargar_cmms()
-                        df_nuevos = generar_plan_futuro()
+                        df_nuevos = generar_plan_futuro(año_generar)
                         df_combinado = pd.concat([df_base_actual, df_nuevos], ignore_index=True)
                         df_combinado = df_combinado.drop_duplicates(subset=['TAG', 'S_Programada'], keep='first')
                         for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
                             if col in df_combinado.columns: df_combinado = df_combinado.drop(columns=[col])
                         guardar_cmms(df_combinado)
-                        st.success("✅ Programación anual inyectada correctamente.")
+                        st.success(f"✅ Programación para {año_generar} inyectada correctamente.")
                         time.sleep(1.5)
                         st.rerun()
                         
@@ -1217,7 +1195,6 @@ elif st.session_state.vista_actual == "planificacion":
             
         with c_cal_tog:
             st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
-            # 🔥 NUEVO INTERRUPTOR PARA VER SOLO TAREAS COMPLETADAS 🔥
             solo_hechos = st.toggle("✅ Solo mostrar Completados", value=False)
             
         with c_cal_tit: st.markdown("### 📆 Calendario")
@@ -1362,18 +1339,18 @@ elif st.session_state.vista_actual == "planificacion":
         else:
             st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-# --- 8.3 VISTA DE FIRMAS (FIRMAS PERSISTENTES EN BASE DE DATOS Y EN LA PARTE SUPERIOR) ---
+# --- 8.3 VISTA DE FIRMAS (FIRMAS PERSISTENTES EN BD) ---
 elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
     st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas y Revisión</h1>", unsafe_allow_html=True)
+    st.markdown("---")
     
     if len(st.session_state.informes_pendientes) == 0: 
         st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
     else:
-        st.markdown("---")
-        
-        # 🔥 1. SELECCIÓN DE APROBADOR 🔥
+        # 🔥 1. SELECCIÓN GLOBAL DE APROBADOR 🔥
         st.markdown("### 👤 1. Seleccionar Aprobador (Cliente)")
         contactos_db = obtener_contactos()
+        
         if 'aprobador_global' not in st.session_state:
             cliente_por_defecto = st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes[0].get('cli') else (contactos_db[0] if contactos_db else "")
             st.session_state.aprobador_global = cliente_por_defecto
@@ -1762,7 +1739,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if t1_sel == "➕ Escribir nuevo...":
                 nuevo_t1 = st.text_input("Nombre T1:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_t1")
-                if st.button("💾 Guardar y Seleccionar", key="save_t1", use_container_width=True):
+                if st.button("💾 Guardar", key="save_t1", use_container_width=True):
                     if nuevo_t1.strip(): 
                         agregar_tecnico(nuevo_t1)
                         st.session_state.input_tec1 = nuevo_t1.strip().title()
@@ -1786,7 +1763,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if t2_sel == "➕ Escribir nuevo...":
                 nuevo_t2 = st.text_input("Nombre T2:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_t2")
-                if st.button("💾 Guardar y Seleccionar", key="save_t2", use_container_width=True):
+                if st.button("💾 Guardar", key="save_t2", use_container_width=True):
                     if nuevo_t2.strip(): 
                         agregar_tecnico(nuevo_t2)
                         st.session_state.input_tec2 = nuevo_t2.strip().title()
@@ -1814,7 +1791,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if cli_sel == "➕ Escribir nuevo...":
                 nuevo_c = st.text_input("Nombre:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_c1")
-                if st.button("💾 Guardar y Seleccionar", use_container_width=True, key="save_c1"):
+                if st.button("💾 Guardar", use_container_width=True, key="save_c1"):
                     if nuevo_c.strip(): 
                         agregar_contacto(nuevo_c)
                         st.session_state.input_cliente = nuevo_c.strip().title()
