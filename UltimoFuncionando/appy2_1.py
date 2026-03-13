@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 🔥 CONFIGURACIÓN DE PÁGINA: Oculta la barra lateral para siempre
+# 🔥 CONFIGURACIÓN DE PÁGINA: Barra lateral oculta permanentemente
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="collapsed")
 
 from docxtpl import DocxTemplate, InlineImage
@@ -23,27 +23,27 @@ from google.oauth2.service_account import Credentials
 from streamlit_pdf_viewer import pdf_viewer
 
 # =============================================================================
-# 0.1 SISTEMA DE SESIONES INMORTALES (Sobrevive si Render se duerme)
+# 0.1 SISTEMA DE SESIONES INMORTALES (1 HORA - SOBREVIVE AL SUEÑO DE RENDER)
 # =============================================================================
 def check_auto_login():
-    params = st.query_params
-    if "session" in params:
+    if "session" in st.query_params:
         try:
-            data = base64.b64decode(params["session"]).decode('utf-8')
-            user, timestamp = data.split("||")
-            if time.time() - float(timestamp) < 3600: # 3600 segs = 1 HORA DE SESIÓN
-                new_token = base64.b64encode(f"{user}||{time.time()}".encode('utf-8')).decode('utf-8')
-                st.query_params.session = new_token
-                return True, user
+            token = st.query_params["session"]
+            data_dec = base64.b64decode(token).decode('utf-8')
+            user_saved, timestamp = data_dec.split("||")
+            if time.time() - float(timestamp) < 3600: # 3600 segundos = 1 Hora
+                new_token = base64.b64encode(f"{user_saved}||{time.time()}".encode('utf-8')).decode('utf-8')
+                st.query_params["session"] = new_token
+                return True, user_saved
             else:
                 st.query_params.clear()
-        except: 
+        except:
             st.query_params.clear()
     return False, ""
 
 def do_login(username):
     token = base64.b64encode(f"{username}||{time.time()}".encode('utf-8')).decode('utf-8')
-    st.query_params.session = token
+    st.query_params["session"] = token
     st.session_state.logged_in = True
     st.session_state.usuario_actual = username
 
@@ -91,7 +91,7 @@ def enviar_carrito_por_correo(destinatario, lista_informes):
     except Exception as e: return False, f"❌ Error al enviar el correo: {e}"
 
 # =============================================================================
-# 0.3 ESTILOS PREMIUM Y OCULTAMIENTO DE BARRA LATERAL
+# 0.3 ESTILOS PREMIUM Y OCULTAMIENTO TOTAL DE BARRA LATERAL
 # =============================================================================
 def aplicar_estilos_premium():
     st.markdown("""
@@ -593,8 +593,8 @@ DATOS_PLAN_BASE = [
     {"TAG": "35-GC-006", "S_Programada": "WK08_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
 ]
 
-# 🔥 SOPORTE PARA PLANIFICACIÓN DE AÑOS FUTUROS (2027+) 🔥
-def generar_plan_futuro(año):
+# 🔥 SOPORTE PARA PLANIFICACIÓN MASIVA DE 3 AÑOS 🔥
+def generar_plan_3_anios():
     PATRONES = {
         "P4_I_P1": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP"],
         "I_P3_I_P1": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4"],
@@ -617,12 +617,17 @@ def generar_plan_futuro(año):
         "50-GC-004": "I_P2_I_I", "55-GC-015": "P1_P1_P2", "65-CD-011": "P2_P1_P1", "65-CD-012": "P1_P2_P1", 
         "65-GC-009": "I_P4_I_I", "65-GC-011": "P4_I_P1", "70-GC-013": "P4_I_P1", "70-GC-014": "P4_I_P1", "Taller": "P4_I_P1"
     }
-    WKS = [f"WK15_{año}", f"WK19_{año}", f"WK24_{año}", f"WK28_{año}", f"WK32_{año}", f"WK37_{año}", f"WK41_{año}", f"WK45_{año}", f"WK50_{año}", f"WK02_{año+1}"]
     
     datos = []
-    for tag, p in MAP.items():
-        for wk, tipo in zip(WKS, PATRONES[p]):
-            datos.append({"TAG": tag, "S_Programada": wk, "Tipo": tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""})
+    años = [2026, 2027, 2028]
+    for año in años:
+        WKS = [f"WK03_{año}", f"WK08_{año}", f"WK13_{año}", f"WK18_{año}", f"WK23_{año}", f"WK28_{año}", f"WK33_{año}", f"WK38_{año}", f"WK43_{año}", f"WK48_{año}"]
+        for tag, p in MAP.items():
+            for wk, tipo in zip(WKS, PATRONES[p]):
+                # 🔥 FILTRO ESCUDO: Protege Marzo 2026 para no sobrescribir nada
+                if wk in ["WK09_2026", "WK10_2026", "WK11_2026", "WK12_2026", "WK13_2026"]:
+                    continue
+                datos.append({"TAG": tag, "S_Programada": wk, "Tipo": tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""})
     return pd.DataFrame(datos)
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -664,7 +669,7 @@ def cargar_cmms():
                 sheet.append_rows([headers] + df_base.values.tolist())
                 st.cache_data.clear()
                 return df_base
-    except Exception as e: print(f"Error cargando Planificación: {e}")
+    except Exception as e: pass
     return pd.DataFrame(DATOS_PLAN_BASE, columns=headers)
 
 def guardar_cmms(df):
@@ -731,7 +736,7 @@ if 'informes_pendientes' not in st.session_state:
     else: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 7. INTERFAZ: LOGIN (Corta la ejecución de abajo si no hay login para evitar SyntaxError)
+# 7. INTERFAZ: LOGIN (Corta la ejecución de abajo si no hay login)
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
@@ -780,7 +785,7 @@ if not st.session_state.logged_in:
     st.stop()  # 🔥 MAGIA: Esto previene que se lea el resto del código sin indentar "else:" 🔥
 
 # =============================================================================
-# 8. INTERFAZ PRINCIPAL (NAVEGACIÓN SUPERIOR FIJA Y SIN BARRA LATERAL)
+# 8. INTERFAZ PRINCIPAL (NAVEGACIÓN SUPERIOR FIJA SIN BARRA LATERAL)
 # =============================================================================
 es_admin = st.session_state.usuario_actual in ADMIN_USERS
 rol = "👑 Administrador" if es_admin else "🧑‍🔧 Técnico"
@@ -1154,22 +1159,24 @@ elif st.session_state.vista_actual == "planificacion":
                         time.sleep(1.5)
                         st.rerun()
         
-        # 🔥 GENERADOR DE PLANIFICACIÓN ANUAL (AHORA DINÁMICO POR AÑO) 🔥
+        # 🔥 GENERADOR DE PLANIFICACIÓN ANUAL (AHORA DINÁMICO A 3 AÑOS) 🔥
         with c_extra2:
             if es_admin:
                 with st.expander("👑 Control de Base de Datos Anual (Admin)", expanded=False):
-                    st.info("Generar y añadir planificación masiva para un año específico.")
-                    año_generar = st.number_input("📅 Selecciona el Año a Generar:", min_value=2025, max_value=2035, value=2026, step=1)
+                    st.info("Inyectar las tareas a 3 AÑOS (Respeta y NO borra tus ediciones manuales en Marzo).")
                     
-                    if st.button(f"🚀 Inyectar Programación {año_generar}", use_container_width=True):
+                    if st.button("🚀 Inyectar Planificación (3 Años)", use_container_width=True):
                         df_base_actual = cargar_cmms()
-                        df_nuevos = generar_plan_futuro(año_generar)
+                        df_nuevos = generar_plan_3_anios()
                         df_combinado = pd.concat([df_base_actual, df_nuevos], ignore_index=True)
+                        
+                        # Al usar keep='first', los que ya existían en tu base de datos (ej: marzo) NO se borran.
                         df_combinado = df_combinado.drop_duplicates(subset=['TAG', 'S_Programada'], keep='first')
+                        
                         for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
                             if col in df_combinado.columns: df_combinado = df_combinado.drop(columns=[col])
                         guardar_cmms(df_combinado)
-                        st.success(f"✅ Programación para {año_generar} inyectada correctamente.")
+                        st.success("✅ Programación masiva inyectada correctamente.")
                         time.sleep(1.5)
                         st.rerun()
                         
@@ -1339,18 +1346,15 @@ elif st.session_state.vista_actual == "planificacion":
         else:
             st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-# --- 8.3 VISTA DE FIRMAS (FIRMAS PERSISTENTES EN BD) ---
+# --- 8.3 VISTA DE FIRMAS (PANEL SUPERIOR CON TÉCNICO Y CLIENTE LADO A LADO) ---
 elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
     st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas y Revisión</h1>", unsafe_allow_html=True)
-    st.markdown("---")
     
     if len(st.session_state.informes_pendientes) == 0: 
         st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
     else:
-        # 🔥 1. SELECCIÓN GLOBAL DE APROBADOR 🔥
-        st.markdown("### 👤 1. Seleccionar Aprobador (Cliente)")
+        # 🔥 SELECCIÓN GLOBAL DE APROBADOR 🔥
         contactos_db = obtener_contactos()
-        
         if 'aprobador_global' not in st.session_state:
             cliente_por_defecto = st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes[0].get('cli') else (contactos_db[0] if contactos_db else "")
             st.session_state.aprobador_global = cliente_por_defecto
@@ -1360,7 +1364,7 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
 
         c_apr1, c_apr2, c_apr3 = st.columns([3, 2, 1])
         with c_apr1:
-            aprob_sel = st.selectbox("Este cliente aparecerá como firmante en todos los informes:", opciones_aprobador, index=idx_aprob)
+            aprob_sel = st.selectbox("👤 Cliente Aprobador para los informes de esta sesión:", opciones_aprobador, index=idx_aprob)
         
         if aprob_sel == "➕ Escribir nuevo aprobador...":
             nuevo_aprob = st.text_input("Nombre del nuevo aprobador:", placeholder="Ej: Oriana Reyes", label_visibility="collapsed")
@@ -1406,26 +1410,26 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                     st.session_state.aprobador_global = obtener_contactos()[0] if obtener_contactos() else ""
                     st.rerun()
 
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # 🔥 2. CONFIGURACIÓN DE FIRMAS (TÉCNICO Y CLIENTE LADO A LADO) 🔥
-        st.markdown("### ⚙️ 2. Configurar Firmas (Se guardan en la nube)")
+        st.markdown("<hr style='margin-top: 5px; border-color: #2b3543;'>", unsafe_allow_html=True)
+        st.markdown("### ⚙️ Configuración de Firmas Activas")
+        
+        # 🔥 PANELES DE FIRMAS LADO A LADO Y GUARDADAS EN LA NUBE 🔥
         firma_tec_bytes = obtener_firma_db(st.session_state.usuario_actual, "Tecnico")
         firma_cli_bytes = obtener_firma_db(aprobador_final, "Cliente")
-
+        
         c_tec, c_cli = st.columns(2)
-
+        
         with c_tec:
             with st.container(border=True):
                 st.markdown("<h4 style='text-align:center;'>🧑‍🔧 Tu Firma (Técnico)</h4>", unsafe_allow_html=True)
                 if firma_tec_bytes:
-                    st.image(firma_tec_bytes, use_column_width=True)
-                    st.success("✅ Firma técnica guardada en base de datos.")
+                    st.image(firma_tec_bytes, width=200)
+                    st.success("✅ Firma técnica guardada y lista.")
                     if st.button("🔄 Cambiar Mi Firma", key="btn_cambiar_tec", use_container_width=True):
                         guardar_firma_db(st.session_state.usuario_actual, "Tecnico", b"")
                         st.rerun()
                 else:
-                    st.warning("⚠️ Dibuja tu firma en el recuadro blanco:")
+                    st.warning("⚠️ No tienes firma configurada.")
                     canvas_tec = st_canvas(stroke_width=3, stroke_color="#000", background_color="#fff", height=150, width=400, drawing_mode="freedraw", key="canvas_tec")
                     if st.button("💾 Guardar Mi Firma", type="primary", use_container_width=True, key="btn_save_tec"):
                         if canvas_tec.image_data is not None:
@@ -1434,19 +1438,19 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                             img.save(io_img, format='PNG')
                             guardar_firma_db(st.session_state.usuario_actual, "Tecnico", io_img.getvalue())
                             st.rerun()
-
+                            
         with c_cli:
             with st.container(border=True):
-                st.markdown(f"<h4 style='text-align:center;'>👤 Firma de {aprobador_final}</h4>", unsafe_allow_html=True)
+                st.markdown(f"<h4 style='text-align:center;'>👤 Firma de {aprobador_final} (Cliente)</h4>", unsafe_allow_html=True)
                 if firma_cli_bytes:
-                    st.image(firma_cli_bytes, use_column_width=True)
-                    st.success("✅ Firma del cliente cargada desde base de datos.")
+                    st.image(firma_cli_bytes, width=200)
+                    st.success("✅ Firma del cliente cargada y lista.")
                     if st.button("🔄 Cambiar Firma de Cliente", key="btn_cambiar_cli", use_container_width=True):
                         guardar_firma_db(aprobador_final, "Cliente", b"")
                         st.rerun()
                 else:
-                    st.info("Pide al cliente que firme aquí, o sube una imagen:")
-                    tab_draw, tab_up = st.tabs(["🖌️ Dibujar", "📁 Subir Archivo (PNG)"])
+                    st.info("Dibuja o sube una imagen de la firma:")
+                    tab_draw, tab_up = st.tabs(["🖌️ Dibujar", "📁 Cargar Archivo (PNG)"])
                     with tab_draw:
                         canvas_cli_top = st_canvas(stroke_width=3, stroke_color="#000", background_color="#fff", height=150, width=400, drawing_mode="freedraw", key="canvas_cli_top")
                         if st.button("💾 Guardar Dibujo", type="primary", use_container_width=True, key="save_cli_draw"):
@@ -1457,7 +1461,7 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                                 guardar_firma_db(aprobador_final, "Cliente", io_img.getvalue())
                                 st.rerun()
                     with tab_up:
-                        firma_archivo = st.file_uploader("Subir imagen sin fondo (PNG)", type=['png', 'jpg', 'jpeg'], key="up_cli")
+                        firma_archivo = st.file_uploader("Sube una imagen sin fondo (PNG)", type=['png', 'jpg', 'jpeg'], key="up_cli")
                         if firma_archivo is not None:
                             if st.button("💾 Guardar Archivo como Firma", type="primary", use_container_width=True, key="save_cli_file"):
                                 guardar_firma_db(aprobador_final, "Cliente", firma_archivo.getvalue())
@@ -1739,7 +1743,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if t1_sel == "➕ Escribir nuevo...":
                 nuevo_t1 = st.text_input("Nombre T1:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_t1")
-                if st.button("💾 Guardar", key="save_t1", use_container_width=True):
+                if st.button("💾 Guardar y Seleccionar", key="save_t1", use_container_width=True):
                     if nuevo_t1.strip(): 
                         agregar_tecnico(nuevo_t1)
                         st.session_state.input_tec1 = nuevo_t1.strip().title()
@@ -1763,7 +1767,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if t2_sel == "➕ Escribir nuevo...":
                 nuevo_t2 = st.text_input("Nombre T2:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_t2")
-                if st.button("💾 Guardar", key="save_t2", use_container_width=True):
+                if st.button("💾 Guardar y Seleccionar", key="save_t2", use_container_width=True):
                     if nuevo_t2.strip(): 
                         agregar_tecnico(nuevo_t2)
                         st.session_state.input_tec2 = nuevo_t2.strip().title()
@@ -1791,7 +1795,7 @@ elif st.session_state.equipo_seleccionado is not None:
                         st.rerun()
             if cli_sel == "➕ Escribir nuevo...":
                 nuevo_c = st.text_input("Nombre:", placeholder="Ej: Juan Pérez", label_visibility="collapsed", key="n_c1")
-                if st.button("💾 Guardar", use_container_width=True, key="save_c1"):
+                if st.button("💾 Guardar y Seleccionar", use_container_width=True, key="save_c1"):
                     if nuevo_c.strip(): 
                         agregar_contacto(nuevo_c)
                         st.session_state.input_cliente = nuevo_c.strip().title()
