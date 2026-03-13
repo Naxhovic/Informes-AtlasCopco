@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 🔥 CONFIGURACIÓN DE PÁGINA: Barra lateral oculta para siempre
+# 🔥 CONFIGURACIÓN DE PÁGINA: Barra lateral oculta permanentemente
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="collapsed")
 
 from docxtpl import DocxTemplate, InlineImage
@@ -165,7 +165,7 @@ inventario_equipos = {
 }
 
 # =============================================================================
-# 2. CONEXIÓN A GOOGLE SHEETS
+# 2. CONEXIÓN A GOOGLE SHEETS Y NUEVA GESTIÓN DE FIRMAS EN LA NUBE
 # =============================================================================
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
@@ -183,7 +183,6 @@ def get_sheet(sheet_name):
         except gspread.exceptions.WorksheetNotFound: return doc.add_worksheet(title=sheet_name, rows="1000", cols="20")
     except Exception as e: return None
 
-# 🔥 FUNCIONES PARA GUARDAR FIRMAS EN LA NUBE 🔥
 def guardar_firma_db(nombre, rol, img_bytes):
     try:
         sheet = get_sheet("firmas_guardadas")
@@ -216,7 +215,7 @@ def obtener_firma_db(nombre, rol):
     return None
 
 # =============================================================================
-# 3. FUNCIONES DE BASE DE DATOS
+# 3. FUNCIONES DE BASE DE DATOS REGULARES
 # =============================================================================
 @st.cache_data(ttl=120, show_spinner=False)
 def obtener_estados_actuales():
@@ -451,7 +450,6 @@ def format_fecha(d):
     meses_nombres = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
     return f"{d.day} de {meses_nombres[d.month]} de {d.year}" if d.year != 1970 else "Fecha Desconocida"
 
-# 🔥 CARGA DE BANDEJA BLINDADA EN GOOGLE SHEETS 🔥
 def cargar_pendientes(usuario):
     try:
         sheet = get_sheet("bandeja_pendientes")
@@ -593,31 +591,31 @@ DATOS_PLAN_BASE = [
     {"TAG": "35-GC-006", "S_Programada": "WK08_2026", "Tipo": "INSP", "Estado": "Hecho", "S_Realizada": "2026-02-16", "Observacion": ""}
 ]
 
-# 🔥 SOPORTE PARA PLANIFICACIÓN MASIVA DE 3 AÑOS 🔥
+# 🔥 SOPORTE PARA PLANIFICACIÓN MASIVA DE 3 AÑOS (2026-2028) EXACTO COMO FOTOS 🔥
 def generar_plan_3_anios():
-    MATRIZ = {
-        "70-GC-013": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
-        "70-GC-014": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1"],
-        "50-GC-001": ["P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
-        "50-GC-002": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1"],
-        "50-GC-003": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
-        "50-GC-004": ["INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1"],
-        "50-CD-001": ["INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP"],
-        "50-CD-002": ["INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP"],
-        "55-GC-015": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
-        "65-GC-011": ["P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P1", "INSP"],
-        "65-GC-009": ["INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1"],
-        "65-CD-011": ["INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "P2"],
-        "65-CD-012": ["INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "P2"],
-        "35-GC-006": ["P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P1", "P1", "P1", "P3", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P1", "P1", "P3"],
-        "35-GC-007": ["P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P3", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P2", "P1"],
-        "35-GC-008": ["P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P3", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P3"],
-        "20-GC-004": ["INSP", "P4", "INSP", "INSP", "P1", "INSP", "INSP", "P2", "INSP", "INSP", "P1", "INSP", "INSP", "P3", "INSP", "INSP", "P1", "INSP", "INSP", "P2", "INSP", "INSP", "P1", "INSP", "INSP", "P4", "INSP", "INSP", "P1", "INSP", "INSP", "P2"],
-        "20-GC-001": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
-        "20-GC-002": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
-        "20-GC-003": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
-        "Taller":    ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"]
-    }
+    MATRIZ_EQUIPOS_ORDENADOS = [
+        ("70-GC-013", ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"]),
+        ("70-GC-014", ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1"]),
+        ("50-GC-001", ["P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"]),
+        ("50-GC-002", ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1"]),
+        ("50-GC-003", ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"]),
+        ("50-GC-004", ["INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1"]),
+        ("50-CD-001", ["INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP"]),
+        ("50-CD-002", ["INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP"]),
+        ("55-GC-015", ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"]),
+        ("65-GC-011", ["P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P1", "INSP"]),
+        ("65-GC-009", ["INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1"]),
+        ("65-CD-011", ["INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "P2"]),
+        ("65-CD-012", ["INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "P2"]),
+        ("35-GC-006", ["P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P1", "P1", "P1", "P3", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P1", "P1", "P3"]),
+        ("35-GC-007", ["P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P3", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P2", "P1"]),
+        ("35-GC-008", ["P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P3", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P3"]),
+        ("20-GC-004", ["INSP", "P4", "INSP", "INSP", "P1", "INSP", "INSP", "P2", "INSP", "INSP", "P1", "INSP", "INSP", "P3", "INSP", "INSP", "P1", "INSP", "INSP", "P2", "INSP", "INSP", "P1", "INSP", "INSP", "P4", "INSP", "INSP", "P1", "INSP", "INSP", "P2"]),
+        ("20-GC-001", ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"]),
+        ("20-GC-002", ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"]),
+        ("20-GC-003", ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"]),
+        ("Taller",    ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"])
+    ]
     
     WKS = [
         "WK15_2026", "WK19_2026", "WK24_2026", "WK28_2026", "WK32_2026", "WK37_2026", "WK41_2026", "WK45_2026", "WK50_2026",
@@ -626,13 +624,12 @@ def generar_plan_3_anios():
     ]
     
     datos = []
-    for tag, arr in MATRIZ.items():
+    for tag, arr in MATRIZ_EQUIPOS_ORDENADOS:
         for wk, tipo in zip(WKS, arr):
-            tipo_real = "INSP" if tipo == "I" else tipo
-            # 🔥 FILTRO ESCUDO: Protege Marzo 2026 para no sobrescribir nada
+            # 🔥 FILTRO ESCUDO: Protege Marzo 2026 para no sobrescribir nada.
             if wk in ["WK09_2026", "WK10_2026", "WK11_2026", "WK12_2026", "WK13_2026"]:
                 continue
-            datos.append({"TAG": tag, "S_Programada": wk, "Tipo": tipo_real, "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""})
+            datos.append({"TAG": tag, "S_Programada": wk, "Tipo": tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""})
     return pd.DataFrame(datos)
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -715,7 +712,7 @@ def volver_catalogo():
 
 # --- FIN DE LA PARTE 1 ---
 # =============================================================================
-# 6. INICIALIZACIÓN DE ESTADOS
+# 6. INICIALIZACIÓN DE ESTADOS Y LOGIN CON "URL TOKEN"
 # =============================================================================
 default_states = {
     'logged_in': False, 'usuario_actual': "", 'equipo_seleccionado': None, 'vista_actual': "catalogo",
@@ -728,7 +725,7 @@ default_states = {
     'filtro_area': "Todas" 
 }
 
-# 🔥 INTENTAR AUTO-LOGIN SI LA SESIÓN ES MENOR A 1 HORA 🔥
+# 🔥 INTENTAR AUTO-LOGIN SI LA SESIÓN (TOKEN EN URL) ES MENOR A 1 HORA 🔥
 if 'logged_in' not in st.session_state or not st.session_state.logged_in:
     es_valido, usuario_guardado = check_auto_login()
     if es_valido:
@@ -1166,13 +1163,13 @@ elif st.session_state.vista_actual == "planificacion":
                         time.sleep(1.5)
                         st.rerun()
         
-        # 🔥 GENERADOR DE PLANIFICACIÓN ANUAL (AHORA DINÁMICO A 3 AÑOS) 🔥
+        # 🔥 GENERADOR DE PLANIFICACIÓN ANUAL (AHORA DINÁMICO A 3 AÑOS - 2026 AL 2028) 🔥
         with c_extra2:
             if es_admin:
                 with st.expander("👑 Control de Base de Datos Anual (Admin)", expanded=False):
-                    st.info("Inyectar las tareas a 3 AÑOS (Respeta y NO borra tus ediciones manuales en Marzo).")
+                    st.info("Inyectar las tareas a 3 AÑOS (Abril 2026 - Noviembre 2028). **Tu trabajo en Marzo 2026 NO SE BORRARÁ.**")
                     
-                    if st.button("🚀 Inyectar Planificación (3 Años)", use_container_width=True):
+                    if st.button("🚀 Inyectar Planificación Completa (Abr 2026 - Nov 2028)", use_container_width=True):
                         df_base_actual = cargar_cmms()
                         df_nuevos = generar_plan_3_anios()
                         df_combinado = pd.concat([df_base_actual, df_nuevos], ignore_index=True)
@@ -1183,12 +1180,12 @@ elif st.session_state.vista_actual == "planificacion":
                         for col in ['Mes_Calc', '🗑️ Quitar', 'Día Programado']:
                             if col in df_combinado.columns: df_combinado = df_combinado.drop(columns=[col])
                         guardar_cmms(df_combinado)
-                        st.success("✅ Programación masiva inyectada correctamente.")
+                        st.success("✅ Programación masiva de 3 años inyectada correctamente.")
                         time.sleep(1.5)
                         st.rerun()
                         
                     st.markdown("---")
-                    st.warning("Usa esto solo si la base de datos se corrompe por completo (Reseteo de Fábrica).")
+                    st.warning("Usa esto solo si la base de datos se corrompe por completo (Reseteo de Fábrica a Marzo 2026).")
                     if st.button("🚑 Resetear Todo a Valores Iniciales", use_container_width=True):
                         headers_b = ["TAG", "S_Programada", "Tipo", "Estado", "S_Realizada", "Observacion"]
                         df_rec = pd.DataFrame(DATOS_PLAN_BASE, columns=headers_b)
@@ -1209,6 +1206,7 @@ elif st.session_state.vista_actual == "planificacion":
             
         with c_cal_tog:
             st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+            # 🔥 NUEVO INTERRUPTOR PARA VER SOLO TAREAS COMPLETADAS 🔥
             solo_hechos = st.toggle("✅ Solo mostrar Completados", value=False)
             
         with c_cal_tit: st.markdown("### 📆 Calendario")
@@ -1353,7 +1351,7 @@ elif st.session_state.vista_actual == "planificacion":
         else:
             st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-# --- 8.3 VISTA DE FIRMAS (FIRMAS PERSISTENTES LADO A LADO) ---
+# --- 8.3 VISTA DE FIRMAS (PANEL SUPERIOR CON TÉCNICO Y CLIENTE JUNTOS) ---
 elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
     st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas y Revisión</h1>", unsafe_allow_html=True)
     st.markdown("---")
@@ -1379,6 +1377,7 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         if aprob_sel == "➕ Escribir nuevo aprobador...":
             nuevo_aprob = st.text_input("Nombre del nuevo aprobador:", placeholder="Ej: Oriana Reyes", label_visibility="collapsed")
             with c_apr2:
+                st.markdown("<div style='margin-top: 0px;'></div>", unsafe_allow_html=True)
                 if st.button("💾 Guardar y Seleccionar", use_container_width=True):
                     if nuevo_aprob.strip():
                         agregar_contacto(nuevo_aprob)
@@ -1423,7 +1422,7 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
         st.markdown("<br>", unsafe_allow_html=True)
 
         # 🔥 2. CONFIGURACIÓN DE FIRMAS (TÉCNICO Y CLIENTE LADO A LADO) 🔥
-        st.markdown("### ⚙️ 2. Configurar Firmas (Se guardan en la nube)")
+        st.markdown("### ⚙️ 2. Configurar Firmas Fijas (Se guardan en la nube)")
         firma_tec_bytes = obtener_firma_db(st.session_state.usuario_actual, "Tecnico")
         firma_cli_bytes = obtener_firma_db(aprobador_final, "Cliente")
 
@@ -1581,7 +1580,7 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                 
                 _, col_btn_final, _ = st.columns([1, 2, 1])
                 with col_btn_final:
-                    if st.button(f"🚀 Generar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
+                    if st.button(f"🚀 Aprobar, Firmar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
                         
                         tec_ok = firma_tec_bytes is not None 
                         cli_ok = firma_cli_bytes is not None
