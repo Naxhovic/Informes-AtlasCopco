@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 🔥 CONFIGURACIÓN DE PÁGINA: Barra lateral oculta permanentemente
+# 🔥 CONFIGURACIÓN DE PÁGINA: Barra lateral oculta para siempre
 st.set_page_config(page_title="Atlas Spence | Gestión de Reportes", layout="wide", page_icon="⚙️", initial_sidebar_state="collapsed")
 
 from docxtpl import DocxTemplate, InlineImage
@@ -23,16 +23,16 @@ from google.oauth2.service_account import Credentials
 from streamlit_pdf_viewer import pdf_viewer
 
 # =============================================================================
-# 0.1 SISTEMA DE SESIONES INMORTALES (1 HORA - SOBREVIVE AL SUEÑO DE RENDER)
+# 0.1 SISTEMA DE SESIONES INMORTALES (1 HORA - SOBREVIVE RECARGAS)
 # =============================================================================
 def check_auto_login():
     if "session" in st.query_params:
         try:
             token = st.query_params["session"]
-            data_dec = base64.b64decode(token).decode('utf-8')
+            data_dec = base64.urlsafe_b64decode(token.encode('utf-8')).decode('utf-8')
             user_saved, timestamp = data_dec.split("||")
             if time.time() - float(timestamp) < 3600: # 3600 segundos = 1 Hora
-                new_token = base64.b64encode(f"{user_saved}||{time.time()}".encode('utf-8')).decode('utf-8')
+                new_token = base64.urlsafe_b64encode(f"{user_saved}||{time.time()}".encode('utf-8')).decode('utf-8')
                 st.query_params["session"] = new_token
                 return True, user_saved
             else:
@@ -42,7 +42,7 @@ def check_auto_login():
     return False, ""
 
 def do_login(username):
-    token = base64.b64encode(f"{username}||{time.time()}".encode('utf-8')).decode('utf-8')
+    token = base64.urlsafe_b64encode(f"{username}||{time.time()}".encode('utf-8')).decode('utf-8')
     st.query_params["session"] = token
     st.session_state.logged_in = True
     st.session_state.usuario_actual = username
@@ -595,39 +595,44 @@ DATOS_PLAN_BASE = [
 
 # 🔥 SOPORTE PARA PLANIFICACIÓN MASIVA DE 3 AÑOS 🔥
 def generar_plan_3_anios():
-    PATRONES = {
-        "P4_I_P1": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP"],
-        "I_P3_I_P1": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4"],
-        "P3_I_P1": ["P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP"],
-        "I_P3_I_P1_alt": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
-        "I_P4_I_P1": ["INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3"],
-        "I_I_I_P2": ["INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4"],
-        "P1_I_P2": ["P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4", "INSP"],
-        "I_P1_I_P1": ["INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1"],
-        "I_P2_I_I": ["INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP"],
-        "P1_P1_P2": ["P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1"],
-        "P2_P1_P1": ["P2", "P1", "P1", "P1", "P1", "P1", "P4", "P1", "P1", "P2"],
-        "P1_P2_P1": ["P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1"],
-        "I_P4_I_I": ["INSP", "P4", "INSP", "INSP", "P1", "INSP", "INSP", "P2", "INSP", "INSP"]
-    }
-    MAP = {
-        "20-GC-001": "P4_I_P1", "20-GC-002": "I_P3_I_P1", "20-GC-003": "P3_I_P1", "20-GC-004": "I_P3_I_P1_alt",
-        "35-GC-006": "P4_I_P1", "35-GC-007": "I_P4_I_P1", "35-GC-008": "I_I_I_P2", "50-CD-001": "I_I_I_P2", 
-        "50-CD-002": "P4_I_P1", "50-GC-001": "P1_I_P2", "50-GC-002": "I_P1_I_P1", "50-GC-003": "I_P2_I_I", 
-        "50-GC-004": "I_P2_I_I", "55-GC-015": "P1_P1_P2", "65-CD-011": "P2_P1_P1", "65-CD-012": "P1_P2_P1", 
-        "65-GC-009": "I_P4_I_I", "65-GC-011": "P4_I_P1", "70-GC-013": "P4_I_P1", "70-GC-014": "P4_I_P1", "Taller": "P4_I_P1"
+    MATRIZ = {
+        "70-GC-013": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
+        "70-GC-014": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1"],
+        "50-GC-001": ["P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
+        "50-GC-002": ["INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1"],
+        "50-GC-003": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
+        "50-GC-004": ["INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1"],
+        "50-CD-001": ["INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP"],
+        "50-CD-002": ["INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "INSP"],
+        "55-GC-015": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
+        "65-GC-011": ["P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P1", "INSP"],
+        "65-GC-009": ["INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P1", "INSP", "P2", "INSP", "P1"],
+        "65-CD-011": ["INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "P2"],
+        "65-CD-012": ["INSP", "P2", "INSP", "INSP", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P2", "INSP", "INSP", "INSP", "P4", "INSP", "INSP", "INSP", "P2"],
+        "35-GC-006": ["P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P1", "P1", "P1", "P3", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P1", "P1", "P3"],
+        "35-GC-007": ["P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P3", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P2", "P1"],
+        "35-GC-008": ["P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P3", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P4", "P1", "P1", "P2", "P1", "P1", "P2", "P1", "P1", "P3"],
+        "20-GC-004": ["INSP", "P4", "INSP", "INSP", "P1", "INSP", "INSP", "P2", "INSP", "INSP", "P1", "INSP", "INSP", "P3", "INSP", "INSP", "P1", "INSP", "INSP", "P2", "INSP", "INSP", "P1", "INSP", "INSP", "P4", "INSP", "INSP", "P1", "INSP", "INSP", "P2"],
+        "20-GC-001": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
+        "20-GC-002": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
+        "20-GC-003": ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"],
+        "Taller":    ["P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P4", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP", "P3", "INSP", "P1", "INSP", "P2", "INSP", "P1", "INSP"]
     }
     
+    WKS = [
+        "WK15_2026", "WK19_2026", "WK24_2026", "WK28_2026", "WK32_2026", "WK37_2026", "WK41_2026", "WK45_2026", "WK50_2026",
+        "WK02_2027", "WK06_2027", "WK10_2027", "WK15_2027", "WK19_2027", "WK24_2027", "WK28_2027", "WK32_2027", "WK37_2027", "WK41_2027", "WK45_2027", "WK50_2027",
+        "WK02_2028", "WK06_2028", "WK10_2028", "WK15_2028", "WK19_2028", "WK24_2028", "WK28_2028", "WK32_2028", "WK37_2028", "WK41_2028", "WK45_2028"
+    ]
+    
     datos = []
-    años = [2026, 2027, 2028]
-    for año in años:
-        WKS = [f"WK03_{año}", f"WK08_{año}", f"WK13_{año}", f"WK18_{año}", f"WK23_{año}", f"WK28_{año}", f"WK33_{año}", f"WK38_{año}", f"WK43_{año}", f"WK48_{año}"]
-        for tag, p in MAP.items():
-            for wk, tipo in zip(WKS, PATRONES[p]):
-                # 🔥 FILTRO ESCUDO: Protege Marzo 2026 para no sobrescribir nada
-                if wk in ["WK09_2026", "WK10_2026", "WK11_2026", "WK12_2026", "WK13_2026"]:
-                    continue
-                datos.append({"TAG": tag, "S_Programada": wk, "Tipo": tipo, "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""})
+    for tag, arr in MATRIZ.items():
+        for wk, tipo in zip(WKS, arr):
+            tipo_real = "INSP" if tipo == "I" else tipo
+            # 🔥 FILTRO ESCUDO: Protege Marzo 2026 para no sobrescribir nada
+            if wk in ["WK09_2026", "WK10_2026", "WK11_2026", "WK12_2026", "WK13_2026"]:
+                continue
+            datos.append({"TAG": tag, "S_Programada": wk, "Tipo": tipo_real, "Estado": "Pendiente", "S_Realizada": "", "Observacion": ""})
     return pd.DataFrame(datos)
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -710,7 +715,7 @@ def volver_catalogo():
 
 # --- FIN DE LA PARTE 1 ---
 # =============================================================================
-# 6. INICIALIZACIÓN DE ESTADOS Y LOGIN 
+# 6. INICIALIZACIÓN DE ESTADOS
 # =============================================================================
 default_states = {
     'logged_in': False, 'usuario_actual': "", 'equipo_seleccionado': None, 'vista_actual': "catalogo",
@@ -718,6 +723,8 @@ default_states = {
     'input_h_marcha': 0, 'input_h_carga': 0, 'input_temp': "70.0",
     'input_p_carga': "7.0", 'input_p_descarga': "7.5", 'input_estado': "",
     'input_reco': "", 'input_estado_eq': "Operativo", 'vista_firmas': False,
+    'firma_tec_json': None, 'firma_tec_img': None,
+    'mostrar_firma_tec': False,
     'filtro_area': "Todas" 
 }
 
@@ -736,7 +743,7 @@ if 'informes_pendientes' not in st.session_state:
     else: st.session_state.informes_pendientes = []
 
 # =============================================================================
-# 7. INTERFAZ: LOGIN (Corta la ejecución de abajo si no hay login)
+# 7. INTERFAZ: LOGIN (Corta la ejecución de abajo si no hay login para evitar SyntaxError)
 # =============================================================================
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
@@ -1346,15 +1353,18 @@ elif st.session_state.vista_actual == "planificacion":
         else:
             st.dataframe(df_matriz_congelada, use_container_width=True, height=600)
 
-# --- 8.3 VISTA DE FIRMAS (PANEL SUPERIOR CON TÉCNICO Y CLIENTE LADO A LADO) ---
+# --- 8.3 VISTA DE FIRMAS (FIRMAS PERSISTENTES LADO A LADO) ---
 elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
     st.markdown("<h1 style='margin-top:-15px;'>✍️ Pizarra de Firmas y Revisión</h1>", unsafe_allow_html=True)
+    st.markdown("---")
     
     if len(st.session_state.informes_pendientes) == 0: 
         st.info("🎉 ¡Excelente! No tienes ningún informe pendiente por firmar.")
     else:
-        # 🔥 SELECCIÓN GLOBAL DE APROBADOR 🔥
+        # 🔥 1. SELECCIÓN GLOBAL DE APROBADOR 🔥
+        st.markdown("### 👤 1. Seleccionar Aprobador (Cliente)")
         contactos_db = obtener_contactos()
+        
         if 'aprobador_global' not in st.session_state:
             cliente_por_defecto = st.session_state.informes_pendientes[0]['cli'] if st.session_state.informes_pendientes[0].get('cli') else (contactos_db[0] if contactos_db else "")
             st.session_state.aprobador_global = cliente_por_defecto
@@ -1364,7 +1374,7 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
 
         c_apr1, c_apr2, c_apr3 = st.columns([3, 2, 1])
         with c_apr1:
-            aprob_sel = st.selectbox("👤 Cliente Aprobador para los informes de esta sesión:", opciones_aprobador, index=idx_aprob)
+            aprob_sel = st.selectbox("Este cliente aparecerá como firmante en todos los informes:", opciones_aprobador, index=idx_aprob)
         
         if aprob_sel == "➕ Escribir nuevo aprobador...":
             nuevo_aprob = st.text_input("Nombre del nuevo aprobador:", placeholder="Ej: Oriana Reyes", label_visibility="collapsed")
@@ -1410,26 +1420,26 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                     st.session_state.aprobador_global = obtener_contactos()[0] if obtener_contactos() else ""
                     st.rerun()
 
-        st.markdown("<hr style='margin-top: 5px; border-color: #2b3543;'>", unsafe_allow_html=True)
-        st.markdown("### ⚙️ Configuración de Firmas Activas")
-        
-        # 🔥 PANELES DE FIRMAS LADO A LADO Y GUARDADAS EN LA NUBE 🔥
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # 🔥 2. CONFIGURACIÓN DE FIRMAS (TÉCNICO Y CLIENTE LADO A LADO) 🔥
+        st.markdown("### ⚙️ 2. Configurar Firmas (Se guardan en la nube)")
         firma_tec_bytes = obtener_firma_db(st.session_state.usuario_actual, "Tecnico")
         firma_cli_bytes = obtener_firma_db(aprobador_final, "Cliente")
-        
+
         c_tec, c_cli = st.columns(2)
-        
+
         with c_tec:
             with st.container(border=True):
                 st.markdown("<h4 style='text-align:center;'>🧑‍🔧 Tu Firma (Técnico)</h4>", unsafe_allow_html=True)
                 if firma_tec_bytes:
-                    st.image(firma_tec_bytes, width=200)
-                    st.success("✅ Firma técnica guardada y lista.")
+                    st.image(firma_tec_bytes, use_column_width=True)
+                    st.success("✅ Firma técnica lista.")
                     if st.button("🔄 Cambiar Mi Firma", key="btn_cambiar_tec", use_container_width=True):
                         guardar_firma_db(st.session_state.usuario_actual, "Tecnico", b"")
                         st.rerun()
                 else:
-                    st.warning("⚠️ No tienes firma configurada.")
+                    st.warning("⚠️ Dibuja tu firma:")
                     canvas_tec = st_canvas(stroke_width=3, stroke_color="#000", background_color="#fff", height=150, width=400, drawing_mode="freedraw", key="canvas_tec")
                     if st.button("💾 Guardar Mi Firma", type="primary", use_container_width=True, key="btn_save_tec"):
                         if canvas_tec.image_data is not None:
@@ -1438,19 +1448,19 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                             img.save(io_img, format='PNG')
                             guardar_firma_db(st.session_state.usuario_actual, "Tecnico", io_img.getvalue())
                             st.rerun()
-                            
+
         with c_cli:
             with st.container(border=True):
-                st.markdown(f"<h4 style='text-align:center;'>👤 Firma de {aprobador_final} (Cliente)</h4>", unsafe_allow_html=True)
+                st.markdown(f"<h4 style='text-align:center;'>👤 Firma de {aprobador_final}</h4>", unsafe_allow_html=True)
                 if firma_cli_bytes:
-                    st.image(firma_cli_bytes, width=200)
-                    st.success("✅ Firma del cliente cargada y lista.")
+                    st.image(firma_cli_bytes, use_column_width=True)
+                    st.success("✅ Firma del cliente lista.")
                     if st.button("🔄 Cambiar Firma de Cliente", key="btn_cambiar_cli", use_container_width=True):
                         guardar_firma_db(aprobador_final, "Cliente", b"")
                         st.rerun()
                 else:
-                    st.info("Dibuja o sube una imagen de la firma:")
-                    tab_draw, tab_up = st.tabs(["🖌️ Dibujar", "📁 Cargar Archivo (PNG)"])
+                    st.info("Pide al cliente que firme aquí, o sube una imagen:")
+                    tab_draw, tab_up = st.tabs(["🖌️ Dibujar", "📁 Subir Archivo (PNG)"])
                     with tab_draw:
                         canvas_cli_top = st_canvas(stroke_width=3, stroke_color="#000", background_color="#fff", height=150, width=400, drawing_mode="freedraw", key="canvas_cli_top")
                         if st.button("💾 Guardar Dibujo", type="primary", use_container_width=True, key="save_cli_draw"):
@@ -1461,9 +1471,9 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                                 guardar_firma_db(aprobador_final, "Cliente", io_img.getvalue())
                                 st.rerun()
                     with tab_up:
-                        firma_archivo = st.file_uploader("Sube una imagen sin fondo (PNG)", type=['png', 'jpg', 'jpeg'], key="up_cli")
+                        firma_archivo = st.file_uploader("Subir imagen sin fondo", type=['png', 'jpg', 'jpeg'], key="up_cli")
                         if firma_archivo is not None:
-                            if st.button("💾 Guardar Archivo como Firma", type="primary", use_container_width=True, key="save_cli_file"):
+                            if st.button("💾 Guardar Archivo", type="primary", use_container_width=True, key="save_cli_file"):
                                 guardar_firma_db(aprobador_final, "Cliente", firma_archivo.getvalue())
                                 st.rerun()
 
@@ -1571,7 +1581,7 @@ elif st.session_state.vista_firmas or st.session_state.vista_actual == "firmas":
                 
                 _, col_btn_final, _ = st.columns([1, 2, 1])
                 with col_btn_final:
-                    if st.button(f"🚀 Aprobar, Firmar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
+                    if st.button(f"🚀 Generar y Subir Informes de {macro_area}", type="primary", use_container_width=True, key=f"btn_subir_{macro_area}"):
                         
                         tec_ok = firma_tec_bytes is not None 
                         cli_ok = firma_cli_bytes is not None
